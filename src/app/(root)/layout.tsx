@@ -2,7 +2,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
-export default async function SetLayout({
+export default async function SetupLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -11,6 +11,7 @@ export default async function SetLayout({
   if (!userId) {
     redirect("/sign-in");
   }
+
   const store = await prisma.store.findFirst({
     where: {
       userId,
@@ -21,5 +22,5 @@ export default async function SetLayout({
     redirect(`/${store.id}`);
   }
 
-  return null;
+  return <>{children}</>; 
 }

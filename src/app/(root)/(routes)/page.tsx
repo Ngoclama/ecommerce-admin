@@ -5,17 +5,12 @@ import { useEffect } from "react";
 
 const SetUpPage = () => {
   const isOpen = useStoreModal((state) => state.isOpen);
+  console.log(isOpen);
   const onOpen = useStoreModal((state) => state.onOpen);
   useEffect(() => {
     if (!isOpen) onOpen();
   }, [onOpen, isOpen]);
 
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-24">
-      <Button variant="secondary" size="lg">
-        Set up your store
-      </Button>
-    </div>
-  );
+  return null;
 };
 export default SetUpPage;
