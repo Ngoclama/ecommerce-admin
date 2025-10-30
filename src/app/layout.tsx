@@ -7,9 +7,9 @@ import {
   SignedOut,
   UserButton,
 } from "@clerk/nextjs";
+import "./globals.css";
 
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
 import { ModalProvider } from "@/providers/modal-provider";
 import { Store } from "../generated/prisma/index";
 import prisma from "@/lib/prisma";
@@ -41,20 +41,19 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
           <ModalProvider />
-
-          <header className="flex justify-end items-center p-4 gap-4 h-16">
-            <SignedOut>
-              <SignInButton />
-              <SignUpButton>
-                <button className="bg-[#6c47ff] text-white rounded-full font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 cursor-pointer">
-                  Sign Up
-                </button>
-              </SignUpButton>
-            </SignedOut>
-            <SignedIn></SignedIn>
-          </header>
-
-          {children}
+          <div className="min-h-screen flex flex-col">
+            <header>
+              <SignedOut>
+                <SignInButton />
+                <SignUpButton>
+                  <button className="bg-[#6c47ff] text-white rounded-full font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 cursor-pointer">
+                    Sign Up
+                  </button>
+                </SignUpButton>
+              </SignedOut>
+            </header>
+            <main className="flex-1">{children}</main>
+          </div>
           <Toaster richColors position="bottom-right" />
         </body>
       </html>

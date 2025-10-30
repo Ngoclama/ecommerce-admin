@@ -15,9 +15,22 @@ datasource db {
 }
 
 model Store {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  userId    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  userId     String
+  billboards Billboard[] // không cần @relation("StoreToBillboards")
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 }
+
+model Billboard {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  label     String
+  imageUrl  String
+  storeId   String   @db.ObjectId
+  store     Store    @relation(fields: [storeId], references: [id])
+  createdAt DateTime @default(now())
+  @@index([storeId])
+}
+
+

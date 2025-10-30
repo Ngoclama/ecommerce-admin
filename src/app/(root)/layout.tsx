@@ -11,6 +11,15 @@ export default async function SetupLayout({
   if (!userId) {
     redirect("/sign-in");
   }
+  // const billboard = await prisma.billboard.findFirst({
+  //   where: {
+  //     userId,
+  //   },
+  // });
+
+  // if (!billboard) {
+  //   redirect("/(dashboard)/setup/billboard");
+  // }
 
   const store = await prisma.store.findFirst({
     where: {
@@ -22,5 +31,5 @@ export default async function SetupLayout({
     redirect(`/${store.id}`);
   }
 
-  return <>{children}</>; 
+  return <>{children}</>;
 }

@@ -18,6 +18,11 @@ export type PrismaPromise<T> = $Public.PrismaPromise<T>
  * 
  */
 export type Store = $Result.DefaultSelection<Prisma.$StorePayload>
+/**
+ * Model Billboard
+ * 
+ */
+export type Billboard = $Result.DefaultSelection<Prisma.$BillboardPayload>
 
 /**
  * ##  Prisma Client ʲˢ
@@ -113,6 +118,16 @@ export class PrismaClient<
     * ```
     */
   get store(): Prisma.StoreDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.billboard`: Exposes CRUD operations for the **Billboard** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Billboards
+    * const billboards = await prisma.billboard.findMany()
+    * ```
+    */
+  get billboard(): Prisma.BillboardDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -553,7 +568,8 @@ export namespace Prisma {
 
 
   export const ModelName: {
-    Store: 'Store'
+    Store: 'Store',
+    Billboard: 'Billboard'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -572,7 +588,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "store"
+      modelProps: "store" | "billboard"
       txIsolationLevel: never
     }
     model: {
@@ -647,6 +663,80 @@ export namespace Prisma {
           count: {
             args: Prisma.StoreCountArgs<ExtArgs>
             result: $Utils.Optional<StoreCountAggregateOutputType> | number
+          }
+        }
+      }
+      Billboard: {
+        payload: Prisma.$BillboardPayload<ExtArgs>
+        fields: Prisma.BillboardFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.BillboardFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BillboardPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.BillboardFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BillboardPayload>
+          }
+          findFirst: {
+            args: Prisma.BillboardFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BillboardPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.BillboardFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BillboardPayload>
+          }
+          findMany: {
+            args: Prisma.BillboardFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BillboardPayload>[]
+          }
+          create: {
+            args: Prisma.BillboardCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BillboardPayload>
+          }
+          createMany: {
+            args: Prisma.BillboardCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.BillboardDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BillboardPayload>
+          }
+          update: {
+            args: Prisma.BillboardUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BillboardPayload>
+          }
+          deleteMany: {
+            args: Prisma.BillboardDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.BillboardUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.BillboardUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BillboardPayload>
+          }
+          aggregate: {
+            args: Prisma.BillboardAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateBillboard>
+          }
+          groupBy: {
+            args: Prisma.BillboardGroupByArgs<ExtArgs>
+            result: $Utils.Optional<BillboardGroupByOutputType>[]
+          }
+          findRaw: {
+            args: Prisma.BillboardFindRawArgs<ExtArgs>
+            result: JsonObject
+          }
+          aggregateRaw: {
+            args: Prisma.BillboardAggregateRawArgs<ExtArgs>
+            result: JsonObject
+          }
+          count: {
+            args: Prisma.BillboardCountArgs<ExtArgs>
+            result: $Utils.Optional<BillboardCountAggregateOutputType> | number
           }
         }
       }
@@ -730,6 +820,7 @@ export namespace Prisma {
   }
   export type GlobalOmitConfig = {
     store?: StoreOmit
+    billboard?: BillboardOmit
   }
 
   /* Types for Logging */
@@ -804,6 +895,36 @@ export namespace Prisma {
    * Count Types
    */
 
+
+  /**
+   * Count Type StoreCountOutputType
+   */
+
+  export type StoreCountOutputType = {
+    billboards: number
+  }
+
+  export type StoreCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    billboards?: boolean | StoreCountOutputTypeCountBillboardsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * StoreCountOutputType without action
+   */
+  export type StoreCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StoreCountOutputType
+     */
+    select?: StoreCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * StoreCountOutputType without action
+   */
+  export type StoreCountOutputTypeCountBillboardsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BillboardWhereInput
+  }
 
 
   /**
@@ -974,6 +1095,8 @@ export namespace Prisma {
     userId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    billboards?: boolean | Store$billboardsArgs<ExtArgs>
+    _count?: boolean | StoreCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["store"]>
 
 
@@ -987,10 +1110,16 @@ export namespace Prisma {
   }
 
   export type StoreOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "userId" | "createdAt" | "updatedAt", ExtArgs["result"]["store"]>
+  export type StoreInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    billboards?: boolean | Store$billboardsArgs<ExtArgs>
+    _count?: boolean | StoreCountOutputTypeDefaultArgs<ExtArgs>
+  }
 
   export type $StorePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Store"
-    objects: {}
+    objects: {
+      billboards: Prisma.$BillboardPayload<ExtArgs>[]
+    }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       name: string
@@ -1360,6 +1489,7 @@ export namespace Prisma {
    */
   export interface Prisma__StoreClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    billboards<T extends Store$billboardsArgs<ExtArgs> = {}>(args?: Subset<T, Store$billboardsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BillboardPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1411,6 +1541,10 @@ export namespace Prisma {
      */
     omit?: StoreOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StoreInclude<ExtArgs> | null
+    /**
      * Filter, which Store to fetch.
      */
     where: StoreWhereUniqueInput
@@ -1429,6 +1563,10 @@ export namespace Prisma {
      */
     omit?: StoreOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StoreInclude<ExtArgs> | null
+    /**
      * Filter, which Store to fetch.
      */
     where: StoreWhereUniqueInput
@@ -1446,6 +1584,10 @@ export namespace Prisma {
      * Omit specific fields from the Store
      */
     omit?: StoreOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StoreInclude<ExtArgs> | null
     /**
      * Filter, which Store to fetch.
      */
@@ -1495,6 +1637,10 @@ export namespace Prisma {
      */
     omit?: StoreOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StoreInclude<ExtArgs> | null
+    /**
      * Filter, which Store to fetch.
      */
     where?: StoreWhereInput
@@ -1543,6 +1689,10 @@ export namespace Prisma {
      */
     omit?: StoreOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StoreInclude<ExtArgs> | null
+    /**
      * Filter, which Stores to fetch.
      */
     where?: StoreWhereInput
@@ -1586,6 +1736,10 @@ export namespace Prisma {
      */
     omit?: StoreOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StoreInclude<ExtArgs> | null
+    /**
      * The data needed to create a Store.
      */
     data: XOR<StoreCreateInput, StoreUncheckedCreateInput>
@@ -1613,6 +1767,10 @@ export namespace Prisma {
      * Omit specific fields from the Store
      */
     omit?: StoreOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StoreInclude<ExtArgs> | null
     /**
      * The data needed to update a Store.
      */
@@ -1654,6 +1812,10 @@ export namespace Prisma {
      */
     omit?: StoreOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StoreInclude<ExtArgs> | null
+    /**
      * The filter to search for the Store to update in case it exists.
      */
     where: StoreWhereUniqueInput
@@ -1679,6 +1841,10 @@ export namespace Prisma {
      * Omit specific fields from the Store
      */
     omit?: StoreOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StoreInclude<ExtArgs> | null
     /**
      * Filter which Store to delete.
      */
@@ -1728,6 +1894,30 @@ export namespace Prisma {
   }
 
   /**
+   * Store.billboards
+   */
+  export type Store$billboardsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Billboard
+     */
+    select?: BillboardSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Billboard
+     */
+    omit?: BillboardOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BillboardInclude<ExtArgs> | null
+    where?: BillboardWhereInput
+    orderBy?: BillboardOrderByWithRelationInput | BillboardOrderByWithRelationInput[]
+    cursor?: BillboardWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: BillboardScalarFieldEnum | BillboardScalarFieldEnum[]
+  }
+
+  /**
    * Store without action
    */
   export type StoreDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -1739,6 +1929,989 @@ export namespace Prisma {
      * Omit specific fields from the Store
      */
     omit?: StoreOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StoreInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model Billboard
+   */
+
+  export type AggregateBillboard = {
+    _count: BillboardCountAggregateOutputType | null
+    _min: BillboardMinAggregateOutputType | null
+    _max: BillboardMaxAggregateOutputType | null
+  }
+
+  export type BillboardMinAggregateOutputType = {
+    id: string | null
+    label: string | null
+    imageUrl: string | null
+    storeId: string | null
+    createdAt: Date | null
+  }
+
+  export type BillboardMaxAggregateOutputType = {
+    id: string | null
+    label: string | null
+    imageUrl: string | null
+    storeId: string | null
+    createdAt: Date | null
+  }
+
+  export type BillboardCountAggregateOutputType = {
+    id: number
+    label: number
+    imageUrl: number
+    storeId: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type BillboardMinAggregateInputType = {
+    id?: true
+    label?: true
+    imageUrl?: true
+    storeId?: true
+    createdAt?: true
+  }
+
+  export type BillboardMaxAggregateInputType = {
+    id?: true
+    label?: true
+    imageUrl?: true
+    storeId?: true
+    createdAt?: true
+  }
+
+  export type BillboardCountAggregateInputType = {
+    id?: true
+    label?: true
+    imageUrl?: true
+    storeId?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type BillboardAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Billboard to aggregate.
+     */
+    where?: BillboardWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Billboards to fetch.
+     */
+    orderBy?: BillboardOrderByWithRelationInput | BillboardOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: BillboardWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Billboards from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Billboards.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Billboards
+    **/
+    _count?: true | BillboardCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: BillboardMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: BillboardMaxAggregateInputType
+  }
+
+  export type GetBillboardAggregateType<T extends BillboardAggregateArgs> = {
+        [P in keyof T & keyof AggregateBillboard]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateBillboard[P]>
+      : GetScalarType<T[P], AggregateBillboard[P]>
+  }
+
+
+
+
+  export type BillboardGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BillboardWhereInput
+    orderBy?: BillboardOrderByWithAggregationInput | BillboardOrderByWithAggregationInput[]
+    by: BillboardScalarFieldEnum[] | BillboardScalarFieldEnum
+    having?: BillboardScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: BillboardCountAggregateInputType | true
+    _min?: BillboardMinAggregateInputType
+    _max?: BillboardMaxAggregateInputType
+  }
+
+  export type BillboardGroupByOutputType = {
+    id: string
+    label: string
+    imageUrl: string
+    storeId: string
+    createdAt: Date
+    _count: BillboardCountAggregateOutputType | null
+    _min: BillboardMinAggregateOutputType | null
+    _max: BillboardMaxAggregateOutputType | null
+  }
+
+  type GetBillboardGroupByPayload<T extends BillboardGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<BillboardGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof BillboardGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], BillboardGroupByOutputType[P]>
+            : GetScalarType<T[P], BillboardGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type BillboardSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    label?: boolean
+    imageUrl?: boolean
+    storeId?: boolean
+    createdAt?: boolean
+    store?: boolean | StoreDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["billboard"]>
+
+
+
+  export type BillboardSelectScalar = {
+    id?: boolean
+    label?: boolean
+    imageUrl?: boolean
+    storeId?: boolean
+    createdAt?: boolean
+  }
+
+  export type BillboardOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "label" | "imageUrl" | "storeId" | "createdAt", ExtArgs["result"]["billboard"]>
+  export type BillboardInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    store?: boolean | StoreDefaultArgs<ExtArgs>
+  }
+
+  export type $BillboardPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Billboard"
+    objects: {
+      store: Prisma.$StorePayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      label: string
+      imageUrl: string
+      storeId: string
+      createdAt: Date
+    }, ExtArgs["result"]["billboard"]>
+    composites: {}
+  }
+
+  type BillboardGetPayload<S extends boolean | null | undefined | BillboardDefaultArgs> = $Result.GetResult<Prisma.$BillboardPayload, S>
+
+  type BillboardCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<BillboardFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: BillboardCountAggregateInputType | true
+    }
+
+  export interface BillboardDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Billboard'], meta: { name: 'Billboard' } }
+    /**
+     * Find zero or one Billboard that matches the filter.
+     * @param {BillboardFindUniqueArgs} args - Arguments to find a Billboard
+     * @example
+     * // Get one Billboard
+     * const billboard = await prisma.billboard.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends BillboardFindUniqueArgs>(args: SelectSubset<T, BillboardFindUniqueArgs<ExtArgs>>): Prisma__BillboardClient<$Result.GetResult<Prisma.$BillboardPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Billboard that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {BillboardFindUniqueOrThrowArgs} args - Arguments to find a Billboard
+     * @example
+     * // Get one Billboard
+     * const billboard = await prisma.billboard.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends BillboardFindUniqueOrThrowArgs>(args: SelectSubset<T, BillboardFindUniqueOrThrowArgs<ExtArgs>>): Prisma__BillboardClient<$Result.GetResult<Prisma.$BillboardPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Billboard that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BillboardFindFirstArgs} args - Arguments to find a Billboard
+     * @example
+     * // Get one Billboard
+     * const billboard = await prisma.billboard.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends BillboardFindFirstArgs>(args?: SelectSubset<T, BillboardFindFirstArgs<ExtArgs>>): Prisma__BillboardClient<$Result.GetResult<Prisma.$BillboardPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Billboard that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BillboardFindFirstOrThrowArgs} args - Arguments to find a Billboard
+     * @example
+     * // Get one Billboard
+     * const billboard = await prisma.billboard.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends BillboardFindFirstOrThrowArgs>(args?: SelectSubset<T, BillboardFindFirstOrThrowArgs<ExtArgs>>): Prisma__BillboardClient<$Result.GetResult<Prisma.$BillboardPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Billboards that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BillboardFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Billboards
+     * const billboards = await prisma.billboard.findMany()
+     * 
+     * // Get first 10 Billboards
+     * const billboards = await prisma.billboard.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const billboardWithIdOnly = await prisma.billboard.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends BillboardFindManyArgs>(args?: SelectSubset<T, BillboardFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BillboardPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Billboard.
+     * @param {BillboardCreateArgs} args - Arguments to create a Billboard.
+     * @example
+     * // Create one Billboard
+     * const Billboard = await prisma.billboard.create({
+     *   data: {
+     *     // ... data to create a Billboard
+     *   }
+     * })
+     * 
+     */
+    create<T extends BillboardCreateArgs>(args: SelectSubset<T, BillboardCreateArgs<ExtArgs>>): Prisma__BillboardClient<$Result.GetResult<Prisma.$BillboardPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Billboards.
+     * @param {BillboardCreateManyArgs} args - Arguments to create many Billboards.
+     * @example
+     * // Create many Billboards
+     * const billboard = await prisma.billboard.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends BillboardCreateManyArgs>(args?: SelectSubset<T, BillboardCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a Billboard.
+     * @param {BillboardDeleteArgs} args - Arguments to delete one Billboard.
+     * @example
+     * // Delete one Billboard
+     * const Billboard = await prisma.billboard.delete({
+     *   where: {
+     *     // ... filter to delete one Billboard
+     *   }
+     * })
+     * 
+     */
+    delete<T extends BillboardDeleteArgs>(args: SelectSubset<T, BillboardDeleteArgs<ExtArgs>>): Prisma__BillboardClient<$Result.GetResult<Prisma.$BillboardPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Billboard.
+     * @param {BillboardUpdateArgs} args - Arguments to update one Billboard.
+     * @example
+     * // Update one Billboard
+     * const billboard = await prisma.billboard.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends BillboardUpdateArgs>(args: SelectSubset<T, BillboardUpdateArgs<ExtArgs>>): Prisma__BillboardClient<$Result.GetResult<Prisma.$BillboardPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Billboards.
+     * @param {BillboardDeleteManyArgs} args - Arguments to filter Billboards to delete.
+     * @example
+     * // Delete a few Billboards
+     * const { count } = await prisma.billboard.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends BillboardDeleteManyArgs>(args?: SelectSubset<T, BillboardDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Billboards.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BillboardUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Billboards
+     * const billboard = await prisma.billboard.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends BillboardUpdateManyArgs>(args: SelectSubset<T, BillboardUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Billboard.
+     * @param {BillboardUpsertArgs} args - Arguments to update or create a Billboard.
+     * @example
+     * // Update or create a Billboard
+     * const billboard = await prisma.billboard.upsert({
+     *   create: {
+     *     // ... data to create a Billboard
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Billboard we want to update
+     *   }
+     * })
+     */
+    upsert<T extends BillboardUpsertArgs>(args: SelectSubset<T, BillboardUpsertArgs<ExtArgs>>): Prisma__BillboardClient<$Result.GetResult<Prisma.$BillboardPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Billboards that matches the filter.
+     * @param {BillboardFindRawArgs} args - Select which filters you would like to apply.
+     * @example
+     * const billboard = await prisma.billboard.findRaw({
+     *   filter: { age: { $gt: 25 } }
+     * })
+     */
+    findRaw(args?: BillboardFindRawArgs): Prisma.PrismaPromise<JsonObject>
+
+    /**
+     * Perform aggregation operations on a Billboard.
+     * @param {BillboardAggregateRawArgs} args - Select which aggregations you would like to apply.
+     * @example
+     * const billboard = await prisma.billboard.aggregateRaw({
+     *   pipeline: [
+     *     { $match: { status: "registered" } },
+     *     { $group: { _id: "$country", total: { $sum: 1 } } }
+     *   ]
+     * })
+     */
+    aggregateRaw(args?: BillboardAggregateRawArgs): Prisma.PrismaPromise<JsonObject>
+
+
+    /**
+     * Count the number of Billboards.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BillboardCountArgs} args - Arguments to filter Billboards to count.
+     * @example
+     * // Count the number of Billboards
+     * const count = await prisma.billboard.count({
+     *   where: {
+     *     // ... the filter for the Billboards we want to count
+     *   }
+     * })
+    **/
+    count<T extends BillboardCountArgs>(
+      args?: Subset<T, BillboardCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], BillboardCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Billboard.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BillboardAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends BillboardAggregateArgs>(args: Subset<T, BillboardAggregateArgs>): Prisma.PrismaPromise<GetBillboardAggregateType<T>>
+
+    /**
+     * Group by Billboard.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BillboardGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends BillboardGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: BillboardGroupByArgs['orderBy'] }
+        : { orderBy?: BillboardGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, BillboardGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetBillboardGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Billboard model
+   */
+  readonly fields: BillboardFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Billboard.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__BillboardClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    store<T extends StoreDefaultArgs<ExtArgs> = {}>(args?: Subset<T, StoreDefaultArgs<ExtArgs>>): Prisma__StoreClient<$Result.GetResult<Prisma.$StorePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Billboard model
+   */
+  interface BillboardFieldRefs {
+    readonly id: FieldRef<"Billboard", 'String'>
+    readonly label: FieldRef<"Billboard", 'String'>
+    readonly imageUrl: FieldRef<"Billboard", 'String'>
+    readonly storeId: FieldRef<"Billboard", 'String'>
+    readonly createdAt: FieldRef<"Billboard", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Billboard findUnique
+   */
+  export type BillboardFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Billboard
+     */
+    select?: BillboardSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Billboard
+     */
+    omit?: BillboardOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BillboardInclude<ExtArgs> | null
+    /**
+     * Filter, which Billboard to fetch.
+     */
+    where: BillboardWhereUniqueInput
+  }
+
+  /**
+   * Billboard findUniqueOrThrow
+   */
+  export type BillboardFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Billboard
+     */
+    select?: BillboardSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Billboard
+     */
+    omit?: BillboardOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BillboardInclude<ExtArgs> | null
+    /**
+     * Filter, which Billboard to fetch.
+     */
+    where: BillboardWhereUniqueInput
+  }
+
+  /**
+   * Billboard findFirst
+   */
+  export type BillboardFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Billboard
+     */
+    select?: BillboardSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Billboard
+     */
+    omit?: BillboardOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BillboardInclude<ExtArgs> | null
+    /**
+     * Filter, which Billboard to fetch.
+     */
+    where?: BillboardWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Billboards to fetch.
+     */
+    orderBy?: BillboardOrderByWithRelationInput | BillboardOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Billboards.
+     */
+    cursor?: BillboardWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Billboards from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Billboards.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Billboards.
+     */
+    distinct?: BillboardScalarFieldEnum | BillboardScalarFieldEnum[]
+  }
+
+  /**
+   * Billboard findFirstOrThrow
+   */
+  export type BillboardFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Billboard
+     */
+    select?: BillboardSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Billboard
+     */
+    omit?: BillboardOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BillboardInclude<ExtArgs> | null
+    /**
+     * Filter, which Billboard to fetch.
+     */
+    where?: BillboardWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Billboards to fetch.
+     */
+    orderBy?: BillboardOrderByWithRelationInput | BillboardOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Billboards.
+     */
+    cursor?: BillboardWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Billboards from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Billboards.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Billboards.
+     */
+    distinct?: BillboardScalarFieldEnum | BillboardScalarFieldEnum[]
+  }
+
+  /**
+   * Billboard findMany
+   */
+  export type BillboardFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Billboard
+     */
+    select?: BillboardSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Billboard
+     */
+    omit?: BillboardOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BillboardInclude<ExtArgs> | null
+    /**
+     * Filter, which Billboards to fetch.
+     */
+    where?: BillboardWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Billboards to fetch.
+     */
+    orderBy?: BillboardOrderByWithRelationInput | BillboardOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Billboards.
+     */
+    cursor?: BillboardWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Billboards from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Billboards.
+     */
+    skip?: number
+    distinct?: BillboardScalarFieldEnum | BillboardScalarFieldEnum[]
+  }
+
+  /**
+   * Billboard create
+   */
+  export type BillboardCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Billboard
+     */
+    select?: BillboardSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Billboard
+     */
+    omit?: BillboardOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BillboardInclude<ExtArgs> | null
+    /**
+     * The data needed to create a Billboard.
+     */
+    data: XOR<BillboardCreateInput, BillboardUncheckedCreateInput>
+  }
+
+  /**
+   * Billboard createMany
+   */
+  export type BillboardCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Billboards.
+     */
+    data: BillboardCreateManyInput | BillboardCreateManyInput[]
+  }
+
+  /**
+   * Billboard update
+   */
+  export type BillboardUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Billboard
+     */
+    select?: BillboardSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Billboard
+     */
+    omit?: BillboardOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BillboardInclude<ExtArgs> | null
+    /**
+     * The data needed to update a Billboard.
+     */
+    data: XOR<BillboardUpdateInput, BillboardUncheckedUpdateInput>
+    /**
+     * Choose, which Billboard to update.
+     */
+    where: BillboardWhereUniqueInput
+  }
+
+  /**
+   * Billboard updateMany
+   */
+  export type BillboardUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Billboards.
+     */
+    data: XOR<BillboardUpdateManyMutationInput, BillboardUncheckedUpdateManyInput>
+    /**
+     * Filter which Billboards to update
+     */
+    where?: BillboardWhereInput
+    /**
+     * Limit how many Billboards to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Billboard upsert
+   */
+  export type BillboardUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Billboard
+     */
+    select?: BillboardSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Billboard
+     */
+    omit?: BillboardOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BillboardInclude<ExtArgs> | null
+    /**
+     * The filter to search for the Billboard to update in case it exists.
+     */
+    where: BillboardWhereUniqueInput
+    /**
+     * In case the Billboard found by the `where` argument doesn't exist, create a new Billboard with this data.
+     */
+    create: XOR<BillboardCreateInput, BillboardUncheckedCreateInput>
+    /**
+     * In case the Billboard was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<BillboardUpdateInput, BillboardUncheckedUpdateInput>
+  }
+
+  /**
+   * Billboard delete
+   */
+  export type BillboardDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Billboard
+     */
+    select?: BillboardSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Billboard
+     */
+    omit?: BillboardOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BillboardInclude<ExtArgs> | null
+    /**
+     * Filter which Billboard to delete.
+     */
+    where: BillboardWhereUniqueInput
+  }
+
+  /**
+   * Billboard deleteMany
+   */
+  export type BillboardDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Billboards to delete
+     */
+    where?: BillboardWhereInput
+    /**
+     * Limit how many Billboards to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * Billboard findRaw
+   */
+  export type BillboardFindRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The query predicate filter. If unspecified, then all documents in the collection will match the predicate. ${@link https://docs.mongodb.com/manual/reference/operator/query MongoDB Docs}.
+     */
+    filter?: InputJsonValue
+    /**
+     * Additional options to pass to the `find` command ${@link https://docs.mongodb.com/manual/reference/command/find/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
+  }
+
+  /**
+   * Billboard aggregateRaw
+   */
+  export type BillboardAggregateRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * An array of aggregation stages to process and transform the document stream via the aggregation pipeline. ${@link https://docs.mongodb.com/manual/reference/operator/aggregation-pipeline MongoDB Docs}.
+     */
+    pipeline?: InputJsonValue[]
+    /**
+     * Additional options to pass to the `aggregate` command ${@link https://docs.mongodb.com/manual/reference/command/aggregate/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
+  }
+
+  /**
+   * Billboard without action
+   */
+  export type BillboardDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Billboard
+     */
+    select?: BillboardSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Billboard
+     */
+    omit?: BillboardOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BillboardInclude<ExtArgs> | null
   }
 
 
@@ -1755,6 +2928,17 @@ export namespace Prisma {
   };
 
   export type StoreScalarFieldEnum = (typeof StoreScalarFieldEnum)[keyof typeof StoreScalarFieldEnum]
+
+
+  export const BillboardScalarFieldEnum: {
+    id: 'id',
+    label: 'label',
+    imageUrl: 'imageUrl',
+    storeId: 'storeId',
+    createdAt: 'createdAt'
+  };
+
+  export type BillboardScalarFieldEnum = (typeof BillboardScalarFieldEnum)[keyof typeof BillboardScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -1832,6 +3016,7 @@ export namespace Prisma {
     userId?: StringFilter<"Store"> | string
     createdAt?: DateTimeFilter<"Store"> | Date | string
     updatedAt?: DateTimeFilter<"Store"> | Date | string
+    billboards?: BillboardListRelationFilter
   }
 
   export type StoreOrderByWithRelationInput = {
@@ -1840,6 +3025,7 @@ export namespace Prisma {
     userId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    billboards?: BillboardOrderByRelationAggregateInput
   }
 
   export type StoreWhereUniqueInput = Prisma.AtLeast<{
@@ -1851,6 +3037,7 @@ export namespace Prisma {
     userId?: StringFilter<"Store"> | string
     createdAt?: DateTimeFilter<"Store"> | Date | string
     updatedAt?: DateTimeFilter<"Store"> | Date | string
+    billboards?: BillboardListRelationFilter
   }, "id">
 
   export type StoreOrderByWithAggregationInput = {
@@ -1875,12 +3062,68 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"Store"> | Date | string
   }
 
+  export type BillboardWhereInput = {
+    AND?: BillboardWhereInput | BillboardWhereInput[]
+    OR?: BillboardWhereInput[]
+    NOT?: BillboardWhereInput | BillboardWhereInput[]
+    id?: StringFilter<"Billboard"> | string
+    label?: StringFilter<"Billboard"> | string
+    imageUrl?: StringFilter<"Billboard"> | string
+    storeId?: StringFilter<"Billboard"> | string
+    createdAt?: DateTimeFilter<"Billboard"> | Date | string
+    store?: XOR<StoreScalarRelationFilter, StoreWhereInput>
+  }
+
+  export type BillboardOrderByWithRelationInput = {
+    id?: SortOrder
+    label?: SortOrder
+    imageUrl?: SortOrder
+    storeId?: SortOrder
+    createdAt?: SortOrder
+    store?: StoreOrderByWithRelationInput
+  }
+
+  export type BillboardWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: BillboardWhereInput | BillboardWhereInput[]
+    OR?: BillboardWhereInput[]
+    NOT?: BillboardWhereInput | BillboardWhereInput[]
+    label?: StringFilter<"Billboard"> | string
+    imageUrl?: StringFilter<"Billboard"> | string
+    storeId?: StringFilter<"Billboard"> | string
+    createdAt?: DateTimeFilter<"Billboard"> | Date | string
+    store?: XOR<StoreScalarRelationFilter, StoreWhereInput>
+  }, "id">
+
+  export type BillboardOrderByWithAggregationInput = {
+    id?: SortOrder
+    label?: SortOrder
+    imageUrl?: SortOrder
+    storeId?: SortOrder
+    createdAt?: SortOrder
+    _count?: BillboardCountOrderByAggregateInput
+    _max?: BillboardMaxOrderByAggregateInput
+    _min?: BillboardMinOrderByAggregateInput
+  }
+
+  export type BillboardScalarWhereWithAggregatesInput = {
+    AND?: BillboardScalarWhereWithAggregatesInput | BillboardScalarWhereWithAggregatesInput[]
+    OR?: BillboardScalarWhereWithAggregatesInput[]
+    NOT?: BillboardScalarWhereWithAggregatesInput | BillboardScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Billboard"> | string
+    label?: StringWithAggregatesFilter<"Billboard"> | string
+    imageUrl?: StringWithAggregatesFilter<"Billboard"> | string
+    storeId?: StringWithAggregatesFilter<"Billboard"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"Billboard"> | Date | string
+  }
+
   export type StoreCreateInput = {
     id?: string
     name: string
     userId: string
     createdAt?: Date | string
     updatedAt?: Date | string
+    billboards?: BillboardCreateNestedManyWithoutStoreInput
   }
 
   export type StoreUncheckedCreateInput = {
@@ -1889,6 +3132,7 @@ export namespace Prisma {
     userId: string
     createdAt?: Date | string
     updatedAt?: Date | string
+    billboards?: BillboardUncheckedCreateNestedManyWithoutStoreInput
   }
 
   export type StoreUpdateInput = {
@@ -1896,6 +3140,7 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    billboards?: BillboardUpdateManyWithoutStoreNestedInput
   }
 
   export type StoreUncheckedUpdateInput = {
@@ -1903,6 +3148,7 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    billboards?: BillboardUncheckedUpdateManyWithoutStoreNestedInput
   }
 
   export type StoreCreateManyInput = {
@@ -1925,6 +3171,57 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BillboardCreateInput = {
+    id?: string
+    label: string
+    imageUrl: string
+    createdAt?: Date | string
+    store: StoreCreateNestedOneWithoutBillboardsInput
+  }
+
+  export type BillboardUncheckedCreateInput = {
+    id?: string
+    label: string
+    imageUrl: string
+    storeId: string
+    createdAt?: Date | string
+  }
+
+  export type BillboardUpdateInput = {
+    label?: StringFieldUpdateOperationsInput | string
+    imageUrl?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    store?: StoreUpdateOneRequiredWithoutBillboardsNestedInput
+  }
+
+  export type BillboardUncheckedUpdateInput = {
+    label?: StringFieldUpdateOperationsInput | string
+    imageUrl?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BillboardCreateManyInput = {
+    id?: string
+    label: string
+    imageUrl: string
+    storeId: string
+    createdAt?: Date | string
+  }
+
+  export type BillboardUpdateManyMutationInput = {
+    label?: StringFieldUpdateOperationsInput | string
+    imageUrl?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BillboardUncheckedUpdateManyInput = {
+    label?: StringFieldUpdateOperationsInput | string
+    imageUrl?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type StringFilter<$PrismaModel = never> = {
@@ -1951,6 +3248,16 @@ export namespace Prisma {
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
+  }
+
+  export type BillboardListRelationFilter = {
+    every?: BillboardWhereInput
+    some?: BillboardWhereInput
+    none?: BillboardWhereInput
+  }
+
+  export type BillboardOrderByRelationAggregateInput = {
+    _count?: SortOrder
   }
 
   export type StoreCountOrderByAggregateInput = {
@@ -2009,12 +3316,97 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
+  export type StoreScalarRelationFilter = {
+    is?: StoreWhereInput
+    isNot?: StoreWhereInput
+  }
+
+  export type BillboardCountOrderByAggregateInput = {
+    id?: SortOrder
+    label?: SortOrder
+    imageUrl?: SortOrder
+    storeId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type BillboardMaxOrderByAggregateInput = {
+    id?: SortOrder
+    label?: SortOrder
+    imageUrl?: SortOrder
+    storeId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type BillboardMinOrderByAggregateInput = {
+    id?: SortOrder
+    label?: SortOrder
+    imageUrl?: SortOrder
+    storeId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type BillboardCreateNestedManyWithoutStoreInput = {
+    create?: XOR<BillboardCreateWithoutStoreInput, BillboardUncheckedCreateWithoutStoreInput> | BillboardCreateWithoutStoreInput[] | BillboardUncheckedCreateWithoutStoreInput[]
+    connectOrCreate?: BillboardCreateOrConnectWithoutStoreInput | BillboardCreateOrConnectWithoutStoreInput[]
+    createMany?: BillboardCreateManyStoreInputEnvelope
+    connect?: BillboardWhereUniqueInput | BillboardWhereUniqueInput[]
+  }
+
+  export type BillboardUncheckedCreateNestedManyWithoutStoreInput = {
+    create?: XOR<BillboardCreateWithoutStoreInput, BillboardUncheckedCreateWithoutStoreInput> | BillboardCreateWithoutStoreInput[] | BillboardUncheckedCreateWithoutStoreInput[]
+    connectOrCreate?: BillboardCreateOrConnectWithoutStoreInput | BillboardCreateOrConnectWithoutStoreInput[]
+    createMany?: BillboardCreateManyStoreInputEnvelope
+    connect?: BillboardWhereUniqueInput | BillboardWhereUniqueInput[]
+  }
+
   export type StringFieldUpdateOperationsInput = {
     set?: string
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string
+  }
+
+  export type BillboardUpdateManyWithoutStoreNestedInput = {
+    create?: XOR<BillboardCreateWithoutStoreInput, BillboardUncheckedCreateWithoutStoreInput> | BillboardCreateWithoutStoreInput[] | BillboardUncheckedCreateWithoutStoreInput[]
+    connectOrCreate?: BillboardCreateOrConnectWithoutStoreInput | BillboardCreateOrConnectWithoutStoreInput[]
+    upsert?: BillboardUpsertWithWhereUniqueWithoutStoreInput | BillboardUpsertWithWhereUniqueWithoutStoreInput[]
+    createMany?: BillboardCreateManyStoreInputEnvelope
+    set?: BillboardWhereUniqueInput | BillboardWhereUniqueInput[]
+    disconnect?: BillboardWhereUniqueInput | BillboardWhereUniqueInput[]
+    delete?: BillboardWhereUniqueInput | BillboardWhereUniqueInput[]
+    connect?: BillboardWhereUniqueInput | BillboardWhereUniqueInput[]
+    update?: BillboardUpdateWithWhereUniqueWithoutStoreInput | BillboardUpdateWithWhereUniqueWithoutStoreInput[]
+    updateMany?: BillboardUpdateManyWithWhereWithoutStoreInput | BillboardUpdateManyWithWhereWithoutStoreInput[]
+    deleteMany?: BillboardScalarWhereInput | BillboardScalarWhereInput[]
+  }
+
+  export type BillboardUncheckedUpdateManyWithoutStoreNestedInput = {
+    create?: XOR<BillboardCreateWithoutStoreInput, BillboardUncheckedCreateWithoutStoreInput> | BillboardCreateWithoutStoreInput[] | BillboardUncheckedCreateWithoutStoreInput[]
+    connectOrCreate?: BillboardCreateOrConnectWithoutStoreInput | BillboardCreateOrConnectWithoutStoreInput[]
+    upsert?: BillboardUpsertWithWhereUniqueWithoutStoreInput | BillboardUpsertWithWhereUniqueWithoutStoreInput[]
+    createMany?: BillboardCreateManyStoreInputEnvelope
+    set?: BillboardWhereUniqueInput | BillboardWhereUniqueInput[]
+    disconnect?: BillboardWhereUniqueInput | BillboardWhereUniqueInput[]
+    delete?: BillboardWhereUniqueInput | BillboardWhereUniqueInput[]
+    connect?: BillboardWhereUniqueInput | BillboardWhereUniqueInput[]
+    update?: BillboardUpdateWithWhereUniqueWithoutStoreInput | BillboardUpdateWithWhereUniqueWithoutStoreInput[]
+    updateMany?: BillboardUpdateManyWithWhereWithoutStoreInput | BillboardUpdateManyWithWhereWithoutStoreInput[]
+    deleteMany?: BillboardScalarWhereInput | BillboardScalarWhereInput[]
+  }
+
+  export type StoreCreateNestedOneWithoutBillboardsInput = {
+    create?: XOR<StoreCreateWithoutBillboardsInput, StoreUncheckedCreateWithoutBillboardsInput>
+    connectOrCreate?: StoreCreateOrConnectWithoutBillboardsInput
+    connect?: StoreWhereUniqueInput
+  }
+
+  export type StoreUpdateOneRequiredWithoutBillboardsNestedInput = {
+    create?: XOR<StoreCreateWithoutBillboardsInput, StoreUncheckedCreateWithoutBillboardsInput>
+    connectOrCreate?: StoreCreateOrConnectWithoutBillboardsInput
+    upsert?: StoreUpsertWithoutBillboardsInput
+    connect?: StoreWhereUniqueInput
+    update?: XOR<XOR<StoreUpdateToOneWithWhereWithoutBillboardsInput, StoreUpdateWithoutBillboardsInput>, StoreUncheckedUpdateWithoutBillboardsInput>
   }
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -2082,6 +3474,127 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedDateTimeFilter<$PrismaModel>
     _max?: NestedDateTimeFilter<$PrismaModel>
+  }
+
+  export type BillboardCreateWithoutStoreInput = {
+    id?: string
+    label: string
+    imageUrl: string
+    createdAt?: Date | string
+  }
+
+  export type BillboardUncheckedCreateWithoutStoreInput = {
+    id?: string
+    label: string
+    imageUrl: string
+    createdAt?: Date | string
+  }
+
+  export type BillboardCreateOrConnectWithoutStoreInput = {
+    where: BillboardWhereUniqueInput
+    create: XOR<BillboardCreateWithoutStoreInput, BillboardUncheckedCreateWithoutStoreInput>
+  }
+
+  export type BillboardCreateManyStoreInputEnvelope = {
+    data: BillboardCreateManyStoreInput | BillboardCreateManyStoreInput[]
+  }
+
+  export type BillboardUpsertWithWhereUniqueWithoutStoreInput = {
+    where: BillboardWhereUniqueInput
+    update: XOR<BillboardUpdateWithoutStoreInput, BillboardUncheckedUpdateWithoutStoreInput>
+    create: XOR<BillboardCreateWithoutStoreInput, BillboardUncheckedCreateWithoutStoreInput>
+  }
+
+  export type BillboardUpdateWithWhereUniqueWithoutStoreInput = {
+    where: BillboardWhereUniqueInput
+    data: XOR<BillboardUpdateWithoutStoreInput, BillboardUncheckedUpdateWithoutStoreInput>
+  }
+
+  export type BillboardUpdateManyWithWhereWithoutStoreInput = {
+    where: BillboardScalarWhereInput
+    data: XOR<BillboardUpdateManyMutationInput, BillboardUncheckedUpdateManyWithoutStoreInput>
+  }
+
+  export type BillboardScalarWhereInput = {
+    AND?: BillboardScalarWhereInput | BillboardScalarWhereInput[]
+    OR?: BillboardScalarWhereInput[]
+    NOT?: BillboardScalarWhereInput | BillboardScalarWhereInput[]
+    id?: StringFilter<"Billboard"> | string
+    label?: StringFilter<"Billboard"> | string
+    imageUrl?: StringFilter<"Billboard"> | string
+    storeId?: StringFilter<"Billboard"> | string
+    createdAt?: DateTimeFilter<"Billboard"> | Date | string
+  }
+
+  export type StoreCreateWithoutBillboardsInput = {
+    id?: string
+    name: string
+    userId: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type StoreUncheckedCreateWithoutBillboardsInput = {
+    id?: string
+    name: string
+    userId: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type StoreCreateOrConnectWithoutBillboardsInput = {
+    where: StoreWhereUniqueInput
+    create: XOR<StoreCreateWithoutBillboardsInput, StoreUncheckedCreateWithoutBillboardsInput>
+  }
+
+  export type StoreUpsertWithoutBillboardsInput = {
+    update: XOR<StoreUpdateWithoutBillboardsInput, StoreUncheckedUpdateWithoutBillboardsInput>
+    create: XOR<StoreCreateWithoutBillboardsInput, StoreUncheckedCreateWithoutBillboardsInput>
+    where?: StoreWhereInput
+  }
+
+  export type StoreUpdateToOneWithWhereWithoutBillboardsInput = {
+    where?: StoreWhereInput
+    data: XOR<StoreUpdateWithoutBillboardsInput, StoreUncheckedUpdateWithoutBillboardsInput>
+  }
+
+  export type StoreUpdateWithoutBillboardsInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type StoreUncheckedUpdateWithoutBillboardsInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BillboardCreateManyStoreInput = {
+    id?: string
+    label: string
+    imageUrl: string
+    createdAt?: Date | string
+  }
+
+  export type BillboardUpdateWithoutStoreInput = {
+    label?: StringFieldUpdateOperationsInput | string
+    imageUrl?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BillboardUncheckedUpdateWithoutStoreInput = {
+    label?: StringFieldUpdateOperationsInput | string
+    imageUrl?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BillboardUncheckedUpdateManyWithoutStoreInput = {
+    label?: StringFieldUpdateOperationsInput | string
+    imageUrl?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
 
