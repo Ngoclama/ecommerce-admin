@@ -1,5 +1,5 @@
 "use client";
-
+import { BillboardViewModal } from "@/components/modals/billboard-view";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -14,7 +14,7 @@ import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import { Billboard } from "@/generated/prisma";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Trash } from "lucide-react";
+import { ImagePlus, Trash } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -121,7 +121,12 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
       />
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 backdrop-blur-xl bg-white/50 dark:bg-neutral-900/50 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm">
+      <div
+        className="flex items-center justify-between px-6 py-4 
+                 rounded-2xl border border-neutral-200 dark:border-neutral-800 
+                 bg-white/70 dark:bg-neutral-900/60 backdrop-blur-xl 
+                 shadow-md hover:shadow-lg transition-all duration-300"
+      >
         <Heading title={title} description={description} />
         {initialData && (
           <Button
@@ -129,39 +134,47 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
             variant="destructive"
             size="icon"
             onClick={() => setIsOpen(true)}
+            className="rounded-xl hover:scale-105 transition-all"
           >
             <Trash className="h-5 w-5" />
           </Button>
         )}
       </div>
 
-      <Separator className="my-4" />
+      <Separator className="my-5" />
 
       {/* Form */}
       <Form {...form}>
-        <motion.form
+        <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-10 w-full mt-4 px-6"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
+          className="space-y-8 w-full max-w-3xl mx-auto"
         >
-          {/* Hình ảnh */}
-          <div className="flex flex-col gap-8 max-w-3xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="flex flex-col gap-8 rounded-2xl border border-neutral-200 
+                     dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 
+                     shadow-md backdrop-blur-lg p-8 transition-all hover:shadow-xl"
+          >
+            {/* Label input */}
             <FormField
               control={form.control}
-              name="imageUrl"
+              name="label"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-semibold">
-                    Background Image
+                  <FormLabel className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+                    Label
                   </FormLabel>
                   <FormControl>
-                    <ImageUpload
-                      value={field.value ? [field.value] : []}
+                    <Input
+                      placeholder="Enter billboard label..."
                       disabled={isLoading}
-                      onChange={(url) => field.onChange(url)}
-                      onRemove={() => field.onChange("")}
+                      {...field}
+                      className="rounded-xl border border-neutral-300 dark:border-neutral-700 
+                               focus-visible:ring-2 focus-visible:ring-blue-500/50 
+                               focus-visible:border-blue-400 dark:focus-visible:ring-blue-400/50 
+                               transition-all bg-white/80 dark:bg-neutral-800/80 backdrop-blur-md"
                     />
                   </FormControl>
                   <FormMessage />
@@ -169,20 +182,90 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
               )}
             />
 
-            {/* Label input */}
+            {/* Hình ảnh */}
             <FormField
               control={form.control}
-              name="label"
+              name="imageUrl"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm font-semibold">Label</FormLabel>
+                <FormItem className="max-w-2xl mx-auto">
+                  <FormLabel className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+                    Background Image
+                  </FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Enter billboard label..."
-                      disabled={isLoading}
-                      {...field}
-                      className="focus-visible:ring-2 focus-visible:ring-blue-500/60 rounded-xl transition-all"
-                    />
+                    <div
+                      className="relative group border-2 border-dashed border-neutral-300 dark:border-neutral-700 
+                               rounded-2xl overflow-hidden bg-white/40 dark:bg-neutral-900/40 backdrop-blur-sm 
+                               hover:border-blue-500 transition-all duration-300 min-h-[220px] 
+                               flex items-center justify-center"
+                    >
+                      {field.value ? (
+                        <div className="relative w-full h-full">
+                          <img
+                            src={field.value}
+                            alt="Billboard background"
+                            className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                          />
+
+                          {/* Overlay controls */}
+                          <div
+                            className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 
+                                     flex items-center justify-center gap-3 transition-opacity"
+                          >
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              className="bg-white/80 hover:bg-white text-sm font-medium text-neutral-800"
+                              onClick={() => field.onChange("")}
+                            >
+                              Xóa ảnh
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium"
+                              onClick={() =>
+                                document
+                                  .getElementById("imageUploadTrigger")
+                                  ?.click()
+                              }
+                            >
+                              Đổi ảnh
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center space-y-3 p-6 text-neutral-500">
+                          <ImagePlus className="h-10 w-10 text-neutral-400" />
+                          <p className="text-sm font-medium">
+                            Chọn hình nền billboard
+                          </p>
+                          <Button
+                            id="imageUploadTrigger"
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="text-sm"
+                            disabled={isLoading}
+                            onClick={() => {
+                              const uploadInput =
+                                document.createElement("input");
+                              uploadInput.type = "file";
+                              uploadInput.accept = "image/*";
+                              uploadInput.onchange = async (e: any) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const url = URL.createObjectURL(file);
+                                field.onChange(url);
+                              };
+                              uploadInput.click();
+                            }}
+                          >
+                            Tải ảnh lên
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -191,16 +274,17 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
 
             {/* Submit button */}
             <div className="flex justify-end pt-4">
-              <Button
-                disabled={isLoading}
-                type="submit"
-                className="px-6 py-2 font-semibold text-white hover:opacity-90 rounded-xl transition-all shadow-md"
+              <motion.div
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
               >
-                {isLoading ? "Processing..." : action}
-              </Button>
+                <Button disabled={isLoading} type="submit" variant={"outline"}>
+                  {isLoading ? "Processing..." : action}
+                </Button>
+              </motion.div>
             </div>
-          </div>
-        </motion.form>
+          </motion.div>
+        </form>
       </Form>
     </>
   );

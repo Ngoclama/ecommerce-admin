@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { BillboardForm } from "./components/billboard-form";
-import { ObjectId } from "bson"; 
+import { ObjectId } from "bson";
 
 const BillboardPage = async ({
   params,

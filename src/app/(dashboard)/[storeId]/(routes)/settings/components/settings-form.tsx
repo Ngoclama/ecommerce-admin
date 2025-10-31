@@ -83,7 +83,12 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
   };
 
   return (
-    <>
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="space-y-8"
+    >
       {/* Modal xác nhận xóa */}
       <AlertModal
         isOpen={isOpen}
@@ -93,8 +98,9 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
         onConfirm={handleDelete}
         loading={isLoading}
       />
+
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur-xl shadow-sm mt-4">
+      <div className="flex items-center justify-between px-6 py-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur-xl shadow-sm">
         <Heading
           title="Store Settings"
           description="Manage your store settings"
@@ -110,65 +116,59 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
         </Button>
       </div>
 
-      {/* Form */}
+      {/* Form + Button */}
       <Form {...form}>
         <motion.form
           onSubmit={form.handleSubmit(onSubmit)}
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="mx-auto w-full space-y-10 mt-5"
+          whileHover={{ scale: 1 }}
+          transition={{ duration: 0.3 }}
+          className="bg-white/50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-sm backdrop-blur-md p-6 space-y-8"
         >
-          <div className="flex flex-col gap-8 bg-white/50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-sm backdrop-blur-md p-6">
-            {/* Store Name */}
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm font-semibold">
-                    Store Name
-                  </FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        placeholder="My Store"
-                        disabled={isLoading}
-                        {...field}
-                        className="pr-10 rounded-xl focus-visible:ring-2 focus-visible:ring-blue-500/70 transition-all"
-                      />
-                      <Pencil className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }: any) => (
+              <FormItem>
+                <FormLabel className="text-sm font-semibold">
+                  Store Name
+                </FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Input
+                      placeholder="My Store"
+                      disabled={isLoading}
+                      {...field}
+                      className="pr-10 rounded-xl focus-visible:ring-2 focus-visible:ring-blue-500/70 transition-all"
+                    />
+                    <Pencil className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-            {/* Save Button */}
-            <div className="flex justify-end">
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                transition={{ type: "spring", stiffness: 300 }}
-                disabled={isLoading}
-                type="submit"
-                className="px-6 py-2 text-black  rounded-xl shadow-md bg-gradient-to-r hover:opacity-90 border-1"
-              >
-                {isLoading ? "Saving..." : "Save Changes"}
-              </motion.button>
-            </div>
+          <div className="flex justify-end">
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: "spring", stiffness: 300 }}
+              disabled={isLoading}
+              type="submit"
+              className="px-6 py-2 rounded-xl shadow-md bg-gradient-to-r from-white-500 text-black  hover:opacity-90 transition-all"
+            >
+              {isLoading ? "Saving..." : "Save Changes"}
+            </motion.button>
           </div>
         </motion.form>
       </Form>
+
       {/* API Section */}
-      <div className="mt-auto">
-        <ApiAlert
-          title="API Endpoint"
-          description={`${origin}/api/${initialData.id}`}
-          variant="public"
-        />
-      </div>
-    </>
+      <ApiAlert
+        title="API Endpoint"
+        description={`${origin}/api/${initialData.id}`}
+        variant="public"
+      />
+    </motion.div>
   );
 };
