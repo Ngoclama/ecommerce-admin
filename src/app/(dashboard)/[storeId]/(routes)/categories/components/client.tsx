@@ -1,15 +1,16 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
-import { MoreHorizontal, Plus, Trash } from "lucide-react";
-import { BillboardColumn, columns } from "./columns";
+import { Plus, Trash, MoreHorizontal } from "lucide-react";
+import { CategoryColumn, columns } from "./columns";
 import { DataTable } from "@/components/ui/data-table";
 import { ApiList } from "@/components/ui/api-list";
+import { useState } from "react";
+import { toast } from "sonner";
+import { AlertModal } from "@/components/modals/alert-modal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,32 +19,30 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { AlertModal } from "@/components/modals/alert-modal";
-import { BillboardViewModal } from "@/components/modals/billboard-view";
+import { CategoryViewModal } from "@/components/modals/category-view ";
 
-interface BillboardClientProps {
-  data: BillboardColumn[];
+interface CategoryClientProps {
+  data: CategoryColumn[];
 }
 
-export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
+export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
   const [isLoading, setIsLoading] = useState(false);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
 
-  // ✅ Sửa đúng endpoint API cho billboard, không phải category
   const handleDeleteAll = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`/api/${params.storeId}/billboards`, {
+      const res = await fetch(`/api/${params.storeId}/categories`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Failed to delete billboards");
-      toast.success("All billboards deleted successfully");
+      if (!res.ok) throw new Error("Failed to delete categories");
+      toast.success("All categories deleted successfully");
       router.refresh();
     } catch (error) {
-      toast.error("Failed to delete billboards. Check related items first.");
+      toast.error("Failed to delete categories. Check related products first.");
     } finally {
       setIsLoading(false);
       setDeleteAllOpen(false);
@@ -52,29 +51,28 @@ export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
 
   return (
     <>
-      {/* ✅ Modal xác nhận xóa billboard */}
+      {/* Modal xác nhận xóa tất cả */}
       <AlertModal
         isOpen={deleteAllOpen}
         onClose={() => setDeleteAllOpen(false)}
         onConfirm={handleDeleteAll}
         loading={isLoading}
-        title="Delete All Billboards?"
-        description="This action cannot be undone. All billboards will be permanently deleted."
+        title="Delete All Categories?"
+        description="This action cannot be undone. All categories will be permanently deleted."
       />
-
-      <BillboardViewModal
+      <CategoryViewModal
         isOpen={viewModalOpen}
         onClose={() => setViewModalOpen(false)}
         storeId={params.storeId as string}
-        billboardId=""
+        categoryId=""
       />
-
       <div className="flex items-center justify-between">
         <Heading
-          title={`Billboards (${data.length})`}
-          description="Manage billboards for your store"
+          title={`Categories (${data.length})`}
+          description="Manage categories for your store"
         />
 
+        {/* ✅ Dropdown Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="flex items-center gap-2">
@@ -84,11 +82,11 @@ export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>Billboard Actions</DropdownMenuLabel>
+            <DropdownMenuLabel>Category Actions</DropdownMenuLabel>
             <DropdownMenuSeparator />
 
             <DropdownMenuItem
-              onClick={() => router.push(`/${params.storeId}/billboards/new`)}
+              onClick={() => router.push(`/${params.storeId}/categories/new`)}
               className="flex items-center gap-2 cursor-pointer"
             >
               <Plus className="h-4 w-4 " />
@@ -105,15 +103,13 @@ export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-
+      </div>{" "}
+      {/* ✅ ĐÃ ĐÓNG DIV */}
       <Separator className="my-4" />
-
-      <DataTable searchKey="label" columns={columns} data={data} />
-
-      <Heading title="API" description="API Calls for billboards" />
+      <DataTable searchKey="name" columns={columns} data={data} />
+      <Heading title="API" description="API Calls for categories" />
       <Separator className="my-4" />
-      <ApiList entityName="billboards" entityIdName="billboardId" />
+      <ApiList entityName="categories" entityIdName="categoryId" />
     </>
   );
 };

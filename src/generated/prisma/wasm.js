@@ -98,7 +98,17 @@ exports.Prisma.BillboardScalarFieldEnum = {
   label: 'label',
   imageUrl: 'imageUrl',
   storeId: 'storeId',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CategoryScalarFieldEnum = {
+  id: 'id',
+  storeId: 'storeId',
+  billboardId: 'billboardId',
+  name: 'name',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.SortOrder = {
@@ -114,7 +124,8 @@ exports.Prisma.QueryMode = {
 
 exports.Prisma.ModelName = {
   Store: 'Store',
-  Billboard: 'Billboard'
+  Billboard: 'Billboard',
+  Category: 'Category'
 };
 /**
  * Create the Client
@@ -163,13 +174,13 @@ const config = {
       }
     }
   },
-  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?\n// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"mongodb\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel Store {\n  id         String      @id @default(auto()) @map(\"_id\") @db.ObjectId\n  name       String\n  userId     String\n  billboards Billboard[] // không cần @relation(\"StoreToBillboards\")\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n}\n\nmodel Billboard {\n  id        String   @id @default(auto()) @map(\"_id\") @db.ObjectId\n  label     String\n  imageUrl  String\n  storeId   String   @db.ObjectId\n  store     Store    @relation(fields: [storeId], references: [id])\n  createdAt DateTime @default(now())\n\n  @@index([storeId])\n}\n",
-  "inlineSchemaHash": "fb09402d72d43aa2679cfe9714b8f4a91e54a1400e89a2b5bc2dc8a4cf13340a",
+  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?\n// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"mongodb\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel Store {\n  id         String      @id @default(auto()) @map(\"_id\") @db.ObjectId\n  name       String\n  userId     String\n  billboards Billboard[]\n  categories Category[]\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime?   @updatedAt\n}\n\nmodel Billboard {\n  id         String     @id @default(auto()) @map(\"_id\") @db.ObjectId\n  label      String\n  imageUrl   String\n  categories Category[]\n  storeId    String     @db.ObjectId\n  store      Store      @relation(fields: [storeId], references: [id])\n  createdAt  DateTime   @default(now())\n  updatedAt  DateTime?  @updatedAt\n\n  @@index([storeId])\n}\n\nmodel Category {\n  id          String    @id @default(auto()) @map(\"_id\") @db.ObjectId\n  storeId     String    @db.ObjectId\n  store       Store     @relation(fields: [storeId], references: [id])\n  billboardId String    @db.ObjectId\n  billboard   Billboard @relation(fields: [billboardId], references: [id])\n  name        String\n  createdAt   DateTime  @default(now())\n  updatedAt   DateTime? @updatedAt\n\n  @@index([storeId])\n  @@index([billboardId])\n}\n",
+  "inlineSchemaHash": "9801056eba03344bde84e7e0b1e04ddd787a8590890f9f98bcd737da783db841",
   "copyEngine": true
 }
 config.dirname = '/'
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"Store\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"_id\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"userId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"billboards\",\"kind\":\"object\",\"type\":\"Billboard\",\"relationName\":\"BillboardToStore\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"Billboard\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"_id\"},{\"name\":\"label\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"imageUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"storeId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"store\",\"kind\":\"object\",\"type\":\"Store\",\"relationName\":\"BillboardToStore\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"Store\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"_id\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"userId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"billboards\",\"kind\":\"object\",\"type\":\"Billboard\",\"relationName\":\"BillboardToStore\"},{\"name\":\"categories\",\"kind\":\"object\",\"type\":\"Category\",\"relationName\":\"CategoryToStore\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"Billboard\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"_id\"},{\"name\":\"label\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"imageUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"categories\",\"kind\":\"object\",\"type\":\"Category\",\"relationName\":\"BillboardToCategory\"},{\"name\":\"storeId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"store\",\"kind\":\"object\",\"type\":\"Store\",\"relationName\":\"BillboardToStore\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"Category\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"_id\"},{\"name\":\"storeId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"store\",\"kind\":\"object\",\"type\":\"Store\",\"relationName\":\"CategoryToStore\"},{\"name\":\"billboardId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"billboard\",\"kind\":\"object\",\"type\":\"Billboard\",\"relationName\":\"BillboardToCategory\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
 defineDmmfProperty(exports.Prisma, config.runtimeDataModel)
 config.engineWasm = {
   getRuntime: async () => require('./query_engine_bg.js'),

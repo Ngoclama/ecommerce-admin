@@ -9,17 +9,17 @@ export async function POST(
   try {
     const { userId } = await auth();
     const body = await req.json();
-    const { label, imageUrl } = body;
+    const { name, billboardId } = body;
 
     if (!userId) {
       return new NextResponse("Unauthenticated", { status: 401 });
     }
 
-    if (!label) {
-      return new NextResponse("Label is required", { status: 400 });
+    if (!name) {
+      return new NextResponse("Name is required", { status: 400 });
     }
-    if (!imageUrl) {
-      return new NextResponse("ImageUrl is required", { status: 400 });
+    if (!billboardId) {
+      return new NextResponse("BillboardId is required", { status: 400 });
     }
     if (!params.storeId) {
       return new NextResponse("Store id is required", { status: 400 });
@@ -31,19 +31,19 @@ export async function POST(
       },
     });
     if (!storeByUserId) {
-      return new NextResponse("Unauthorized"), { status: 403 };
+      return new NextResponse("Unauthorized", { status: 403 });
     }
-    const billboard = await prisma.billboard.create({
+    const category = await prisma.category.create({
       data: {
-        label,
-        imageUrl,
+        name,
+        billboardId,
         storeId: params.storeId,
       },
     });
 
-    return NextResponse.json(billboard);
+    return NextResponse.json(category);
   } catch (error) {
-    console.error("[Billboar_Post]", error);
+    console.error("[Category_Post]", error);
     return new NextResponse("Internal error", { status: 500 });
   }
 }
@@ -56,15 +56,15 @@ export async function GET(
     if (!params.storeId) {
       return new NextResponse("Store id is required", { status: 400 });
     }
-    const billboards = await prisma.billboard.findMany({
+    const category = await prisma.category.findMany({
       where: {
         storeId: params.storeId,
       },
     });
 
-    return NextResponse.json(billboards);
+    return NextResponse.json(category);
   } catch (error) {
-    console.error("[Billboard_GET]", error);
+    console.error("[Category_GET]", error);
     return new NextResponse("Internal error", { status: 500 });
   }
 }
@@ -88,7 +88,7 @@ export async function DELETE(
       return new NextResponse("Unauthorized", { status: 403 });
     }
 
-    await prisma.billboard.deleteMany({
+    await prisma.category.deleteMany({
       where: {
         storeId: params.storeId,
       },
@@ -96,7 +96,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "All categories deleted" });
   } catch (error) {
-    console.error("[Billboard_DELETE_ALL]", error);
+    console.error("[CATEGORIES_DELETE_ALL]", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

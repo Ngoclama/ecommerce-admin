@@ -126,7 +126,17 @@ exports.Prisma.BillboardScalarFieldEnum = {
   label: 'label',
   imageUrl: 'imageUrl',
   storeId: 'storeId',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CategoryScalarFieldEnum = {
+  id: 'id',
+  storeId: 'storeId',
+  billboardId: 'billboardId',
+  name: 'name',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.SortOrder = {
@@ -142,7 +152,8 @@ exports.Prisma.QueryMode = {
 
 exports.Prisma.ModelName = {
   Store: 'Store',
-  Billboard: 'Billboard'
+  Billboard: 'Billboard',
+  Category: 'Category'
 };
 
 /**

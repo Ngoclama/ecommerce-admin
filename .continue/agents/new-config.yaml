@@ -1,0 +1,19 @@
+# Continue configuration file
+# Docs: https://docs.continue.dev/reference/config
+
+name: Continue for Claude (Fixed)
+version: 1.0.0
+schema: v1
+
+# Available models
+models:
+  - name: claude-3-sonnet
+    provider: anthropic
+    model: claude-3-sonnet
+    apiKey: ${ANTHROPIC_API_KEY}
+
+# No MCP servers (avoid "Connection closed" error)
+mcpServers: []
+
+# Optional: general Continue settings
+defaultModel: claude-3-sonnet
