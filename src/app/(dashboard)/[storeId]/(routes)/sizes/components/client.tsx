@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Heading } from '@/components/ui/heading';
-import { Separator } from '@/components/ui/separator';
-import { MoreHorizontal, Plus, Trash } from 'lucide-react';
-import { CategoryColumn, columns } from './columns';
-import { DataTable } from '@/components/ui/data-table';
-import { ApiList } from '@/components/ui/api-list';
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Heading } from "@/components/ui/heading";
+import { Separator } from "@/components/ui/separator";
+import { MoreHorizontal, Plus, Trash } from "lucide-react";
+import { SizeColumn, columns } from "./columns";
+import { DataTable } from "@/components/ui/data-table";
+import { ApiList } from "@/components/ui/api-list";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,32 +17,32 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { AlertModal } from '@/components/modals/alert-modal';
+} from "@/components/ui/dropdown-menu";
+import { AlertModal } from "@/components/modals/alert-modal";
+import { SizeViewModal } from "@/components/modals/size-view ";
 
-interface CategoryClientProps {
-  data: CategoryColumn[];
+interface SizeClientProps {
+  data: SizeColumn[];
 }
 
-export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
+export const SizeClient: React.FC<SizeClientProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
   const [isLoading, setIsLoading] = useState(false);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
 
   const handleDeleteAll = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`/api/${params.storeId}/categories`, {
-        method: 'DELETE',
+      const res = await fetch(`/api/${params.storeId}/sizes`, {
+        method: "DELETE",
       });
-      if (!res.ok) throw new Error('Failed to delete categories');
-      toast.success('All categories deleted successfully');
+      if (!res.ok) throw new Error("Failed to delete Sizes");
+      toast.success("All Sizes deleted successfully");
       router.refresh();
     } catch (error) {
-      toast.error(
-        'Failed to delete categories. Make sure you removed all products using these categories first.'
-      );
+      toast.error("Failed to delete Sizes. Check related items first.");
     } finally {
       setIsLoading(false);
       setDeleteAllOpen(false);
@@ -56,14 +56,21 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
         onClose={() => setDeleteAllOpen(false)}
         onConfirm={handleDeleteAll}
         loading={isLoading}
-        title="Delete All Categories?"
-        description="This action cannot be undone. All categories will be permanently deleted."
+        title="Delete All Sizes?"
+        description="This action cannot be undone. All sizes will be permanently deleted."
+      />
+
+      <SizeViewModal
+        isOpen={viewModalOpen}
+        onClose={() => setViewModalOpen(false)}
+        storeId={params.storeId as string}
+        sizeId=""
       />
 
       <div className="flex items-center justify-between">
         <Heading
-          title={`Categories (${data.length})`}
-          description="Manage categories for your store"
+          title={`Sizes (${data.length})`}
+          description="Manage sizes for your store"
         />
 
         <DropdownMenu>
@@ -75,11 +82,11 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>Category Actions</DropdownMenuLabel>
+            <DropdownMenuLabel>Sizes Actions</DropdownMenuLabel>
             <DropdownMenuSeparator />
 
             <DropdownMenuItem
-              onClick={() => router.push(`/${params.storeId}/categories/new`)}
+              onClick={() => router.push(`/${params.storeId}/sizes/new`)}
               className="flex items-center gap-2 cursor-pointer"
             >
               <Plus className="h-4 w-4 " />
@@ -102,9 +109,9 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
 
       <DataTable searchKey="name" columns={columns} data={data} />
 
-      <Heading title="API" description="API Calls for categories" />
+      <Heading title="API" description="API Calls for sizes" />
       <Separator className="my-4" />
-      <ApiList entityName="categories" entityIdName="categoryId" />
+      <ApiList entityName="sizes" entityIdName="sizeId" />
     </>
   );
 };

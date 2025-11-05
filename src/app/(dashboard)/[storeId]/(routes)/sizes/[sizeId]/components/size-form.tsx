@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
-import { Billboard, Category } from "@/generated/prisma";
+import { Size } from "@/generated/prisma";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Trash } from "lucide-react";
 import { useState } from "react";
@@ -26,52 +26,47 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
   SelectValue,
+  SelectTrigger,
 } from "@/components/ui/select";
 
 const formSchema = z.object({
-  name: z.string().min(1, "Category name is required"),
-  billboardId: z.string().min(1, "Billboard is required"),
+  name: z.string().min(1, "Size name is required"),
+  value: z.string().min(1, "Size value is required"),
 });
 
-type CategoryFormValues = z.infer<typeof formSchema>;
+type SizeFormValues = z.infer<typeof formSchema>;
 
-interface CategoryFormProps {
-  initialData: Category | null;
-  billboards: Billboard[];
+interface SizeFormProps {
+  initialData: Size | null;
 }
 
-export const CategoryForm: React.FC<CategoryFormProps> = ({
-  initialData,
-  billboards,
-}) => {
+export const SizeForm: React.FC<SizeFormProps> = ({ initialData }) => {
   const router = useRouter();
   const params = useParams();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [customMode, setCustomMode] = useState(false);
 
-  const title = initialData ? "Edit Category" : "Create Category";
-  const description = initialData
-    ? "Edit your category"
-    : "Add a new category";
+  const title = initialData ? "Edit Size" : "Create Size";
+  const description = initialData ? "Edit your size" : "Add a new size";
   const action = initialData ? "Save changes" : "Create";
 
-  const form = useForm<CategoryFormValues>({
+  const form = useForm<SizeFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
       name: "",
-      billboardId: "",
+      value: "",
     },
   });
 
-  const onSubmit = async (data: CategoryFormValues) => {
+  const onSubmit = async (data: SizeFormValues) => {
     try {
       setIsLoading(true);
 
       const endpoint = initialData
-        ? `/api/${params.storeId}/categories/${params.categoryId}`
-        : `/api/${params.storeId}/categories`;
+        ? `/api/${params.storeId}/sizes/${params.sizeId}`
+        : `/api/${params.storeId}/sizes`;
 
       const method = initialData ? "PATCH" : "POST";
 
@@ -81,22 +76,17 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
         body: JSON.stringify(data),
       });
 
-      if (!res.ok) {
-        const errorBody = await res.json();
-        console.error("[onSubmit Category] API Error:", errorBody);
+      if (!res.ok)
         throw new Error(
-          initialData
-            ? "Failed to update category"
-            : "Failed to create category"
+          initialData ? "Failed to update size" : "Failed to create size"
         );
-      }
 
-      toast.success(initialData ? "Category updated!" : "Category created!");
+      toast.success(initialData ? "Size updated!" : "Size created!");
       router.refresh();
-      router.push(`/${params.storeId}/categories`);
+      router.push(`/${params.storeId}/sizes`);
     } catch (error) {
       toast.error("Something went wrong!");
-      console.error("[onSubmit Category]", error);
+      console.error("[onSubmit Size]", error);
     } finally {
       setIsLoading(false);
     }
@@ -105,16 +95,14 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   const handleDelete = async () => {
     try {
       setIsLoading(true);
-      await fetch(`/api/${params.storeId}/categories/${params.categoryId}`, {
+      await fetch(`/api/${params.storeId}/sizes/${params.sizeId}`, {
         method: "DELETE",
       });
-      toast.success("Category deleted successfully");
-      router.push(`/${params.storeId}/categories`);
+      toast.success("Size deleted successfully");
+      router.push(`/${params.storeId}/sizes`);
       router.refresh();
     } catch (error) {
-      toast.error(
-        "Make sure you removed all products using this category first."
-      );
+      toast.error("Make sure you removed all products using this size first.");
     } finally {
       setIsLoading(false);
       setIsOpen(false);
@@ -163,7 +151,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="flex flex-col gap-8 rounded-2xl border border-neutral-200 
+            className="grid grid-cols-1 md:grid-cols-2 gap-8 rounded-2xl border border-neutral-200 
                      dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 
                      shadow-md backdrop-blur-lg p-8 transition-all hover:shadow-xl"
           >
@@ -177,7 +165,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                   </FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Enter category name..."
+                      placeholder="Enter size name..."
                       disabled={isLoading}
                       {...field}
                       className="rounded-xl border border-neutral-300 dark:border-neutral-700 
@@ -193,48 +181,72 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
             <FormField
               control={form.control}
-              name="billboardId"
+              name="value"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Billboard</FormLabel>
-                  <Select
-                    disabled={isLoading}
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue
-                          defaultValue={field.value}
-                          placeholder="Select a billboard"
+                  <FormLabel className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+                    Size
+                  </FormLabel>
+
+                  <FormControl>
+                    <div className="flex flex-col gap-3">
+                      {/* Select size */}
+                      <Select
+                        disabled={isLoading}
+                        value={customMode ? "custom" : field.value}
+                        onValueChange={(val) => {
+                          if (val === "custom") {
+                            setCustomMode(true);
+                            field.onChange("");
+                          } else {
+                            setCustomMode(false);
+                            field.onChange(val);
+                          }
+                        }}
+                      >
+                        <SelectTrigger
+                          className="rounded-xl border border-neutral-300 dark:border-neutral-700 
+                           bg-white/80 dark:bg-neutral-800/80 backdrop-blur-md 
+                           focus:ring-2 focus:ring-blue-500/50 transition-all"
+                        >
+                          <SelectValue placeholder="Chọn size..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="250g">250g</SelectItem>
+                          <SelectItem value="500g">500g</SelectItem>
+                          <SelectItem value="1kg">1kg</SelectItem>
+                          <SelectItem value="custom">Custom...</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {/* Custom input */}
+                      {customMode && (
+                        <Input
+                          placeholder="Nhập size riêng (vd: 750g)"
+                          disabled={isLoading}
+                          value={field.value}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          className="rounded-xl border border-neutral-300 dark:border-neutral-700 
+                           focus-visible:ring-2 focus-visible:ring-blue-500/50 
+                           focus-visible:border-blue-400 dark:focus-visible:ring-blue-400/50 
+                           transition-all bg-white/80 dark:bg-neutral-800/80 backdrop-blur-md"
                         />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {billboards.map((billboard) => (
-                        <SelectItem key={billboard.id} value={billboard.id}>
-                          {billboard.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                      )}
+                    </div>
+                  </FormControl>
+
                   <FormMessage />
                 </FormItem>
               )}
             />
-
-            <div className="flex justify-end pt-4">
-              <motion.div
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Button disabled={isLoading} type="submit" variant={"outline"}>
-                  {isLoading ? "Processing..." : action}
-                </Button>
-              </motion.div>
-            </div>
           </motion.div>
+          <div className="flex justify-end pt-4">
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+              <Button disabled={isLoading} type="submit" variant={"outline"}>
+                {isLoading ? "Processing..." : action}
+              </Button>
+            </motion.div>
+          </div>
         </form>
       </Form>
     </>

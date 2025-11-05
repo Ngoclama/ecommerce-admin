@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Pencil, Trash2, Eye, Copy } from "lucide-react";
-import { CategoryColumn } from "./columns";
-import { toast } from "sonner";
-import { AlertModal } from "@/components/modals/alert-modal";
-import { CategoryViewModal } from "@/components/modals/category-view";
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { MoreHorizontal, Pencil, Trash2, Eye, Copy } from 'lucide-react';
+import { ColorColumn } from './columns';
+import { toast } from 'sonner';
+import { AlertModal } from '@/components/modals/alert-modal';
+import { ColorViewModal } from '@/components/modals/color-view .tsx';
 
 interface CellActionProps {
-  data: CategoryColumn;
+  data: ColorColumn;
 }
 
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
@@ -29,7 +29,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const [viewModalOpen, setViewModalOpen] = useState(false);
 
   const handleEdit = () => {
-    router.push(`/${params.storeId}/categories/${data.id}`);
+    router.push(`/${params.storeId}/colors/${data.id}`);
   };
 
   const handleView = () => {
@@ -39,16 +39,14 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const handleDelete = async () => {
     try {
       setIsLoading(true);
-      await fetch(`/api/${params.storeId}/categories/${data.id}`, {
-        method: "DELETE",
+      await fetch(`/api/${params.storeId}/colors/${data.id}`, {
+        method: 'DELETE',
       });
-      toast.success("Category deleted successfully");
-      router.push(`/${params.storeId}/categories`);
+      toast.success('Color deleted successfully');
+      router.push(`/${params.storeId}/colors`);
       router.refresh();
     } catch (error) {
-      toast.error(
-        "Make sure you removed all products using this category first."
-      );
+      toast.error('Make sure you removed all products using this color first.');
     } finally {
       setIsLoading(false);
       setIsOpen(false);
@@ -56,10 +54,11 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   };
   const onCopy = (id: string) => {
     navigator.clipboard.writeText(id);
-    toast.success("Category ID copied to clipboard");
+    toast.success('Color ID copied to clipboard');
   };
   return (
     <>
+      {/* Modal xác nhận xóa */}
       <AlertModal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
@@ -68,11 +67,11 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
         onConfirm={handleDelete}
         loading={isLoading}
       />
-      <CategoryViewModal
+      <ColorViewModal
         isOpen={viewModalOpen}
         onClose={() => setViewModalOpen(false)}
         storeId={params.storeId as string}
-        categoryId={data.id}
+        colorId={data.id}
       />
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
@@ -95,7 +94,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 5 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
               >
                 <DropdownMenuItem
                   onClick={handleView}
@@ -122,10 +121,10 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onCopy(data.id)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 transition"
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/30 text-white-600 dark:text-white-400 transition"
                 >
                   <Copy className="h-4 w-4" />
-                  Copy ID
+                  Copy
                 </DropdownMenuItem>
               </motion.div>
             </DropdownMenuContent>

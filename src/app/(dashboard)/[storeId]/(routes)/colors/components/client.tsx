@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
 import { MoreHorizontal, Plus, Trash } from 'lucide-react';
-import { CategoryColumn, columns } from './columns';
+import { ColorColumn, columns } from './columns';
 import { DataTable } from '@/components/ui/data-table';
 import { ApiList } from '@/components/ui/api-list';
 import {
@@ -20,11 +20,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AlertModal } from '@/components/modals/alert-modal';
 
-interface CategoryClientProps {
-  data: CategoryColumn[];
+interface ColorClientProps {
+  data: ColorColumn[];
 }
 
-export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
+export const ColorClient: React.FC<ColorClientProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
   const [isLoading, setIsLoading] = useState(false);
@@ -33,16 +33,14 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
   const handleDeleteAll = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`/api/${params.storeId}/categories`, {
+      const res = await fetch(`/api/${params.storeId}/colors`, {
         method: 'DELETE',
       });
-      if (!res.ok) throw new Error('Failed to delete categories');
-      toast.success('All categories deleted successfully');
+      if (!res.ok) throw new Error('Failed to delete Colors');
+      toast.success('All Colors deleted successfully');
       router.refresh();
     } catch (error) {
-      toast.error(
-        'Failed to delete categories. Make sure you removed all products using these categories first.'
-      );
+      toast.error('Failed to delete Colors. Check related items first.');
     } finally {
       setIsLoading(false);
       setDeleteAllOpen(false);
@@ -56,14 +54,14 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
         onClose={() => setDeleteAllOpen(false)}
         onConfirm={handleDeleteAll}
         loading={isLoading}
-        title="Delete All Categories?"
-        description="This action cannot be undone. All categories will be permanently deleted."
+        title="Delete All Colors?"
+        description="This action cannot be undone. All colors will be permanently deleted."
       />
 
       <div className="flex items-center justify-between">
         <Heading
-          title={`Categories (${data.length})`}
-          description="Manage categories for your store"
+          title={`Colors (${data.length})`}
+          description="Manage colors for your store"
         />
 
         <DropdownMenu>
@@ -75,11 +73,11 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>Category Actions</DropdownMenuLabel>
+            <DropdownMenuLabel>Colors Actions</DropdownMenuLabel>
             <DropdownMenuSeparator />
 
             <DropdownMenuItem
-              onClick={() => router.push(`/${params.storeId}/categories/new`)}
+              onClick={() => router.push(`/${params.storeId}/colors/new`)}
               className="flex items-center gap-2 cursor-pointer"
             >
               <Plus className="h-4 w-4 " />
@@ -102,9 +100,9 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
 
       <DataTable searchKey="name" columns={columns} data={data} />
 
-      <Heading title="API" description="API Calls for categories" />
+      <Heading title="API" description="API Calls for colors" />
       <Separator className="my-4" />
-      <ApiList entityName="categories" entityIdName="categoryId" />
+      <ApiList entityName="colors" entityIdName="colorId" />
     </>
   );
 };

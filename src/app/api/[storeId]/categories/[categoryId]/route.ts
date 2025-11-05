@@ -1,6 +1,39 @@
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import slugify from "slugify";
+
+export async function GET(
+  req: Request,
+  { params }: { params: { storeId: string; categoryId: string } }
+) {
+  try {
+    if (!params.categoryId)
+      return NextResponse.json(
+        { message: "Category ID is required" },
+        { status: 400 }
+      );
+
+    const category = await prisma.category.findUnique({
+      where: { id: params.categoryId },
+      include: { billboard: true },
+    });
+
+    if (!category)
+      return NextResponse.json(
+        { message: "Category not found" },
+        { status: 404 }
+      );
+
+    return NextResponse.json(category);
+  } catch (error) {
+    console.error("[CATEGORY_GET]", error);
+    return NextResponse.json(
+      { message: "Internal Server Error", error: String(error) },
+      { status: 500 }
+    );
+  }
+}
 
 export async function PATCH(
   req: Request,
@@ -11,132 +44,68 @@ export async function PATCH(
     const body = await req.json();
     const { name, billboardId } = body;
 
-    if (!userId) return new NextResponse("Unauthorized", { status: 401 });
-    if (!name) return new NextResponse("Name is required", { status: 400 });
+    if (!userId)
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!name)
+      return NextResponse.json(
+        { message: "Name is required" },
+        { status: 400 }
+      );
     if (!billboardId)
-      return new NextResponse(" BillboardId is required", { status: 400 });
+      return NextResponse.json(
+        { message: "Billboard ID is required" },
+        { status: 400 }
+      );
 
     const storeByUserId = await prisma.store.findFirst({
       where: { id: params.storeId, userId },
     });
     if (!storeByUserId)
-      return new NextResponse("Unauthorized", { status: 403 });
+      return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
 
-    const category = await prisma.category.update({
+    const slug = slugify(name, { lower: true, strict: true });
+
+    const updated = await prisma.category.update({
       where: { id: params.categoryId },
-      data: { name, billboardId },
+      data: { name, slug, billboardId },
     });
 
-    return NextResponse.json(category);
+    return NextResponse.json(updated);
   } catch (error) {
-    console.error("[BILLBOARD_PATCH]", error);
-    return new NextResponse("Internal error", { status: 500 });
-  }
-}
-
-export async function GET(
-  req: Request,
-  { params }: { params: { categoryId: string } }
-) {
-  try {
-    if (!params.categoryId) {
-      return new NextResponse("Category is required", { status: 400 });
-    }
-    const category = await prisma.category.findUnique({
-      where: {
-        id: params.categoryId,
-      },
-    });
-
-    return NextResponse.json(category);
-  } catch (error) {
-    console.error("[Category_GET]", error);
-    return new NextResponse("Internal error", { status: 500 });
-  }
-}
-
-export async function POST(
-  req: Request,
-  { params }: { params: { categoryId: string; storeId: string } }
-) {
-  try {
-    const { userId } = await auth();
-    const body = await req.json();
-    const { name, billboardId } = body;
-
-    if (!userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
-
-    if (!name) {
-      return new NextResponse("Name is required", { status: 400 });
-    }
-    if (!billboardId) {
-      return new NextResponse("BillboardId is required", { status: 400 });
-    }
-    const storeByUserId = await prisma.store.findFirst({
-      where: {
-        id: params.storeId,
-        userId,
-      },
-    });
-    // if (!params.billboardId) {
-    //   return new NextResponse("Billboard is required", { status: 400 });
-    // }
-    if (!storeByUserId) {
-      return new NextResponse("Unauthorized", { status: 403 });
-    }
-
-    const category = await prisma.category.update({
-      where: {
-        id: params.categoryId,
-      },
-      data: {
-        name,
-        billboardId,
-      },
-    });
-
-    return NextResponse.json(category);
-  } catch (error) {
-    console.error("[Category_POST]", error);
-    return new NextResponse("Internal error", { status: 500 });
+    console.error("[CATEGORY_PATCH]", error);
+    return NextResponse.json(
+      { message: "Internal Server Error", error: String(error) },
+      { status: 500 }
+    );
   }
 }
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { categoryId: string; storeId: string } }
+  { params }: { params: { storeId: string; categoryId: string } }
 ) {
   try {
     const { userId } = await auth();
 
-    if (!userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
+    if (!userId)
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-    // if (!params.billboardId) {
-    //   return new NextResponse("Billboard is required", { status: 400 });
-    // }
     const storeByUserId = await prisma.store.findFirst({
-      where: {
-        id: params.storeId,
-        userId,
-      },
+      where: { id: params.storeId, userId },
     });
-    if (!storeByUserId) {
-      return new NextResponse("Unauthorized"), { status: 403 };
-    }
+    if (!storeByUserId)
+      return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
 
     const category = await prisma.category.delete({
-      where: {
-        id: params.categoryId,
-      },
+      where: { id: params.categoryId },
     });
 
     return NextResponse.json(category);
   } catch (error) {
-    console.error("[Category_DELETE]", error);
-    return new NextResponse("Internal error", { status: 500 });
+    console.error("[CATEGORY_DELETE]", error);
+    return NextResponse.json(
+      { message: "Internal Server Error", error: String(error) },
+      { status: 500 }
+    );
   }
 }

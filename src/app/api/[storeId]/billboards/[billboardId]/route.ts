@@ -11,16 +11,16 @@ export async function PATCH(
     const body = await req.json();
     const { label, imageUrl } = body;
 
-    if (!userId) return new NextResponse("Unauthorized", { status: 401 });
-    if (!label) return new NextResponse("Label is required", { status: 400 });
+    if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!label) return NextResponse.json({ message: "Label is required" }, { status: 400 });
     if (!imageUrl)
-      return new NextResponse("Image URL is required", { status: 400 });
+      return NextResponse.json({ message: "Image URL is required" }, { status: 400 });
 
     const storeByUserId = await prisma.store.findFirst({
       where: { id: params.storeId, userId },
     });
     if (!storeByUserId)
-      return new NextResponse("Unauthorized", { status: 403 });
+      return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
 
     const billboard = await prisma.billboard.update({
       where: { id: params.billboardId },
@@ -30,7 +30,7 @@ export async function PATCH(
     return NextResponse.json(billboard);
   } catch (error) {
     console.error("[BILLBOARD_PATCH]", error);
-    return new NextResponse("Internal error", { status: 500 });
+    return NextResponse.json({ message: "Internal error" }, { status: 500 });
   }
 }
 
@@ -40,7 +40,7 @@ export async function GET(
 ) {
   try {
     if (!params.billboardId) {
-      return new NextResponse("Billboard is required", { status: 400 });
+      return NextResponse.json({ message: "Billboard is required" }, { status: 400 });
     }
     const billboard = await prisma.billboard.findUnique({
       where: {
@@ -51,7 +51,7 @@ export async function GET(
     return NextResponse.json(billboard);
   } catch (error) {
     console.error("[Billboard_GET]", error);
-    return new NextResponse("Internal error", { status: 500 });
+    return NextResponse.json({ message: "Internal error" }, { status: 500 });
   }
 }
 
@@ -65,14 +65,14 @@ export async function POST(
     const { label, imageUrl } = body;
 
     if (!userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     if (!label) {
-      return new NextResponse("Label is required", { status: 400 });
+      return NextResponse.json({ message: "Label is required" }, { status: 400 });
     }
     if (!imageUrl) {
-      return new NextResponse("ImageUrl is required", { status: 400 });
+      return NextResponse.json({ message: "ImageUrl is required" }, { status: 400 });
     }
     const storeByUserId = await prisma.store.findFirst({
       where: {
@@ -112,7 +112,7 @@ export async function DELETE(
     const { userId } = await auth();
 
     if (!userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     // if (!params.billboardId) {

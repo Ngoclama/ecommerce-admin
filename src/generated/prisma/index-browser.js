@@ -135,8 +135,103 @@ exports.Prisma.CategoryScalarFieldEnum = {
   storeId: 'storeId',
   billboardId: 'billboardId',
   name: 'name',
+  slug: 'slug',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SizeScalarFieldEnum = {
+  id: 'id',
+  storeId: 'storeId',
+  name: 'name',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ColorScalarFieldEnum = {
+  id: 'id',
+  storeId: 'storeId',
+  name: 'name',
+  value: 'value',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ProductSizeScalarFieldEnum = {
+  id: 'id',
+  productId: 'productId',
+  sizeId: 'sizeId'
+};
+
+exports.Prisma.ProductColorScalarFieldEnum = {
+  id: 'id',
+  productId: 'productId',
+  colorId: 'colorId'
+};
+
+exports.Prisma.ProductScalarFieldEnum = {
+  id: 'id',
+  storeId: 'storeId',
+  categoryId: 'categoryId',
+  name: 'name',
+  slug: 'slug',
+  thumbnailUrl: 'thumbnailUrl',
+  description: 'description',
+  price: 'price',
+  stock: 'stock',
+  isFeatured: 'isFeatured',
+  isArchived: 'isArchived',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ProductImageScalarFieldEnum = {
+  id: 'id',
+  url: 'url',
+  productId: 'productId'
+};
+
+exports.Prisma.ProductVariantScalarFieldEnum = {
+  id: 'id',
+  productId: 'productId',
+  flavor: 'flavor',
+  weight: 'weight',
+  price: 'price',
+  stock: 'stock'
+};
+
+exports.Prisma.ReviewScalarFieldEnum = {
+  id: 'id',
+  productId: 'productId',
+  userId: 'userId',
+  rating: 'rating',
+  comment: 'comment',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.OrderScalarFieldEnum = {
+  id: 'id',
+  storeId: 'storeId',
+  userId: 'userId',
+  phone: 'phone',
+  address: 'address',
+  paymentMethod: 'paymentMethod',
+  paymentStatus: 'paymentStatus',
+  status: 'status',
+  isPaid: 'isPaid',
+  totalPrice: 'totalPrice',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.OrderItemScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  productId: 'productId',
+  variantId: 'variantId',
+  quantity: 'quantity'
 };
 
 exports.Prisma.SortOrder = {
@@ -153,7 +248,17 @@ exports.Prisma.QueryMode = {
 exports.Prisma.ModelName = {
   Store: 'Store',
   Billboard: 'Billboard',
-  Category: 'Category'
+  Category: 'Category',
+  Size: 'Size',
+  Color: 'Color',
+  ProductSize: 'ProductSize',
+  ProductColor: 'ProductColor',
+  Product: 'Product',
+  ProductImage: 'ProductImage',
+  ProductVariant: 'ProductVariant',
+  Review: 'Review',
+  Order: 'Order',
+  OrderItem: 'OrderItem'
 };
 
 /**

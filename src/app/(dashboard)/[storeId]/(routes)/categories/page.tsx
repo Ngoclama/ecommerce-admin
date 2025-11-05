@@ -19,7 +19,7 @@ const CategoryPage = async ({ params }: { params: { storeId: string } }) => {
     id: item.id,
     name: item.name,
     billboardLabel: item.billboard.label,
-    createAt: format(item.createdAt, "MMMM do, yyyy"),
+    createdAt: format(item.createdAt, "MMMM do, yyyy"),
   }));
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-8">

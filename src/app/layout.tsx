@@ -3,16 +3,12 @@ import {
   ClerkProvider,
   SignInButton,
   SignUpButton,
-  SignedIn,
   SignedOut,
-  UserButton,
 } from "@clerk/nextjs";
 import "./globals.css";
 
 import { Geist, Geist_Mono } from "next/font/google";
 import { ModalProvider } from "@/providers/modal-provider";
-import { Store } from "../generated/prisma/index";
-import prisma from "@/lib/prisma";
 import { Toaster } from "@/components/ui/sonner";
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +34,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <body
+          suppressHydrationWarning
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
           <ModalProvider />
