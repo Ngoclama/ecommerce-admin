@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Heading } from '@/components/ui/heading';
-import { Separator } from '@/components/ui/separator';
-import { MoreHorizontal, Plus, Trash } from 'lucide-react';
-import { CategoryColumn, columns } from './columns';
-import { DataTable } from '@/components/ui/data-table';
-import { ApiList } from '@/components/ui/api-list';
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Heading } from "@/components/ui/heading";
+import { Separator } from "@/components/ui/separator";
+import { MoreHorizontal, Plus, Trash } from "lucide-react";
+import { CategoryColumn, columns } from "./columns";
+import { DataTable } from "@/components/ui/data-table";
+import { ApiList } from "@/components/ui/api-list";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,8 +17,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { AlertModal } from '@/components/modals/alert-modal';
+} from "@/components/ui/dropdown-menu";
+import { AlertModal } from "@/components/modals/alert-modal";
 
 interface CategoryClientProps {
   data: CategoryColumn[];
@@ -34,14 +34,14 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
     try {
       setIsLoading(true);
       const res = await fetch(`/api/${params.storeId}/categories`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
-      if (!res.ok) throw new Error('Failed to delete categories');
-      toast.success('All categories deleted successfully');
+      if (!res.ok) throw new Error("Failed to delete categories");
+      toast.success("All categories deleted successfully");
       router.refresh();
     } catch (error) {
       toast.error(
-        'Failed to delete categories. Make sure you removed all products using these categories first.'
+        "Failed to delete categories. Make sure you removed all products using these categories first."
       );
     } finally {
       setIsLoading(false);

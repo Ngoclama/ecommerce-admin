@@ -42,7 +42,6 @@ export async function POST(
     const category = await prisma.category.create({
       data: {
         name,
-        slug,
         billboardId,
         storeId: params.storeId,
       },
