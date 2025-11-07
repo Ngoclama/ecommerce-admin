@@ -44,6 +44,11 @@ export function MainNav({
       href: `/${params.storeId}/products`,
       label: "Products",
     },
+
+    {
+      href: `/${params.storeId}/orders`,
+      label: "Orders",
+    },
     {
       href: `/${params.storeId}/settings`,
       label: "Settings",
