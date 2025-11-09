@@ -1,30 +1,20 @@
 "use client";
 
+import React from "react";
+import { AlertModalProvider } from "@/hooks/use-alert-modal";
+import { BulkCategoryModalProvider } from "@/hooks/use-bulk-category-modal";
 import { AlertModal } from "@/components/modals/alert-modal";
-import { StoreModal } from "@/components/modals/store-modal";
-import { useEffect, useState } from "react";
-export const ModalProvider = () => {
-  const [isMounted, setIsMounted] = useState(false);
+import { BulkCreateCategoryModal } from "@/components/modals/bulk-category-modal";
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  if (!isMounted) {
-    return null;
-  }
-
+export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
   return (
-    <>
-      <StoreModal />
-      {/* <AlertModal
-        isOpen={false}
-        onClose={() => {}}
-        title=""
-        description=""
-        onConfirm={() => {}}
-        loading={false}
-      /> */}
-    </>
+    <AlertModalProvider>
+      <BulkCategoryModalProvider>
+        {children}
+        {/* Global modals */}
+        <AlertModal />
+        <BulkCreateCategoryModal />
+      </BulkCategoryModalProvider>
+    </AlertModalProvider>
   );
 };

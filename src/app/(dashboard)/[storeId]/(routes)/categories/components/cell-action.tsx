@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Pencil, Trash2, Eye, Copy } from "lucide-react";
 import { CategoryColumn } from "./columns";
 import { toast } from "sonner";
-import { AlertModal } from "@/components/modals/alert-modal";
 import { CategoryViewModal } from "@/components/modals/category-view";
 
 interface CellActionProps {
@@ -23,106 +22,114 @@ interface CellActionProps {
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
-  const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
 
   const handleEdit = () => {
+    setMenuOpen(false);
     router.push(`/${params.storeId}/categories/${data.id}`);
   };
 
   const handleView = () => {
+    setMenuOpen(false);
     setViewModalOpen(true);
   };
 
   const handleDelete = async () => {
     try {
-      setIsLoading(true);
-      await fetch(`/api/${params.storeId}/categories/${data.id}`, {
+      setIsDeleting(true);
+      const res = await fetch(`/api/${params.storeId}/categories/${data.id}`, {
         method: "DELETE",
       });
-      toast.success("Category deleted successfully");
-      router.push(`/${params.storeId}/categories`);
+
+      if (!res.ok) throw new Error("Delete failed");
+
+      toast.success("Category deleted successfully!");
       router.refresh();
     } catch (error) {
-      toast.error(
-        "Make sure you removed all products using this category first."
-      );
+      toast.error("Please remove all products using this category first.");
     } finally {
-      setIsLoading(false);
-      setIsOpen(false);
+      setIsDeleting(false);
+      setDeleteModalOpen(false);
     }
   };
-  const onCopy = (id: string) => {
+
+  const handleCopyId = (id: string) => {
     navigator.clipboard.writeText(id);
-    toast.success("Category ID copied to clipboard");
+    toast.success("Category ID copied!");
+    setMenuOpen(false);
   };
+
   return (
     <>
-      <AlertModal
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        title="Are you sure?"
-        description="This action cannot be undone."
-        onConfirm={handleDelete}
-        loading={isLoading}
-      />
       <CategoryViewModal
         isOpen={viewModalOpen}
         onClose={() => setViewModalOpen(false)}
         storeId={params.storeId as string}
         categoryId={data.id}
       />
-      <DropdownMenu open={open} onOpenChange={setOpen}>
+
+      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="h-8 w-8 p-0 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            className="h-8 w-8 p-0 rounded-xl hover:bg-white/60 dark:hover:bg-neutral-800/60 
+                       backdrop-blur-md transition-all shadow-sm"
           >
             <MoreHorizontal className="h-4 w-4 text-neutral-500" />
           </Button>
         </DropdownMenuTrigger>
 
         <AnimatePresence>
-          {open && (
+          {menuOpen && (
             <DropdownMenuContent
               align="end"
-              className="min-w-[150px] rounded-2xl bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border border-neutral-200 dark:border-neutral-800 shadow-lg p-1"
-              asChild
+              className="min-w-[170px] rounded-2xl bg-white/70 dark:bg-neutral-900/80 
+                         backdrop-blur-2xl border border-white/30 dark:border-neutral-800/60 
+                         shadow-[0_8px_40px_rgba(0,0,0,0.1)] p-1"
             >
               <motion.div
-                initial={{ opacity: 0, y: 5 }}
+                initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 5 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
+                exit={{ opacity: 0, y: 6 }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
               >
                 <DropdownMenuItem
                   onClick={handleView}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer 
+                            dark:text-neutral-300 hover:bg-white/70 
+                             dark:hover:bg-neutral-800 transition-all"
                 >
                   <Eye className="h-4 w-4 text-neutral-500" />
-                  View
+                  View Details
                 </DropdownMenuItem>
 
                 <DropdownMenuItem
                   onClick={handleEdit}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 transition"
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer 
+                             text-blue-600 dark:text-blue-400 hover:bg-blue-50 
+                             dark:hover:bg-blue-900/20 transition-all"
                 >
                   <Pencil className="h-4 w-4" />
-                  Edit
+                  Edit Category
                 </DropdownMenuItem>
 
                 <DropdownMenuItem
-                  onClick={() => setIsOpen(true)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 transition"
+                  onClick={handleDelete}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer 
+             hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 transition"
                 >
                   <Trash2 className="h-4 w-4" />
                   Delete
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => onCopy(data.id)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 transition"
+                  onClick={() => handleCopyId(data.id)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer 
+                             dark:text-neutral-400 hover:bg-white/70 
+                             dark:hover:bg-neutral-800 transition-all"
                 >
                   <Copy className="h-4 w-4" />
                   Copy ID

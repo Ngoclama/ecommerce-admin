@@ -9,11 +9,17 @@ export async function POST(req: Request) {
     const { name } = body;
 
     if (!userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
     if (!name) {
-      return new NextResponse("Name is required", { status: 400 });
+      return NextResponse.json(
+        { success: false, message: "Name is required" },
+        { status: 400 }
+      );
     }
 
     const store = await prisma.store.create({
@@ -23,20 +29,36 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json(store);
+    return NextResponse.json({ success: true, data: store }, { status: 201 }); // ✅ trả về format rõ ràng
   } catch (error) {
     console.error("[STORE_POST]", error);
-    return new NextResponse("Internal error", { status: 500 });
+    return NextResponse.json(
+      { success: false, message: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
 
 export async function GET(req: Request) {
-  const { userId } = await auth();
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+  try {
+    const { userId } = await auth();
+    if (!userId)
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
 
-  const stores = await prisma.store.findMany({
-    where: { userId },
-  });
+    const stores = await prisma.store.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
 
-  return NextResponse.json(stores);
+    return NextResponse.json({ success: true, data: stores });
+  } catch (error) {
+    console.error("[STORE_GET]", error);
+    return NextResponse.json(
+      { success: false, message: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }

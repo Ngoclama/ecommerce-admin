@@ -12,6 +12,7 @@ interface AlertModalProps {
   onConfirm: () => void;
   loading: boolean;
 }
+
 export const AlertModal: React.FC<AlertModalProps> = ({
   isOpen,
   onClose,
@@ -29,14 +30,13 @@ export const AlertModal: React.FC<AlertModalProps> = ({
   const handleClose = () => {
     if (loading) return;
     setShowModal(false);
-    setTimeout(() => {
-      onClose();
-    }, 300); // Delay to allow animation to complete
+    setTimeout(onClose, 300);
   };
 
   const handleConfirm = () => {
     if (loading) return;
     onConfirm();
+    onClose();
   };
 
   return (
@@ -50,14 +50,14 @@ export const AlertModal: React.FC<AlertModalProps> = ({
         >
           {/* Overlay */}
           <motion.div
-            className="absolute inset-0"
+            className="absolute inset-0 backdrop-blur-sm"
             onClick={handleClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           />
 
-          {/* Modal content */}
+          {/* Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}

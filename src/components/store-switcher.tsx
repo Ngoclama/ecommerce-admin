@@ -56,7 +56,7 @@ function GlassStoreSwitcher({
             "w-[220px] justify-between rounded-xl font-medium",
             "bg-white/10 dark:bg-zinc-900/20 backdrop-blur-xl border border-white/20 dark:border-white/10",
             "shadow-[0_4px_30px_rgba(0,0,0,0.1)] text-black hover:bg-white/20 dark:hover:bg-white/10",
-            "transition-all duration-300",
+            "transition-all duration-300 ",
             className
           )}
         >

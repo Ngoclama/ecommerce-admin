@@ -111,8 +111,9 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
           size="icon"
           onClick={() => setIsOpen(true)}
           type="button"
+          className="cursor-pointer"
         >
-          <Trash className="h-5 w-5" />
+          <Trash className="h-5 w-5 cursor-pointer" />
         </Button>
       </div>
 
@@ -155,7 +156,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
               transition={{ type: "spring", stiffness: 300 }}
               disabled={isLoading}
               type="submit"
-              className="px-6 py-2 rounded-xl shadow-md bg-gradient-to-r from-white-500 text-black  hover:opacity-90 transition-all"
+              className="px-6 py-2 rounded-xl shadow-md bg-gradient-to-r from-white-500 text-black  hover:opacity-90 transition-all cursor-pointer"
             >
               {isLoading ? "Saving..." : "Save Changes"}
             </motion.button>

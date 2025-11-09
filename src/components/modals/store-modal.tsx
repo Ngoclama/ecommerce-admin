@@ -139,15 +139,19 @@ export const StoreModal = () => {
           .json()
           .catch(() => ({ message: "Something went wrong." }));
         toast.error(errorData.message || "Something went wrong.");
-        return; // Dừng thực thi nếu có lỗi
+        return;
       }
 
-      // Chỉ chạy khi response.ok là true
-      const store = await response.json();
+      const result = await response.json();
+
+      if (!response.ok) {
+        toast.error(result.message || "Something went wrong.");
+        return;
+      }
 
       toast.success("Store created successfully.");
       storeModal.onClose();
-      router.push(`/${store.id}`);
+      router.push(`/${result.data.id}`);
     } catch (error) {
       console.error("[STORE_CREATE_ERROR]", error);
       toast.error("An unexpected error occurred.");

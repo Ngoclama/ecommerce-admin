@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Heading } from '@/components/ui/heading';
-import { Separator } from '@/components/ui/separator';
-import { MoreHorizontal, Plus, Trash } from 'lucide-react';
-import { ColorColumn, columns } from './columns';
-import { DataTable } from '@/components/ui/data-table';
-import { ApiList } from '@/components/ui/api-list';
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Heading } from "@/components/ui/heading";
+import { Separator } from "@/components/ui/separator";
+import { MoreHorizontal, Plus, Trash } from "lucide-react";
+import { ColorColumn, columns } from "./columns";
+import { DataTable } from "@/components/ui/data-table";
+import { ApiList } from "@/components/ui/api-list";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,8 +17,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { AlertModal } from '@/components/modals/alert-modal';
+} from "@/components/ui/dropdown-menu";
+import { AlertModal } from "@/components/modals/alert-modal";
 
 interface ColorClientProps {
   data: ColorColumn[];
@@ -34,13 +34,13 @@ export const ColorClient: React.FC<ColorClientProps> = ({ data }) => {
     try {
       setIsLoading(true);
       const res = await fetch(`/api/${params.storeId}/colors`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
-      if (!res.ok) throw new Error('Failed to delete Colors');
-      toast.success('All Colors deleted successfully');
+      if (!res.ok) throw new Error("Failed to delete Colors");
+      toast.success("All Colors deleted successfully");
       router.refresh();
     } catch (error) {
-      toast.error('Failed to delete Colors. Check related items first.');
+      toast.error("Failed to delete Colors. Check related items first.");
     } finally {
       setIsLoading(false);
       setDeleteAllOpen(false);

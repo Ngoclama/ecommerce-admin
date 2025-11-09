@@ -27,7 +27,7 @@
     "@types/axios": "^0.9.36",
     "@types/bson": "^4.0.5",
     "@types/date-fns": "^2.5.3",
-    "axios": "^1.12.2",
+    "axios": "^1.13.2",
     "bson": "^6.10.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

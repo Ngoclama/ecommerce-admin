@@ -37,7 +37,9 @@ export default function RootLayout({
           suppressHydrationWarning
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <ModalProvider />
+          <ModalProvider>
+
+         
           <div className="min-h-screen flex flex-col">
             <header>
               <SignedOut>
@@ -52,6 +54,7 @@ export default function RootLayout({
             <main className="flex-1">{children}</main>
           </div>
           <Toaster richColors position="bottom-center" />
+           </ModalProvider>
         </body>
       </html>
     </ClerkProvider>

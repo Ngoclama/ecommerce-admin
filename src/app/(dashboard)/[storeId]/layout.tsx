@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/navbar";
+import { StoreModal } from "@/components/modals/store-modal";
 export default async function DashboardLayout({
   children,
   params,
@@ -27,7 +28,7 @@ export default async function DashboardLayout({
   return (
     <>
       <Navbar></Navbar>
-
+      <StoreModal />
       <div className="max-w-full px-6 md:px-10 py-10">{children}</div>
     </>
   );

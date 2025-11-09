@@ -52,9 +52,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const title = initialData ? "Edit Category" : "Create Category";
-  const description = initialData
-    ? "Edit your category"
-    : "Add a new category";
+  const description = initialData ? "Edit your category" : "Add a new category";
   const action = initialData ? "Save changes" : "Create";
 
   const form = useForm<CategoryFormValues>({
