@@ -8,6 +8,18 @@ const nextConfig: NextConfig = {
       "res.cloudinary.com",
       "cdn.pixabay.com",
       "images.unsplash.com",
+      "uploadthing.com",
+      "utfs.io",
+    ],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "utfs.io",
+      },
+      {
+        protocol: "https",
+        hostname: "uploadthing.com",
+      },
     ],
   },
 };

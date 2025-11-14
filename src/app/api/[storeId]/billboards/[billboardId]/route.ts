@@ -11,10 +11,18 @@ export async function PATCH(
     const body = await req.json();
     const { label, imageUrl } = body;
 
-    if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    if (!label) return NextResponse.json({ message: "Label is required" }, { status: 400 });
+    if (!userId)
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!label)
+      return NextResponse.json(
+        { message: "Label is required" },
+        { status: 400 }
+      );
     if (!imageUrl)
-      return NextResponse.json({ message: "Image URL is required" }, { status: 400 });
+      return NextResponse.json(
+        { message: "Image URL is required" },
+        { status: 400 }
+      );
 
     const storeByUserId = await prisma.store.findFirst({
       where: { id: params.storeId, userId },
@@ -40,7 +48,10 @@ export async function GET(
 ) {
   try {
     if (!params.billboardId) {
-      return NextResponse.json({ message: "Billboard is required" }, { status: 400 });
+      return NextResponse.json(
+        { message: "Billboard is required" },
+        { status: 400 }
+      );
     }
     const billboard = await prisma.billboard.findUnique({
       where: {
@@ -69,10 +80,16 @@ export async function POST(
     }
 
     if (!label) {
-      return NextResponse.json({ message: "Label is required" }, { status: 400 });
+      return NextResponse.json(
+        { message: "Label is required" },
+        { status: 400 }
+      );
     }
     if (!imageUrl) {
-      return NextResponse.json({ message: "ImageUrl is required" }, { status: 400 });
+      return NextResponse.json(
+        { message: "ImageUrl is required" },
+        { status: 400 }
+      );
     }
     const storeByUserId = await prisma.store.findFirst({
       where: {

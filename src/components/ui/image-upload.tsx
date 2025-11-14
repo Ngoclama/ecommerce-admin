@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback } from "react";
 import { Trash, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { UploadButton } from "@/utils/uploadthing";
+import type { OurFileRouter } from "@/app/api/uploadthing/core";
 
 interface ImageUploadProps {
   disabled?: boolean;
@@ -12,25 +13,12 @@ interface ImageUploadProps {
   onRemove: (url: string) => void;
 }
 
-const ImageUpload: React.FC<ImageUploadProps> = ({
+const ImageUpload = ({
   disabled,
-  value = [],
+  value,
   onChange,
   onRemove,
-}) => {
-  const handleUpload = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = e.target.files;
-      if (!files) return;
-
-      for (const file of Array.from(files)) {
-        const fileUrl = URL.createObjectURL(file);
-        onChange(fileUrl);
-      }
-    },
-    [onChange]
-  );
-
+}: ImageUploadProps) => {
   return (
     <div className="flex flex-col gap-6">
       {/* Preview ảnh */}
@@ -42,7 +30,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                        bg-white/10 dark:bg-neutral-800/30 
                        shadow-[0_4px_20px_rgba(0,0,0,0.15)] 
                        backdrop-blur-xl backdrop-saturate-150
-                       transition-all hover:scale-[1.03] hover:shadow-[0_8px_30px_rgba(0,0,0,0.25)]"
+                       transition-all hover:scale-[1.03]"
           >
             {/* Nút xoá */}
             <div className="absolute top-2 right-2 z-10">
@@ -58,7 +46,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
               </Button>
             </div>
 
-            {/* Ảnh */}
+            {/* Ảnh từ URL thật */}
             <Image
               fill
               src={url}
@@ -69,34 +57,34 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         ))}
       </div>
 
-      {/* Nút upload */}
-      <div>
-        <label
-          htmlFor="upload-image"
-          className={`flex flex-col items-center justify-center gap-2 w-40 h-40 border-2 border-dashed rounded-2xl cursor-pointer 
-                      text-sm font-medium text-neutral-700 dark:text-neutral-300
-                      bg-white/10 dark:bg-neutral-900/40 
-                      shadow-inner backdrop-blur-xl backdrop-saturate-150
-                      transition-all hover:scale-[1.03] hover:shadow-[0_0_25px_rgba(255,255,255,0.1)]
-                      ${
-                        disabled
-                          ? "opacity-50 cursor-not-allowed"
-                          : "hover:border-blue-400/50"
-                      }`}
-        >
-          <ImagePlus className="w-6 h-6 opacity-80" />
-          <span>Upload an Image</span>
-        </label>
+      {/* Nút UploadThing */}
+      <UploadButton
+        endpoint="imageUploader"
+        onClientUploadComplete={(res) => {
+          if (!res) return;
+          for (const file of res) {
+            onChange(file.url);
+          }
+        }}
+        onUploadError={(err) => console.error(err)}
+        appearance={{
+          button:
+            "flex flex-col items-center justify-center gap-2 w-40 h-40 border-2 border-dashed rounded-2xl cursor-pointer text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white/10 dark:bg-neutral-900/40 shadow-inner backdrop-blur-xl transition-all hover:scale-[1.03]",
+        }}
+        content={{
+          button: (
+            <div className="flex flex-col items-center gap-1">
+              <ImagePlus className="w-6 h-6 opacity-80" />
+              <span>Upload Image</span>
 
-        <input
-          id="upload-image"
-          type="file"
-          multiple
-          disabled={disabled}
-          className="hidden"
-          onChange={handleUpload}
-        />
-      </div>
+              {/* Dòng mô tả thêm */}
+              <span className="text-[10px] text-neutral-500 dark:text-neutral-400">
+                Upload Image
+              </span>
+            </div>
+          ),
+        }}
+      />
     </div>
   );
 };

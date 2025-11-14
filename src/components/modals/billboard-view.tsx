@@ -96,7 +96,7 @@ export const BillboardViewModal: React.FC<BillboardViewModalProps> = ({
                 <div>
                   <p className="text-sm text-neutral-500">Image:</p>
                   <img
-                    src={data.imageUrl}
+                    src={data.imageUrls?.[0]}
                     alt={data.label}
                     className="w-50 rounded-lg mt-2 shadow-md"
                   />

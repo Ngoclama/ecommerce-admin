@@ -182,90 +182,19 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
               )}
             />
 
-            {/* Hình ảnh */}
             <FormField
               control={form.control}
               name="imageUrl"
               render={({ field }) => (
-                <FormItem className="max-w-2xl mx-auto">
-                  <FormLabel className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
-                    Background Image
-                  </FormLabel>
+                <FormItem>
+                  <FormLabel>Background Image</FormLabel>
                   <FormControl>
-                    <div
-                      className="relative group border-2 border-dashed border-neutral-300 dark:border-neutral-700 
-                               rounded-2xl overflow-hidden bg-white/40 dark:bg-neutral-900/40 backdrop-blur-sm 
-                               hover:border-blue-500 transition-all duration-300 min-h-[220px] 
-                               flex items-center justify-center"
-                    >
-                      {field.value ? (
-                        <div className="relative w-full h-full">
-                          <img
-                            src={field.value}
-                            alt="Billboard background"
-                            className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
-                          />
-
-                          {/* Overlay controls */}
-                          <div
-                            className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 
-                                     flex items-center justify-center gap-3 transition-opacity"
-                          >
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="secondary"
-                              className="bg-white/80 hover:bg-white text-sm font-medium text-neutral-800"
-                              onClick={() => field.onChange("")}
-                            >
-                              Xóa ảnh
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium"
-                              onClick={() =>
-                                document
-                                  .getElementById("imageUploadTrigger")
-                                  ?.click()
-                              }
-                            >
-                              Đổi ảnh
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center space-y-3 p-6 text-neutral-500">
-                          <ImagePlus className="h-10 w-10 text-neutral-400" />
-                          <p className="text-sm font-medium">
-                            Chọn hình nền billboard
-                          </p>
-                          <Button
-                            id="imageUploadTrigger"
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            className="text-sm"
-                            disabled={isLoading}
-                            onClick={() => {
-                              const uploadInput =
-                                document.createElement("input");
-                              uploadInput.type = "file";
-                              uploadInput.accept = "image/*";
-                              uploadInput.onchange = async (e: any) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                const url = URL.createObjectURL(file);
-                                field.onChange(url);
-                              };
-                              uploadInput.click();
-                            }}
-                          >
-                            Tải ảnh lên
-                          </Button>
-                        </div>
-                      )}
-                    </div>
+                    <ImageUpload
+                      disabled={isLoading}
+                      value={field.value ? [field.value] : []}
+                      onChange={(url) => field.onChange(url)}
+                      onRemove={() => field.onChange("")}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
