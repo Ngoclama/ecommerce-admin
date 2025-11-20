@@ -68,6 +68,9 @@ export async function PATCH(
     const updated = await prisma.category.update({
       where: { id: params.categoryId },
       data: { name, billboardId },
+      include: {
+        billboard: true,
+      },
     });
 
     return NextResponse.json(updated);

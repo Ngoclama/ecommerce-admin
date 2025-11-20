@@ -16,14 +16,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { AlertModal } from "@/components/modals/alert-modal";
-
+import { OrderColumn } from "./columns"; 
 interface CellActionProps {
-  data: {
-    id: string;
-    isPaid: boolean;
-    status: string;
-    totalPrice: string;
-  };
+  data: OrderColumn; 
 }
 
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
@@ -75,13 +70,9 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
             <Copy className="mr-2 h-4 w-4" />
             Copy ID
           </DropdownMenuItem>
+
+          
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => router.push(`/${params.storeId}/orders/${data.id}`)}
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
-          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => setOpen(true)}
             className="text-red-600 focus:text-red-700"

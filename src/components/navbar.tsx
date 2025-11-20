@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import NavbarUser from "./navbar-user";
+import ClientOnly from "./ClientOnly";
 
 const Navbar = async () => {
   const { userId } = await auth();
@@ -19,7 +20,9 @@ const Navbar = async () => {
   return (
     <div className="border-b">
       <div className="flex h-16 items-center px-4">
-        <StoreSwitcher items={stores} />
+        <ClientOnly>
+          <StoreSwitcher items={stores} />
+        </ClientOnly>
         <MainNav className="mx-6" />
         <NavbarUser />
       </div>
