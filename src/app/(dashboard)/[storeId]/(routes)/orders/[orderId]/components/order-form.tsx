@@ -8,8 +8,7 @@ import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 
-import { Order, OrderStatus } from "@/generated/prisma";
-
+import { Order, OrderStatus } from "@prisma/client"; 
 
 import {
   Form,
@@ -53,7 +52,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData }) => {
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      status: initialData.status,
+      status: initialData.status, // Bây giờ TypeScript sẽ hiểu trường này đã tồn tại
     },
   });
 
@@ -104,13 +103,11 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData }) => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {(Object.values(OrderStatus) as string[]).map(
-                        (status) => (
-                          <SelectItem key={status} value={status}>
-                            {status}
-                          </SelectItem>
-                        )
-                      )}
+                      {Object.values(OrderStatus).map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {status}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

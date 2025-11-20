@@ -32,7 +32,6 @@ export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
 
-  // ✅ Sửa đúng endpoint API cho billboard, không phải category
   const handleDeleteAll = async () => {
     try {
       setIsLoading(true);
@@ -52,14 +51,11 @@ export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
 
   return (
     <>
-      {/* ✅ Modal xác nhận xóa billboard */}
       <AlertModal
         isOpen={deleteAllOpen}
         onClose={() => setDeleteAllOpen(false)}
         onConfirm={handleDeleteAll}
         loading={isLoading}
-        title="Delete All Billboards?"
-        description="This action cannot be undone. All billboards will be permanently deleted."
       />
 
       <BillboardViewModal

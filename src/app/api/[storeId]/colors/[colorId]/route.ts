@@ -4,24 +4,22 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ colorId: string }> }
+  { params }: { params: { colorId: string } }
 ) {
   try {
-    const { colorId } = await params;
-
-    if (!colorId) {
+    if (!params.colorId) {
       return new NextResponse("Color id is required", { status: 400 });
     }
 
     const color = await prisma.color.findUnique({
       where: {
-        id: colorId,
+        id: params.colorId,
       },
     });
 
     return NextResponse.json(color);
-  } catch (err) {
-    console.log("[COLOR_GET]", err);
+  } catch (error) {
+    console.log("[COLOR_GET]", error);
     return new NextResponse("Internal error", { status: 500 });
   }
 }

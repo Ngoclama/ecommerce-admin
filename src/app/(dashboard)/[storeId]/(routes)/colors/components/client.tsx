@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AlertModal } from "@/components/modals/alert-modal";
+import { useBulkColorModal } from "@/hooks/use-bulk-color-modal";
 
 interface ColorClientProps {
   data: ColorColumn[];
@@ -27,6 +28,8 @@ interface ColorClientProps {
 export const ColorClient: React.FC<ColorClientProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
+  const { onOpen: openBulkModal } = useBulkColorModal();
+
   const [isLoading, setIsLoading] = useState(false);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
 
@@ -54,8 +57,6 @@ export const ColorClient: React.FC<ColorClientProps> = ({ data }) => {
         onClose={() => setDeleteAllOpen(false)}
         onConfirm={handleDeleteAll}
         loading={isLoading}
-        title="Delete All Colors?"
-        description="This action cannot be undone. All colors will be permanently deleted."
       />
 
       <div className="flex items-center justify-between">
@@ -82,6 +83,13 @@ export const ColorClient: React.FC<ColorClientProps> = ({ data }) => {
             >
               <Plus className="h-4 w-4 " />
               Add New
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={openBulkModal}
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              Add Bulk
             </DropdownMenuItem>
 
             <DropdownMenuItem

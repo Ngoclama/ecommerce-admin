@@ -72,8 +72,6 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
         onClose={() => setConfirmOpen(false)}
         onConfirm={handleDeleteAll}
         loading={isLoading}
-        title="Delete All Categories?"
-        description="This action cannot be undone. All categories will be permanently deleted."
       />
       <div
         className="

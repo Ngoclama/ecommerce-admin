@@ -114,8 +114,6 @@ export const SizeForm: React.FC<SizeFormProps> = ({ initialData }) => {
       <AlertModal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        title="Are you sure?"
-        description="This action cannot be undone."
         onConfirm={handleDelete}
         loading={isLoading}
       />
@@ -209,7 +207,7 @@ export const SizeForm: React.FC<SizeFormProps> = ({ initialData }) => {
                            bg-white/80 dark:bg-neutral-800/80 backdrop-blur-md 
                            focus:ring-2 focus:ring-blue-500/50 transition-all"
                         >
-                          <SelectValue placeholder="Chọn size..." />
+                          <SelectValue placeholder="Select Size..." />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="250g">250g</SelectItem>
@@ -222,7 +220,7 @@ export const SizeForm: React.FC<SizeFormProps> = ({ initialData }) => {
                       {/* Custom input */}
                       {customMode && (
                         <Input
-                          placeholder="Nhập size riêng (vd: 750g)"
+                          placeholder="Input Size (ex: 750g)"
                           disabled={isLoading}
                           value={field.value}
                           onChange={(e) => field.onChange(e.target.value)}

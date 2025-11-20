@@ -108,8 +108,6 @@ export const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
       <AlertModal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        title="Are you sure?"
-        description="This action cannot be undone."
         onConfirm={handleDelete}
         loading={isLoading}
       />

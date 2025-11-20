@@ -12,48 +12,44 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import axios from "axios";
 import { toast } from "sonner";
-import { Loader2, Tag } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 
-interface CouponViewModalProps {
+interface ColorViewModalProps {
   isOpen: boolean;
   onClose: () => void;
   storeId: string;
-  couponId: string | null;
+  colorId: string | null;
 }
 
-type CouponDetails = {
+type ColorDetails = {
   id: string;
-  code: string;
-  value: number;
-  type: "PERCENT" | "FIXED";
+  name: string;
+  value: string;
   createdAt: string;
   updatedAt: string;
 };
 
-export const CouponViewModal: React.FC<CouponViewModalProps> = ({
+export const ColorViewModal: React.FC<ColorViewModalProps> = ({
   isOpen,
   onClose,
   storeId,
-  couponId,
+  colorId,
 }) => {
-  const [data, setData] = useState<CouponDetails | null>(null);
+  const [data, setData] = useState<ColorDetails | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (isOpen && couponId && storeId) {
+      if (isOpen && colorId && storeId) {
         try {
           setLoading(true);
-          const response = await axios.get(
-            `/api/${storeId}/coupons/${couponId}`
-          );
+          const response = await axios.get(`/api/${storeId}/colors/${colorId}`);
           if ("data" in response && typeof response.data === "object") {
-            setData(response.data as CouponDetails);
+            setData(response.data as ColorDetails);
           }
         } catch (error) {
-          toast.error("Failed to load coupon details.");
+          toast.error("Failed to load color details.");
           onClose();
         } finally {
           setLoading(false);
@@ -62,7 +58,7 @@ export const CouponViewModal: React.FC<CouponViewModalProps> = ({
     };
 
     fetchData();
-  }, [isOpen, couponId, storeId, onClose]);
+  }, [isOpen, colorId, storeId, onClose]);
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "";
@@ -75,26 +71,13 @@ export const CouponViewModal: React.FC<CouponViewModalProps> = ({
     });
   };
 
-  const formatValue = (val: number, type: string) => {
-    if (type === "PERCENT") {
-      return `${val}%`;
-    }
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(val);
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Tag className="w-5 h-5" />
-            Coupon Details
-          </DialogTitle>
+          <DialogTitle>Color Details</DialogTitle>
           <DialogDescription>
-            Information about this discount code.
+            Information about this color attribute.
           </DialogDescription>
         </DialogHeader>
 
@@ -103,71 +86,66 @@ export const CouponViewModal: React.FC<CouponViewModalProps> = ({
             <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
           </div>
         ) : data ? (
-          <div className="space-y-5">
+          <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 gap-2">
                 <Label className="text-neutral-500 dark:text-neutral-400">
-                  Code
+                  Name
                 </Label>
-                <div className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-800 text-lg font-bold text-primary tracking-wider">
-                  {data.code}
+                <div className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-800 text-sm font-medium">
+                  {data.name}
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 gap-2">
                 <Label className="text-neutral-500 dark:text-neutral-400">
-                  Type
+                  Value
                 </Label>
-                <div className="h-[52px] flex items-center">
-                  <Badge
-                    variant={data.type === "PERCENT" ? "default" : "secondary"}
-                    className="px-3 py-1 text-sm"
-                  >
-                    {data.type === "PERCENT" ? "Percentage" : "Fixed Amount"}
-                  </Badge>
+                <div className="flex items-center gap-x-3">
+                  <div className="flex-1 p-3 rounded-md bg-neutral-100 dark:bg-neutral-800 text-sm font-medium">
+                    {data.value}
+                  </div>
+                  <div
+                    className="h-10 w-10 rounded-full border border-neutral-300 shadow-sm"
+                    style={{ backgroundColor: data.value }}
+                  />
                 </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-neutral-500 dark:text-neutral-400">
-                Discount Value
-              </Label>
-              <div className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-800 text-base font-semibold">
-                {formatValue(data.value, data.type)}
-              </div>
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 gap-2">
                 <Label className="text-neutral-500 dark:text-neutral-400">
                   Created At
                 </Label>
                 <Input
                   disabled
                   value={formatDate(data.createdAt)}
-                  className="bg-neutral-100 dark:bg-neutral-800 border-none"
+                  className="bg-neutral-100 dark:bg-neutral-800 border-none focus-visible:ring-0"
                 />
               </div>
-              <div className="space-y-2">
+
+              <div className="grid grid-cols-1 gap-2">
                 <Label className="text-neutral-500 dark:text-neutral-400">
                   Updated At
                 </Label>
                 <Input
                   disabled
                   value={formatDate(data.updatedAt)}
-                  className="bg-neutral-100 dark:bg-neutral-800 border-none"
+                  className="bg-neutral-100 dark:bg-neutral-800 border-none focus-visible:ring-0"
                 />
               </div>
             </div>
 
-            <Separator />
+            <Separator className="my-2" />
 
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 gap-2">
               <Label className="text-xs text-neutral-400">System ID</Label>
-              <code className="block w-full p-2 rounded bg-neutral-100 dark:bg-neutral-800 font-mono text-xs text-neutral-500">
-                {data.id}
-              </code>
+              <div className="flex items-center gap-2">
+                <code className="relative rounded bg-neutral-100 px-[0.3rem] py-[0.2rem] font-mono text-xs dark:bg-neutral-800 w-full">
+                  {data.id}
+                </code>
+              </div>
             </div>
           </div>
         ) : (

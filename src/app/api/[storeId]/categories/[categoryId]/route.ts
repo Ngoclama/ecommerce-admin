@@ -5,33 +5,26 @@ import slugify from "slugify";
 
 export async function GET(
   req: Request,
-  { params }: { params: { storeId: string; categoryId: string } }
+  { params }: { params: { categoryId: string } }
 ) {
   try {
-    if (!params.categoryId)
-      return NextResponse.json(
-        { message: "Category ID is required" },
-        { status: 400 }
-      );
+    if (!params.categoryId) {
+      return new NextResponse("Category id is required", { status: 400 });
+    }
 
     const category = await prisma.category.findUnique({
-      where: { id: params.categoryId },
-      include: { billboard: true },
+      where: {
+        id: params.categoryId,
+      },
+      include: {
+        billboard: true, 
+      },
     });
-
-    if (!category)
-      return NextResponse.json(
-        { message: "Category not found" },
-        { status: 404 }
-      );
 
     return NextResponse.json(category);
   } catch (error) {
-    console.error("[CATEGORY_GET]", error);
-    return NextResponse.json(
-      { message: "Internal Server Error", error: String(error) },
-      { status: 500 }
-    );
+    console.log("[CATEGORY_GET]", error);
+    return new NextResponse("Internal error", { status: 500 });
   }
 }
 

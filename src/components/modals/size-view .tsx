@@ -1,15 +1,35 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import axios from "axios";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Size } from "@prisma/client";
 
 interface SizeViewModalProps {
   isOpen: boolean;
   onClose: () => void;
   storeId: string;
-  sizeId: string;
+  sizeId: string | null;
 }
+
+type SizeDetails = {
+  id: string;
+  name: string;
+  value: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export const SizeViewModal: React.FC<SizeViewModalProps> = ({
   isOpen,
@@ -17,99 +37,118 @@ export const SizeViewModal: React.FC<SizeViewModalProps> = ({
   storeId,
   sizeId,
 }) => {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<SizeDetails | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!isOpen || !sizeId) return;
     const fetchData = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/${storeId}/sizes/${sizeId}`);
-        const json = await res.json();
-        setData(json);
-      } catch (err) {
-        console.error("Error loading Size:", err);
-      } finally {
-        setLoading(false);
+      if (isOpen && sizeId && storeId) {
+        try {
+          setLoading(true);
+          const response = await axios.get(`/api/${storeId}/sizes/${sizeId}`);
+          if ("data" in response && typeof response.data === "object") {
+            setData(response.data as SizeDetails);
+          }
+        } catch (error) {
+          toast.error("Failed to load size details.");
+          onClose();
+        } finally {
+          setLoading(false);
+        }
       }
     };
+
     fetchData();
-  }, [isOpen, storeId, sizeId]);
+  }, [isOpen, sizeId, storeId, onClose]);
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-[9999] flex items-center justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          {/* Overlay */}
-          <motion.div
-            className="absolute inset-0"
-            onClick={onClose}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          />
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+        <DialogHeader>
+          <DialogTitle>Size Details</DialogTitle>
+          <DialogDescription>
+            Information about this size attribute.
+          </DialogDescription>
+        </DialogHeader>
 
-          {/* Content */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="relative z-50 w-11/12 max-w-lg rounded-2xl bg-white/90 dark:bg-neutral-900/90 
-                       border border-neutral-200 dark:border-neutral-800 backdrop-blur-lg 
-                       shadow-2xl p-6"
-          >
-            {/* Header */}
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100">
-                Size Details
-              </h2>
-              <button
-                onClick={onClose}
-                className="text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300 transition"
-              >
-                <X className="h-5 w-5" />
-              </button>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
+          </div>
+        ) : data ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-2">
+                <Label className="text-neutral-500 dark:text-neutral-400">
+                  Name
+                </Label>
+                <div className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-800 text-sm font-medium">
+                  {data.name}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2">
+                <Label className="text-neutral-500 dark:text-neutral-400">
+                  Value
+                </Label>
+                <div className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-800 text-sm font-medium">
+                  {data.value}
+                </div>
+              </div>
             </div>
 
-            {loading ? (
-              <div className="flex items-center justify-center py-10 text-neutral-500">
-                <Loader2 className="animate-spin mr-2 h-5 w-5" />
-                Loading...
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-2">
+                <Label className="text-neutral-500 dark:text-neutral-400">
+                  Created At
+                </Label>
+                <Input
+                  disabled
+                  value={formatDate(data.createdAt)}
+                  className="bg-neutral-100 dark:bg-neutral-800 border-none focus-visible:ring-0"
+                />
               </div>
-            ) : data ? (
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-neutral-500">ID:</p>
-                  <p className="text-base font-mono break-all">{data.id}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-neutral-500">Name:</p>
-                  <p className="text-base font-medium">{data.name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-neutral-500">Value:</p>
-                  <p className="text-base font-medium">{data.value}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-neutral-500">Created At:</p>
-                  <p className="text-base">
-                    {new Date(data.createdAt).toLocaleString()}
-                  </p>
-                </div>
+
+              <div className="grid grid-cols-1 gap-2">
+                <Label className="text-neutral-500 dark:text-neutral-400">
+                  Updated At
+                </Label>
+                <Input
+                  disabled
+                  value={formatDate(data.updatedAt)}
+                  className="bg-neutral-100 dark:bg-neutral-800 border-none focus-visible:ring-0"
+                />
               </div>
-            ) : (
-              <p className="text-center text-neutral-500">No data found.</p>
-            )}
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+            </div>
+
+            <Separator className="my-2" />
+
+            <div className="grid grid-cols-1 gap-2">
+              <Label className="text-xs text-neutral-400">System ID</Label>
+              <div className="flex items-center gap-2">
+                <code className="relative rounded bg-neutral-100 px-[0.3rem] py-[0.2rem] font-mono text-xs dark:bg-neutral-800 w-full">
+                  {data.id}
+                </code>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="py-4 text-center text-neutral-500">
+            No data found.
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };

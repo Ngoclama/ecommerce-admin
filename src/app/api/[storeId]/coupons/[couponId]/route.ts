@@ -4,11 +4,9 @@ import { auth } from "@clerk/nextjs/server";
 
 export async function GET(
   req: Request,
-  props: { params: Promise<{ couponId: string }> }
+  { params }: { params: { couponId: string } }
 ) {
   try {
-    const params = await props.params;
-
     if (!params.couponId) {
       return new NextResponse("Coupon id is required", { status: 400 });
     }

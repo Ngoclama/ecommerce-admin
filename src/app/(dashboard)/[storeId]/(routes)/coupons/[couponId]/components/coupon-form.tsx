@@ -103,8 +103,6 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
   return (
     <>
       <AlertModal
-        title="Delete Coupon"
-        description="Are you sure you want to delete this coupon?"
         isOpen={open}
         onClose={() => setOpen(false)}
         onConfirm={onDelete}

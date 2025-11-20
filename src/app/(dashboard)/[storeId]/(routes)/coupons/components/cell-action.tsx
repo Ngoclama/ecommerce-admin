@@ -55,12 +55,9 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
 
   return (
     <>
-      {/* Modal xác nhận xóa */}
       <AlertModal
         isOpen={openAlert}
         onClose={() => setOpenAlert(false)}
-        title="Are you sure?"
-        description="This action cannot be undone."
         onConfirm={handleDelete}
         loading={isLoading}
       />

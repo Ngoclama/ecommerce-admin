@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js" 
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -10,7 +10,7 @@ datasource db {
 // ─── 1. USER & AUTH (Đồng bộ với Clerk) ────────────────────────
 model User {
   id       String  @id @default(auto()) @map("_id") @db.ObjectId
-  clerkId  String  @unique // ID từ Clerk
+  clerkId  String  @unique
   email    String  @unique
   name     String?
   imageUrl String?
@@ -33,7 +33,7 @@ model Store {
   name String
 
   userId String // Đây là Clerk ID
-  user   User   @relation(fields: [userId], references: [clerkId]) // <--- THÊM DÒNG NÀY
+  user   User   @relation(fields: [userId], references: [clerkId])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -73,7 +73,7 @@ model Category {
   billboard   Billboard @relation(fields: [billboardId], references: [id])
 
   name String
-  slug String? // Cho SEO (ví-du-nhu-nay)
+  slug String? // Cho SEO 
 
   products  Product[]
   createdAt DateTime  @default(now())
@@ -87,8 +87,8 @@ model Size {
   id        String    @id @default(auto()) @map("_id") @db.ObjectId
   storeId   String    @db.ObjectId
   store     Store     @relation(fields: [storeId], references: [id])
-  name      String // Ví dụ: "XL"
-  value     String // Ví dụ: "Extra Large"
+  name      String
+  value     String
   products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -100,8 +100,8 @@ model Color {
   id        String    @id @default(auto()) @map("_id") @db.ObjectId
   storeId   String    @db.ObjectId
   store     Store     @relation(fields: [storeId], references: [id])
-  name      String // Ví dụ: "Đỏ"
-  value     String // Ví dụ: "#FF0000"
+  name      String
+  value     String
   products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -133,8 +133,8 @@ model Product {
   category   Category @relation(fields: [categoryId], references: [id])
 
   name        String
-  description String? // MỚI: Cho phép null
-  price       Float // Giá hiển thị
+  description String?
+  price       Float
 
   // Thuộc tính
   isFeatured Boolean @default(false)
@@ -156,7 +156,7 @@ model Product {
   images     Image[]
   orderItems OrderItem[]
   reviews    Review[]
-  wishlists  Wishlist[] // Quan hệ nhiều-nhiều ngầm định hoặc qua bảng phụ
+  wishlists  Wishlist[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -179,43 +179,50 @@ model Image {
   @@index([productId])
 }
 
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
 // ─── 5. ORDER & CHECKOUT (QUAN TRỌNG) ─────────────────────────
 model Order {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  storeId     String    @db.ObjectId
-  store       Store     @relation(fields: [storeId], references: [id])
-  
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  storeId String @db.ObjectId
+  store   Store  @relation(fields: [storeId], references: [id])
+
   // Thông tin khách hàng (nếu login)
-  userId      String?   @db.ObjectId 
-  user        User?     @relation(fields: [userId], references: [id]) // <--- THÊM DÒNG NÀY
-  
-  orderItems  OrderItem[]
-  isPaid      Boolean   @default(false)
-  
+  userId String? @db.ObjectId
+  user   User?   @relation(fields: [userId], references: [id])
+
+  orderItems OrderItem[]
+  isPaid     Boolean     @default(false)
+
   // Thông tin giao hàng
-  phone       String    @default("")
-  address     String    @default("")
-  
+  phone      String      @default("")
+  address    String      @default("")
+  status     OrderStatus @default(PENDING)
   // Thanh toán
-  totalPrice  Float     @default(0)
-  currency    String    @default("VND")
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  totalPrice Float       @default(0)
+  currency   String      @default("VND")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([storeId])
 }
 
-// Đã fix vấn đề Snapshot dữ liệu
 model OrderItem {
-  id        String  @id @default(auto()) @map("_id") @db.ObjectId
-  orderId   String  @db.ObjectId
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  orderId String @db.ObjectId
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   productId String  @db.ObjectId
-  product   Product @relation(fields: [productId], references: [id]) 
+  product   Product @relation(fields: [productId], references: [id])
 
-  quantity  Int     @default(1)
+  quantity Int @default(1)
 
   // SNAPSHOT FIELDS (Lưu cứng tên để hiển thị hóa đơn)
   productName  String?
@@ -223,11 +230,8 @@ model OrderItem {
   sizeName     String?
   colorName    String?
 
-  // RELATIONS (Thêm lại cái này để thống kê & khớp code backend)
-  sizeId    String? @db.ObjectId
-  colorId   String? @db.ObjectId
-  // Không cần relation @relation(...) ở đây cũng được để tránh phức tạp, 
-  // chỉ cần lưu ID là đủ để query ngược lại khi cần.
+  sizeId  String? @db.ObjectId
+  colorId String? @db.ObjectId
 
   @@index([orderId])
   @@index([productId])

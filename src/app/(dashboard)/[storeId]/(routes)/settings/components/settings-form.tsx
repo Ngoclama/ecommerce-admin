@@ -89,12 +89,9 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="space-y-8"
     >
-      {/* Modal xác nhận xóa */}
       <AlertModal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        title="Are you sure?"
-        description="This action cannot be undone."
         onConfirm={handleDelete}
         loading={isLoading}
       />

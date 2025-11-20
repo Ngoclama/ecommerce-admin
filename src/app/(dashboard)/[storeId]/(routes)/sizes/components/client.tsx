@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AlertModal } from "@/components/modals/alert-modal";
 import { SizeViewModal } from "@/components/modals/size-view ";
+import { useBulkSizeModal } from "@/hooks/use-bulk-size-modal";
 
 interface SizeClientProps {
   data: SizeColumn[];
@@ -28,6 +29,7 @@ interface SizeClientProps {
 export const SizeClient: React.FC<SizeClientProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
+  const { onOpen: openBulkModal } = useBulkSizeModal();
   const [isLoading, setIsLoading] = useState(false);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
@@ -56,8 +58,6 @@ export const SizeClient: React.FC<SizeClientProps> = ({ data }) => {
         onClose={() => setDeleteAllOpen(false)}
         onConfirm={handleDeleteAll}
         loading={isLoading}
-        title="Delete All Sizes?"
-        description="This action cannot be undone. All sizes will be permanently deleted."
       />
 
       <SizeViewModal
@@ -91,6 +91,13 @@ export const SizeClient: React.FC<SizeClientProps> = ({ data }) => {
             >
               <Plus className="h-4 w-4 " />
               Add New
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={openBulkModal}
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              Add Bulk
             </DropdownMenuItem>
 
             <DropdownMenuItem

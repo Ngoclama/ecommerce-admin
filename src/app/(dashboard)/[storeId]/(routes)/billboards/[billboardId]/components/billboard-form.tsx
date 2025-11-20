@@ -110,12 +110,9 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
 
   return (
     <>
-      {/* Modal xác nhận xóa */}
       <AlertModal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        title="Are you sure?"
-        description="This action cannot be undone."
         onConfirm={handleDelete}
         loading={isLoading}
       />

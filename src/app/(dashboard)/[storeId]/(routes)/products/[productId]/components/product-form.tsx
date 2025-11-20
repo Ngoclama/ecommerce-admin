@@ -57,9 +57,6 @@ const formSchema = z.object({
 
 export type ProductFormValues = z.infer<typeof formSchema>;
 
-//
-// ─── PRICE FIELD COMPONENT ─────────────────────────────────────────────────────
-//
 interface PriceFieldProps {
   form: any;
   isLoading?: boolean;
@@ -78,9 +75,7 @@ export const PriceField: React.FC<PriceFieldProps> = ({
 
   const placeholderText = useMemo(
     () =>
-      currency === "USD"
-        ? "Enter price in USD..."
-        : "Nhập giá sản phẩm (VNĐ)...",
+      currency === "USD" ? "Enter price in USD..." : "Enter price in VNĐ...",
     [currency]
   );
 
@@ -126,9 +121,6 @@ export const PriceField: React.FC<PriceFieldProps> = ({
   );
 };
 
-//
-// ─── MAIN PRODUCT FORM ─────────────────────────────────────────────────────────
-//
 interface ProductFormProps {
   initialData:
     | (Product & {
@@ -218,9 +210,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     }
   };
 
-  //
-  // ─── DELETE HANDLER ────────────────────────────────────────────────
-  //
   const handleDelete = async () => {
     try {
       setIsLoading(true);
@@ -238,16 +227,11 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     }
   };
 
-  //
-  // ─── RENDER ───────────────────────────────────────────────────────
-  //
   return (
     <>
       <AlertModal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        title="Are you sure?"
-        description="This action cannot be undone."
         onConfirm={handleDelete}
         loading={isLoading}
       />
@@ -456,7 +440,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                         Featured
                       </FormLabel>
                       <FormDescription className="text-xs text-neutral-500 dark:text-neutral-400">
-                        Hiển thị sản phẩm này trên trang chủ
+                        Featured
                       </FormDescription>
                     </div>
                   </FormItem>
@@ -483,7 +467,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                         Archived
                       </FormLabel>
                       <FormDescription className="text-xs text-neutral-500 dark:text-neutral-400">
-                        Sản phẩm này sẽ bị ẩn khỏi cửa hàng
+                        Archived
                       </FormDescription>
                     </div>
                   </FormItem>

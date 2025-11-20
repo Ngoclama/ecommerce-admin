@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { Copy, Edit, MoreHorizontal, Trash } from "lucide-react";
+import { Copy, Edit, Eye, MoreHorizontal, Trash } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
 
@@ -16,14 +16,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { AlertModal } from "@/components/modals/alert-modal";
-import { OrderColumn } from "./columns"; 
+import { OrderColumn } from "./columns";
+import { OrderViewModal } from "@/components/modals/order-view";
 interface CellActionProps {
-  data: OrderColumn; 
+  data: OrderColumn;
 }
 
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
+  const [openView, setOpenView] = useState(false); // Modal xem
 
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -52,11 +54,17 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       <AlertModal
         isOpen={open}
         onClose={() => setOpen(false)}
-        title="Are you sure?"
-        description="This action cannot be undone."
         onConfirm={onDelete}
         loading={loading}
       />
+      {openView && (
+        <OrderViewModal
+          isOpen={openView}
+          onClose={() => setOpenView(false)}
+          storeId={params.storeId as string}
+          orderId={data.id}
+        />
+      )}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="h-8 w-8 p-0">
@@ -70,8 +78,11 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
             <Copy className="mr-2 h-4 w-4" />
             Copy ID
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setOpenView(true)}>
+            <Eye className="mr-2 h-4 w-4" />
+            View Details
+          </DropdownMenuItem>
 
-          
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => setOpen(true)}

@@ -17,6 +17,10 @@ export const columns: ColumnDef<CouponColumn>[] = [
     header: "Code",
   },
   {
+    accessorKey: "name",
+    header: "Name",
+  },
+  {
     accessorKey: "type",
     header: "Type",
   },
