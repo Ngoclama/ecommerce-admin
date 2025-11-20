@@ -50,6 +50,10 @@ export function MainNav({
       label: "Orders",
     },
     {
+      href: `/${params.storeId}/coupons`,
+      label: "Coupons",
+    },
+    {
       href: `/${params.storeId}/settings`,
       label: "Settings",
     },
