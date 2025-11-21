@@ -2,20 +2,19 @@
 
 import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import axios from "axios";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Pencil, Trash2, Eye, Copy } from "lucide-react";
-import { BillboardColumn } from "./columns";
-import { da } from "zod/v4/locales";
-import { ApiAlert } from "@/components/ui/api-alert";
 import { toast } from "sonner";
 import { AlertModal } from "@/components/modals/alert-modal";
+import { BillboardColumn } from "./columns";
 import { BillboardViewModal } from "@/components/modals/billboard-view";
 
 interface CellActionProps {
@@ -25,110 +24,89 @@ interface CellActionProps {
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
-  const [open, setOpen] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [openAlert, setOpenAlert] = useState(false); // Modal xóa
+  const [openView, setOpenView] = useState(false); // Modal xem
+
+  const onCopy = (id: string) => {
+    navigator.clipboard.writeText(id);
+    toast.success("Size ID copied to clipboard");
+  };
 
   const handleEdit = () => {
     router.push(`/${params.storeId}/billboards/${data.id}`);
   };
 
-  const handleView = () => {
-    setViewModalOpen(true);
-  };
-
   const handleDelete = async () => {
     try {
       setIsLoading(true);
-      await fetch(`/api/${params.storeId}/billboards/${data.id}`, {
-        method: "DELETE",
-      });
+      await axios.delete(`/api/${params.storeId}/billboards/${data.id}`);
+
       toast.success("Billboard deleted successfully");
-      router.push(`/${params.storeId}/billboards`);
       router.refresh();
     } catch (error) {
-      toast.error("Make sure you removed all products and categories first.");
+      toast.error(
+        "Make sure you removed all orders using this billboard first."
+      );
     } finally {
       setIsLoading(false);
-      setIsOpen(false);
+      setOpenAlert(false);
     }
   };
-  const onCopy = (id: string) => {
-    navigator.clipboard.writeText(id);
-    toast.success("Billboard copied to clipboard");
-  };
+
   return (
     <>
       <AlertModal
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
+        isOpen={openAlert}
+        onClose={() => setOpenAlert(false)}
         onConfirm={handleDelete}
         loading={isLoading}
       />
-      <BillboardViewModal
-        isOpen={viewModalOpen}
-        onClose={() => setViewModalOpen(false)}
-        storeId={params.storeId as string}
-        billboardId={data.id}
-      />
-      <DropdownMenu open={open} onOpenChange={setOpen}>
+
+      {openView && (
+        <BillboardViewModal
+          isOpen={openView}
+          onClose={() => setOpenView(false)}
+          storeId={params.storeId as string}
+          billboardId={data.id}
+        />
+      )}
+
+      <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="h-8 w-8 p-0 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-          >
-            <MoreHorizontal className="h-4 w-4 text-neutral-500" />
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Open menu</span>
+            <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
 
-        <AnimatePresence>
-          {open && (
-            <DropdownMenuContent
-              align="end"
-              className="min-w-[150px] rounded-2xl bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border border-neutral-200 dark:border-neutral-800 shadow-lg p-1"
-              asChild
-            >
-              <motion.div
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 5 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
-              >
-                <DropdownMenuItem
-                  onClick={handleView}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
-                >
-                  <Eye className="h-4 w-4 text-neutral-500" />
-                  View
-                </DropdownMenuItem>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
 
-                <DropdownMenuItem
-                  onClick={handleEdit}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 transition"
-                >
-                  <Pencil className="h-4 w-4" />
-                  Edit
-                </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onCopy(data.id)}>
+            <Copy className="mr-2 h-4 w-4" />
+            Copy ID
+          </DropdownMenuItem>
 
-                <DropdownMenuItem
-                  onClick={() => setIsOpen(true)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 transition"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onCopy(data.id)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/30 text-white-600 dark:text-white-400 transition"
-                >
-                  <Copy className="h-4 w-4" />
-                  Copy
-                </DropdownMenuItem>
-              </motion.div>
-            </DropdownMenuContent>
-          )}
-        </AnimatePresence>
+          <DropdownMenuItem onClick={() => setOpenView(true)}>
+            <Eye className="mr-2 h-4 w-4" />
+            View Details
+          </DropdownMenuItem>
+
+          <DropdownMenuItem onClick={handleEdit}>
+            <Pencil className="mr-2 h-4 w-4" />
+            Edit
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={() => setOpenAlert(true)}
+            className="text-red-600 focus:text-red-600"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
       </DropdownMenu>
     </>
   );

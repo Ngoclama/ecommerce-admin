@@ -4,6 +4,10 @@ import React from "react";
 import { AlertModalProvider } from "@/hooks/use-alert-modal";
 import { AlertModal } from "@/components/modals/alert-modal";
 
+// Billboard
+import { BulkBillboardModalProvider } from "@/hooks/use-bulk-billboard-modal";
+import { BulkCreateBillboardModal } from "@/components/modals/bulk-billboard-modal";
+
 // Category
 import { BulkCategoryModalProvider } from "@/hooks/use-bulk-category-modal";
 import { BulkCreateCategoryModal } from "@/components/modals/bulk-category-modal";
@@ -27,13 +31,16 @@ export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
         <BulkSizeModalProvider>
           <BulkColorModalProvider>
             <BulkCouponModalProvider>
-              {" "}
-              {children}
-              <AlertModal />
-              <BulkCreateCategoryModal />
-              <BulkCreateSizeModal />
-              <BulkCreateColorModal />
-              <BulkCreateCouponModal />
+              <BulkBillboardModalProvider>
+                {children}
+                <AlertModal />
+
+                <BulkCreateBillboardModal />
+                <BulkCreateCategoryModal />
+                <BulkCreateSizeModal />
+                <BulkCreateColorModal />
+                <BulkCreateCouponModal />
+              </BulkBillboardModalProvider>
             </BulkCouponModalProvider>
           </BulkColorModalProvider>
         </BulkSizeModalProvider>

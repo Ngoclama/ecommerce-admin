@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ success: true, data: store }, { status: 201 }); // ✅ trả về format rõ ràng
+    return NextResponse.json({ success: true, data: store }, { status: 201 });
   } catch (error) {
     console.error("[STORE_POST]", error);
     return NextResponse.json(

@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AlertModal } from "@/components/modals/alert-modal";
 import { BillboardViewModal } from "@/components/modals/billboard-view";
+import { useBulkBillboardModal } from "@/hooks/use-bulk-billboard-modal";
 
 interface BillboardClientProps {
   data: BillboardColumn[];
@@ -28,9 +29,21 @@ interface BillboardClientProps {
 export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
+
   const [isLoading, setIsLoading] = useState(false);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+
+  const { onOpen: openBulkModal } = useBulkBillboardModal();
+
   const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedBillboardId, setSelectedBillboardId] = useState<string | null>(
+    null
+  );
+
+  const onOpenView = (id: string) => {
+    setSelectedBillboardId(id);
+    setViewModalOpen(true);
+  };
 
   const handleDeleteAll = async () => {
     try {
@@ -60,11 +73,13 @@ export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
 
       <BillboardViewModal
         isOpen={viewModalOpen}
-        onClose={() => setViewModalOpen(false)}
+        onClose={() => {
+          setViewModalOpen(false);
+          setSelectedBillboardId(null);
+        }}
         storeId={params.storeId as string}
-        billboardId=""
+        billboardId={selectedBillboardId}
       />
-
       <div className="flex items-center justify-between">
         <Heading
           title={`Billboards (${data.length})`}
@@ -89,6 +104,14 @@ export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
             >
               <Plus className="h-4 w-4 " />
               Add New
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={openBulkModal}
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              Add Bulk
             </DropdownMenuItem>
 
             <DropdownMenuItem

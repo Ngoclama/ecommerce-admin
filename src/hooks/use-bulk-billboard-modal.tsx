@@ -2,16 +2,16 @@
 
 import { createContext, useContext, useState } from "react";
 
-type BulkCategoryModalContextType = {
+type BulkBillboardModalContextType = {
   isOpen: boolean;
   onOpen: () => void;
   onClose: () => void;
 };
 
-const BulkCategoryModalContext =
-  createContext<BulkCategoryModalContextType | null>(null);
+const BulkBillboardModalContext =
+  createContext<BulkBillboardModalContextType | null>(null);
 
-export const BulkCategoryModalProvider = ({
+export const BulkBillboardModalProvider = ({
   children,
 }: {
   children: React.ReactNode;
@@ -22,17 +22,17 @@ export const BulkCategoryModalProvider = ({
   const onClose = () => setIsOpen(false);
 
   return (
-    <BulkCategoryModalContext.Provider value={{ isOpen, onOpen, onClose }}>
+    <BulkBillboardModalContext.Provider value={{ isOpen, onOpen, onClose }}>
       {children}
-    </BulkCategoryModalContext.Provider>
+    </BulkBillboardModalContext.Provider>
   );
 };
 
-export const useBulkCategoryModal = () => {
-  const context = useContext(BulkCategoryModalContext);
+export const useBulkBillboardModal = () => {
+  const context = useContext(BulkBillboardModalContext);
   if (!context)
     throw new Error(
-      "useBulkCategoryModal must be used within BulkCategoryModalProvider"
+      "useBulkBillboardModal must be used within BulkBillboardModalProvider"
     );
   return context;
 };

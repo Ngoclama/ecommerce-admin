@@ -1,119 +1,122 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Loader2 } from "lucide-react";
+import axios from "axios";
+import Image from "next/image";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { Loader2 } from "lucide-react";
 
 interface BillboardViewModalProps {
   isOpen: boolean;
   onClose: () => void;
+  billboardId: string | null;
   storeId: string;
-  billboardId: string;
+}
+
+interface Billboard {
+  id: string;
+  label: string;
+  imageUrl: string;
 }
 
 export const BillboardViewModal: React.FC<BillboardViewModalProps> = ({
   isOpen,
   onClose,
-  storeId,
   billboardId,
+  storeId,
 }) => {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [data, setData] = useState<Billboard | null>(null);
 
   useEffect(() => {
-    if (!isOpen || !billboardId) return;
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
+      if (!billboardId || !isOpen) return;
+
       try {
-        const res = await fetch(`/api/${storeId}/billboards/${billboardId}`);
-        const json = await res.json();
-        setData(json);
-      } catch (err) {
-        console.error("Error loading billboard:", err);
+        setIsLoading(true);
+        const response = await axios.get(
+          `/api/${storeId}/billboards/${billboardId}`
+        );
+        if ("data" in response && typeof response.data === "object") {
+          setData(response.data as Billboard);
+        }
+      } catch (error) {
+        console.error("Failed to fetch billboard details:", error);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
+
     fetchData();
-  }, [isOpen, storeId, billboardId]);
+  }, [billboardId, storeId, isOpen]);
+
+  if (!isMounted) return null;
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center mt-55 "
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          {/* Overlay */}
-          <motion.div
-            className="absolute inset-0"
-            onClick={onClose}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          />
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl overflow-hidden bg-white dark:bg-neutral-900">
+        <DialogHeader>
+          <DialogTitle>Billboard Details</DialogTitle>
+          <DialogDescription>
+            View the details of your billboard.
+          </DialogDescription>
+        </DialogHeader>
 
-          {/* Content */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="relative z-50 w-11/12 max-w-lg rounded-2xl bg-white/90 dark:bg-neutral-900/90 
-                       border border-neutral-200 dark:border-neutral-800 backdrop-blur-lg 
-                       shadow-2xl p-6"
-          >
-            {/* Header */}
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100">
-                Billboard Details
-              </h2>
-              <button
-                onClick={onClose}
-                className="text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300 transition"
-              >
-                <X className="h-5 w-5" />
-              </button>
+        <Separator />
+
+        {isLoading ? (
+          <div className="flex h-60 w-full items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
+          </div>
+        ) : data ? (
+          <div className="grid gap-6 md:grid-cols-2 mt-4">
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+                  Label
+                </h3>
+                <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mt-1">
+                  {data.label}
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+                  ID
+                </h3>
+                <p className="text-sm font-mono text-neutral-600 dark:text-neutral-300 mt-1 bg-neutral-100 dark:bg-neutral-800 p-2 rounded-md inline-block">
+                  {data.id}
+                </p>
+              </div>
             </div>
 
-            {loading ? (
-              <div className="flex items-center justify-center py-10 text-neutral-500">
-                <Loader2 className="animate-spin mr-2 h-5 w-5" />
-                Loading...
-              </div>
-            ) : data ? (
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-neutral-500">ID:</p>
-                  <p className="text-base font-mono break-all">{data.id}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-neutral-500">Label:</p>
-                  <p className="text-base font-medium">{data.label}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-neutral-500">Image:</p>
-                  <img
-                    src={data.imageUrls?.[0]}
-                    alt={data.label}
-                    className="w-50 rounded-lg mt-2 shadow-md"
-                  />
-                </div>
-                <div>
-                  <p className="text-sm text-neutral-500">Created At:</p>
-                  <p className="text-base">
-                    {new Date(data.createdAt).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-center text-neutral-500">No data found.</p>
-            )}
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+            <div className="aspect-video relative w-full overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800">
+              <Image
+                fill
+                src={data.imageUrl}
+                alt={data.label}
+                className="object-cover"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex h-40 items-center justify-center text-neutral-500">
+            No data found.
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };
