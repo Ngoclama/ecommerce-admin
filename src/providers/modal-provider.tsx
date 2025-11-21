@@ -16,7 +16,7 @@ import { BulkCreateSizeModal } from "@/components/modals/bulk-size-modal";
 import { BulkColorModalProvider } from "@/hooks/use-bulk-color-modal";
 import { BulkCreateColorModal } from "@/components/modals/bulk-color-modal";
 
-// Coupon (Mới thêm)
+// Coupon
 import { BulkCouponModalProvider } from "@/hooks/use-bulk-coupon-modal";
 import { BulkCreateCouponModal } from "@/components/modals/bulk-coupon-modal";
 
@@ -28,14 +28,12 @@ export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
           <BulkColorModalProvider>
             <BulkCouponModalProvider>
               {" "}
-              {/* <--- 1. Thêm Provider này */}
               {children}
-              {/* Global modals */}
               <AlertModal />
               <BulkCreateCategoryModal />
               <BulkCreateSizeModal />
               <BulkCreateColorModal />
-              <BulkCreateCouponModal /> {/* <--- 2. Thêm Modal này */}
+              <BulkCreateCouponModal />
             </BulkCouponModalProvider>
           </BulkColorModalProvider>
         </BulkSizeModalProvider>
