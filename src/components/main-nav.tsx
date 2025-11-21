@@ -41,6 +41,10 @@ export function MainNav({
       label: "Colors",
     },
     {
+      href: `/${params.storeId}/materials`,
+      label: "Materials",
+    },
+    {
       href: `/${params.storeId}/products`,
       label: "Products",
     },

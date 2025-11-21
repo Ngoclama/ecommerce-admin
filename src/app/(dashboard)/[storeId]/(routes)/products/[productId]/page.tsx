@@ -1,46 +1,60 @@
 import prisma from "@/lib/prisma";
 import { ProductForm } from "./components/product-form";
-import { ObjectId } from "bson";
+import { auth } from "@clerk/nextjs/server";
 
 const ProductPage = async ({
   params,
 }: {
-  params: { productId: string; storeId: string };
+  params: Promise<{ productId: string; storeId: string }>;
 }) => {
-  const isValidId = ObjectId.isValid(params.productId);
+  const { productId, storeId } = await params;
+  const { userId } = await auth();
 
-  const product = isValidId
-    ? await prisma.product.findUnique({
-        where: { id: params.productId },
-        include: { images: true },
-      })
-    : null;
+  
+  const product =
+    productId === "new"
+      ? null
+      : await prisma.product.findUnique({
+          where: {
+            id: productId,
+          },
+          include: {
+            images: true,
+          },
+        });
 
   const categories = await prisma.category.findMany({
     where: {
-      storeId: params.storeId,
+      storeId: storeId,
     },
   });
 
   const sizes = await prisma.size.findMany({
     where: {
-      storeId: params.storeId,
+      storeId: storeId,
     },
   });
 
   const colors = await prisma.color.findMany({
     where: {
-      storeId: params.storeId,
+      storeId: storeId,
+    },
+  });
+
+  const materials = await prisma.material.findMany({
+    where: {
+      storeId: storeId,
     },
   });
 
   return (
-    <div className="flex flex-col">
+    <div className="flex-col">
       <div className="flex-1 space-y-4 p-8 pt-6">
         <ProductForm
           categories={categories}
-          sizes={sizes}
           colors={colors}
+          sizes={sizes}
+          materials={materials} 
           initialData={product}
         />
       </div>

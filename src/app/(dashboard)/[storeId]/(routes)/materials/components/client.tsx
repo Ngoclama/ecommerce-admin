@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import { MoreHorizontal, Plus, Trash } from "lucide-react";
-import { ProductColumn, columns } from "./columns";
+import { MaterialColumn, columns } from "./columns";
 import { DataTable } from "@/components/ui/data-table";
 import { ApiList } from "@/components/ui/api-list";
 import {
@@ -19,30 +19,31 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AlertModal } from "@/components/modals/alert-modal";
-import { ProductViewModal } from "@/components/modals/product-view";
+import { useBulkMaterialModal } from "@/hooks/use-bulk-material-modal";
 
-interface ProductClientProps {
-  data: ProductColumn[];
+interface MaterialClientProps {
+  data: MaterialColumn[];
 }
 
-export const ProductClient: React.FC<ProductClientProps> = ({ data }) => {
+export const MaterialClient: React.FC<MaterialClientProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
+  const { onOpen: openBulkModal } = useBulkMaterialModal();
+
   const [isLoading, setIsLoading] = useState(false);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
-  const [viewModalOpen, setViewModalOpen] = useState(false);
 
   const handleDeleteAll = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`/api/${params.storeId}/products`, {
+      const res = await fetch(`/api/${params.storeId}/materials`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Failed to delete products");
-      toast.success("All products deleted successfully");
+      if (!res.ok) throw new Error("Failed to delete Materials");
+      toast.success("All Materials deleted successfully");
       router.refresh();
     } catch (error) {
-      toast.error("Failed to delete products. Check related items first.");
+      toast.error("Failed to delete Materials. Check related items first.");
     } finally {
       setIsLoading(false);
       setDeleteAllOpen(false);
@@ -58,17 +59,10 @@ export const ProductClient: React.FC<ProductClientProps> = ({ data }) => {
         loading={isLoading}
       />
 
-      <ProductViewModal
-        isOpen={viewModalOpen}
-        onClose={() => setViewModalOpen(false)}
-        storeId={params.storeId as string}
-        productId=""
-      />
-
       <div className="flex items-center justify-between">
         <Heading
-          title={`Products (${data.length})`}
-          description="Manage products for your store"
+          title={`Materials (${data.length})`}
+          description="Manage materials for your store"
         />
 
         <DropdownMenu>
@@ -80,15 +74,22 @@ export const ProductClient: React.FC<ProductClientProps> = ({ data }) => {
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>Product Actions</DropdownMenuLabel>
+            <DropdownMenuLabel>Materials Actions</DropdownMenuLabel>
             <DropdownMenuSeparator />
 
             <DropdownMenuItem
-              onClick={() => router.push(`/${params.storeId}/products/new`)}
+              onClick={() => router.push(`/${params.storeId}/materials/new`)}
               className="flex items-center gap-2 cursor-pointer"
             >
               <Plus className="h-4 w-4 " />
               Add New
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={openBulkModal}
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              Add Bulk
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -107,9 +108,9 @@ export const ProductClient: React.FC<ProductClientProps> = ({ data }) => {
 
       <DataTable searchKey="name" columns={columns} data={data} />
 
-      <Heading title="API" description="API Calls for products" />
+      <Heading title="API" description="API Calls for materials" />
       <Separator className="my-4" />
-      <ApiList entityName="products" entityIdName="productId" />
+      <ApiList entityName="materials" entityIdName="materialId" />
     </>
   );
 };

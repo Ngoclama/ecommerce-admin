@@ -1,30 +1,37 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+
+// --- Hooks Import ---
 import { AlertModalProvider } from "@/hooks/use-alert-modal";
-import { AlertModal } from "@/components/modals/alert-modal";
-
-// Billboard
 import { BulkBillboardModalProvider } from "@/hooks/use-bulk-billboard-modal";
-import { BulkCreateBillboardModal } from "@/components/modals/bulk-billboard-modal";
-
-// Category
 import { BulkCategoryModalProvider } from "@/hooks/use-bulk-category-modal";
-import { BulkCreateCategoryModal } from "@/components/modals/bulk-category-modal";
-
-// Size
 import { BulkSizeModalProvider } from "@/hooks/use-bulk-size-modal";
-import { BulkCreateSizeModal } from "@/components/modals/bulk-size-modal";
-
-// Color
 import { BulkColorModalProvider } from "@/hooks/use-bulk-color-modal";
-import { BulkCreateColorModal } from "@/components/modals/bulk-color-modal";
-
-// Coupon
 import { BulkCouponModalProvider } from "@/hooks/use-bulk-coupon-modal";
+import { BulkMaterialModalProvider } from "@/hooks/use-bulk-material-modal"; // MỚI
+
+// --- Modals Import ---
+import { AlertModal } from "@/components/modals/alert-modal";
+import { BulkCreateBillboardModal } from "@/components/modals/bulk-billboard-modal";
+import { BulkCreateCategoryModal } from "@/components/modals/bulk-category-modal";
+import { BulkCreateSizeModal } from "@/components/modals/bulk-size-modal";
+import { BulkCreateColorModal } from "@/components/modals/bulk-color-modal";
 import { BulkCreateCouponModal } from "@/components/modals/bulk-coupon-modal";
+import { BulkCreateMaterialModal } from "@/components/modals/bulk-material-modal"; // MỚI
 
 export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Ngăn chặn Hydration Error bằng cách chỉ render trên Client
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null;
+  }
+
   return (
     <AlertModalProvider>
       <BulkCategoryModalProvider>
@@ -32,14 +39,18 @@ export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
           <BulkColorModalProvider>
             <BulkCouponModalProvider>
               <BulkBillboardModalProvider>
-                {children}
-                <AlertModal />
+                <BulkMaterialModalProvider>
+                  {children}
 
-                <BulkCreateBillboardModal />
-                <BulkCreateCategoryModal />
-                <BulkCreateSizeModal />
-                <BulkCreateColorModal />
-                <BulkCreateCouponModal />
+                  {/* Global Modals */}
+                  <AlertModal />
+                  <BulkCreateBillboardModal />
+                  <BulkCreateCategoryModal />
+                  <BulkCreateSizeModal />
+                  <BulkCreateColorModal />
+                  <BulkCreateCouponModal />
+                  <BulkCreateMaterialModal />
+                </BulkMaterialModalProvider>
               </BulkBillboardModalProvider>
             </BulkCouponModalProvider>
           </BulkColorModalProvider>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import axios from "axios"; 
+import axios from "axios";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,11 +14,11 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Pencil, Trash2, Eye, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { AlertModal } from "@/components/modals/alert-modal";
-import { ProductViewModal } from "@/components/modals/product-view";
-import { ProductColumn } from "./columns";
+import { MaterialViewModal } from "@/components/modals/material-view";
+import { MaterialColumn } from "./columns";
 
 interface CellActionProps {
-  data: ProductColumn;
+  data: MaterialColumn;
 }
 
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
@@ -31,22 +31,24 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
 
   const onCopy = (id: string) => {
     navigator.clipboard.writeText(id);
-    toast.success("Product ID copied to clipboard");
+    toast.success("Material ID copied to clipboard");
   };
 
   const handleEdit = () => {
-    router.push(`/${params.storeId}/products/${data.id}`);
+    router.push(`/${params.storeId}/materials/${data.id}`);
   };
 
   const handleDelete = async () => {
     try {
       setIsLoading(true);
-      await axios.delete(`/api/${params.storeId}/products/${data.id}`);
+      await axios.delete(`/api/${params.storeId}/materials/${data.id}`);
 
-      toast.success("Product deleted successfully");
+      toast.success("Material deleted successfully");
       router.refresh();
     } catch (error) {
-      toast.error("Make sure you removed all orders using this product first.");
+      toast.error(
+        "Make sure you removed all orders using this material first."
+      );
     } finally {
       setIsLoading(false);
       setOpenAlert(false);
@@ -63,11 +65,11 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       />
 
       {openView && (
-        <ProductViewModal
+        <MaterialViewModal
           isOpen={openView}
           onClose={() => setOpenView(false)}
           storeId={params.storeId as string}
-          productId={data.id}
+          materialId={data.id}
         />
       )}
 
@@ -90,7 +92,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
           <DropdownMenuItem onClick={() => setOpenView(true)}>
             <Eye className="mr-2 h-4 w-4" />
             View Details
-          </DropdownMenuItem> 
+          </DropdownMenuItem>
 
           <DropdownMenuItem onClick={handleEdit}>
             <Pencil className="mr-2 h-4 w-4" />

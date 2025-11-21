@@ -1,15 +1,14 @@
 import * as z from "zod";
 
 export const productFormSchema = z.object({
-  name: z.string().min(1, "Product name is required"),
-  description: z.string().min(1, "Description is required"),
-  images: z
-    .array(z.object({ url: z.string().url("Invalid image URL") }))
-    .min(1, "At least one image is required"),
-  price: z.coerce.number().min(1, "Price is required"),
-  categoryId: z.string().min(1, "Category is required"),
-  sizeId: z.string().min(1, "Size is required"),
-  colorId: z.string().min(1, "Color is required"),
+  name: z.string().min(1),
+  images: z.object({ url: z.string() }).array(),
+  price: z.coerce.number().min(1),
+  categoryId: z.string().min(1),
+  colorId: z.string().min(1),
+  sizeId: z.string().min(1),
+  materialId: z.string().min(1),
+  description: z.string().default("").optional(),
   isFeatured: z.boolean().default(false).optional(),
   isArchived: z.boolean().default(false).optional(),
 });

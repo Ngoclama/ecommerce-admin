@@ -1,4 +1,13 @@
 {
     "vscode.tsc.compiler.alertOnError": "never",
-    "vscode.tsc.compiler.alertTSConfigChanges": "never"
+    "vscode.tsc.compiler.alertTSConfigChanges": "never",
+    "cSpell.words": [
+        "Danh",
+        "Doanh",
+        "hàng",
+        "phẩm",
+        "quan",
+        "tháng",
+        "theo"
+    ]
 }
