@@ -1,5 +1,5 @@
 "use client";
-import { BillboardViewModal } from "@/components/modals/billboard-view";
+
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -12,15 +12,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
-import { Billboard } from "@/generated/prisma";
+import { Billboard } from "@prisma/client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ImagePlus, Trash } from "lucide-react";
+import { Eye, Trash } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
 import { AlertModal } from "@/components/modals/alert-modal";
+import { BillboardViewModal } from "@/components/modals/billboard-view";
 import ImageUpload from "@/components/ui/image-upload";
 import { motion } from "framer-motion";
 
@@ -41,6 +42,7 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
   const router = useRouter();
   const params = useParams();
   const [isOpen, setIsOpen] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const title = initialData ? "Edit Billboard" : "Create Billboard";
@@ -117,7 +119,13 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
         loading={isLoading}
       />
 
-      {/* Header */}
+      <BillboardViewModal
+        isOpen={isViewOpen}
+        onClose={() => setIsViewOpen(false)}
+        billboardId={params.billboardId as string}
+        storeId={params.storeId as string}
+      />
+
       <div
         className="flex items-center justify-between px-6 py-4 
                  rounded-2xl border border-neutral-200 dark:border-neutral-800 
@@ -125,22 +133,36 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
                  shadow-md hover:shadow-lg transition-all duration-300"
       >
         <Heading title={title} description={description} />
-        {initialData && (
-          <Button
-            disabled={isLoading}
-            variant="destructive"
-            size="icon"
-            onClick={() => setIsOpen(true)}
-            className="rounded-xl hover:scale-105 transition-all"
-          >
-            <Trash className="h-5 w-5" />
-          </Button>
-        )}
+
+        <div className="flex items-center gap-2">
+          {initialData && (
+            <Button
+              disabled={isLoading}
+              variant="outline"
+              size="icon"
+              onClick={() => setIsViewOpen(true)}
+              className="rounded-xl hover:scale-105 transition-all"
+            >
+              <Eye className="h-5 w-5" />
+            </Button>
+          )}
+
+          {initialData && (
+            <Button
+              disabled={isLoading}
+              variant="destructive"
+              size="icon"
+              onClick={() => setIsOpen(true)}
+              className="rounded-xl hover:scale-105 transition-all"
+            >
+              <Trash className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
       </div>
 
       <Separator className="my-5" />
 
-      {/* Form */}
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -154,6 +176,28 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
                      dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 
                      shadow-md backdrop-blur-lg p-8 transition-all hover:shadow-xl"
           >
+            {/* Image Upload - ĐÃ SỬA LỖI Ở ĐÂY */}
+            <FormField
+              control={form.control}
+              name="imageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+                    Background Image
+                  </FormLabel>
+                  <FormControl>
+                    <ImageUpload
+                      disabled={isLoading}
+                      value={field.value ? [field.value] : []}
+                      onChange={(urls) => field.onChange(urls[0])}
+                      onRemove={() => field.onChange("")}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             {/* Label input */}
             <FormField
               control={form.control}
@@ -179,32 +223,17 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="imageUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Background Image</FormLabel>
-                  <FormControl>
-                    <ImageUpload
-                      disabled={isLoading}
-                      value={field.value ? [field.value] : []}
-                      onChange={(url) => field.onChange(url)}
-                      onRemove={() => field.onChange("")}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             {/* Submit button */}
             <div className="flex justify-end pt-4">
               <motion.div
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <Button disabled={isLoading} type="submit" variant={"outline"}>
+                <Button
+                  disabled={isLoading}
+                  type="submit"
+                  className="rounded-xl px-8"
+                >
                   {isLoading ? "Processing..." : action}
                 </Button>
               </motion.div>

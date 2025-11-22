@@ -25,6 +25,11 @@ export function MainNav({
       active: pathname === `/${params.storeId}`,
     },
     {
+      href: `/${params.storeId}/users`,
+      label: "Users",
+      active: pathname === `/${params.storeId}/users`,
+    },
+    {
       href: `/${params.storeId}/billboards`,
       label: "Billboards",
       active: pathname.includes("billboards"),
@@ -39,7 +44,7 @@ export function MainNav({
   const productDropdownRoutes = [
     {
       href: `/${params.storeId}/products`,
-      label: "Products List", 
+      label: "Products List",
       active: pathname === `/${params.storeId}/products`,
     },
     {
@@ -84,9 +89,16 @@ export function MainNav({
 
   const isDropdownActive = productDropdownRoutes.some((route) => route.active);
 
+  const glassEffect =
+    "bg-white/60 dark:bg-black/60 backdrop-blur-xl backdrop-saturate-150 border border-white/20 dark:border-white/10 shadow-lg";
+
   return (
     <nav
-      className={cn("flex items-center space-x-4 lg:space-x-6", className)}
+      className={cn(
+        "flex items-center space-x-4 lg:space-x-6 rounded-2xl px-4 py-2 transition-all duration-300",
+        glassEffect,
+        className
+      )}
       {...props}
     >
       {routes.map((route) => (
@@ -94,9 +106,9 @@ export function MainNav({
           key={route.href}
           href={route.href}
           className={cn(
-            "text-sm font-medium transition-colors hover:text-primary",
+            "text-sm font-medium transition-colors hover:text-primary px-3 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10",
             route.active
-              ? "text-black dark:text-white"
+              ? "text-black dark:text-white font-semibold bg-white/40 dark:bg-white/10 shadow-sm"
               : "text-muted-foreground"
           )}
         >
@@ -107,25 +119,36 @@ export function MainNav({
       <DropdownMenu>
         <DropdownMenuTrigger
           className={cn(
-            "flex items-center text-sm  transition-colors hover:text-primary outline-none",
+            "flex items-center text-sm font-medium transition-colors hover:text-primary outline-none px-3 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10",
             isDropdownActive
-              ? "text-black dark:text-white"
+              ? "text-black dark:text-white bg-white/40 dark:bg-white/10 shadow-sm"
               : "text-muted-foreground"
           )}
         >
-          <Box className="mr-1 h-4 w-4" /> Products {" "}
-          <ChevronDown className="ml-1 h-4 w-4" />
+          <Box className="mr-2 h-4 w-4" /> Products{" "}
+          <ChevronDown
+            className={`ml-1 h-3 w-3 transition-transform duration-200 ${
+              isDropdownActive ? "rotate-180" : ""
+            }`}
+          />
         </DropdownMenuTrigger>
-        <DropdownMenuContent>
+
+        <DropdownMenuContent
+          className={cn(
+            "w-48 mt-2 p-1",
+            glassEffect,
+            "border-none ring-1 ring-black/5"
+          )}
+        >
           {productDropdownRoutes.map((route) => (
             <DropdownMenuItem key={route.href} asChild>
               <Link
                 href={route.href}
                 className={cn(
-                  "w-full cursor-pointer",
+                  "w-full cursor-pointer rounded-md px-2 py-2 transition-colors hover:bg-black/5 dark:hover:bg-white/10",
                   route.active
-                    ? "font-bold bg-neutral-100 dark:bg-neutral-800"
-                    : ""
+                    ? "font-bold bg-primary/10 text-primary"
+                    : "text-neutral-700 dark:text-neutral-200"
                 )}
               >
                 {route.label}
@@ -140,9 +163,9 @@ export function MainNav({
           key={route.href}
           href={route.href}
           className={cn(
-            "text-sm font-medium transition-colors hover:text-primary",
+            "text-sm font-medium transition-colors hover:text-primary px-3 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10",
             route.active
-              ? "text-black dark:text-white"
+              ? "text-black dark:text-white font-semibold bg-white/40 dark:bg-white/10 shadow-sm"
               : "text-muted-foreground"
           )}
         >

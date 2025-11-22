@@ -1,8 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter, useParams } from "next/navigation";
 import axios from "axios";
+import { useState } from "react";
+import { Copy, Edit, MoreHorizontal, Trash, Eye } from "lucide-react";
+import { toast } from "sonner";
+import { useParams, useRouter } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,9 +14,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Pencil, Trash2, Eye, Copy } from "lucide-react";
-import { toast } from "sonner";
 import { AlertModal } from "@/components/modals/alert-modal";
 import { BillboardColumn } from "./columns";
 import { BillboardViewModal } from "@/components/modals/billboard-view";
@@ -24,54 +25,49 @@ interface CellActionProps {
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false); 
+  const [viewOpen, setViewOpen] = useState(false); 
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [openAlert, setOpenAlert] = useState(false); // Modal xóa
-  const [openView, setOpenView] = useState(false); // Modal xem
+  const onConfirm = async () => {
+    try {
+      setLoading(true);
+      await axios.delete(`/api/${params.storeId}/billboards/${data.id}`);
+      toast.success("Billboard deleted successfully.");
+      router.refresh();
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        "Make sure you removed all categories using this billboard first.";
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+      setOpen(false);
+    }
+  };
 
   const onCopy = (id: string) => {
     navigator.clipboard.writeText(id);
-    toast.success("Size ID copied to clipboard");
-  };
-
-  const handleEdit = () => {
-    router.push(`/${params.storeId}/billboards/${data.id}`);
-  };
-
-  const handleDelete = async () => {
-    try {
-      setIsLoading(true);
-      await axios.delete(`/api/${params.storeId}/billboards/${data.id}`);
-
-      toast.success("Billboard deleted successfully");
-      router.refresh();
-    } catch (error) {
-      toast.error(
-        "Make sure you removed all orders using this billboard first."
-      );
-    } finally {
-      setIsLoading(false);
-      setOpenAlert(false);
-    }
+    toast.success("Billboard ID copied to clipboard.");
   };
 
   return (
     <>
+      {/* Alert Modal Xóa */}
       <AlertModal
-        isOpen={openAlert}
-        onClose={() => setOpenAlert(false)}
-        onConfirm={handleDelete}
-        loading={isLoading}
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        onConfirm={onConfirm}
+        loading={loading}
       />
 
-      {openView && (
-        <BillboardViewModal
-          isOpen={openView}
-          onClose={() => setOpenView(false)}
-          storeId={params.storeId as string}
-          billboardId={data.id}
-        />
-      )}
+      {/* View Modal Xem Chi Tiết (Mới thêm) */}
+      <BillboardViewModal
+        isOpen={viewOpen}
+        onClose={() => setViewOpen(false)}
+        billboardId={data.id}
+        storeId={params.storeId as string}
+      />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -80,30 +76,37 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
 
+          {/* Copy ID */}
           <DropdownMenuItem onClick={() => onCopy(data.id)}>
             <Copy className="mr-2 h-4 w-4" />
             Copy ID
           </DropdownMenuItem>
 
-          <DropdownMenuItem onClick={() => setOpenView(true)}>
+          {/* Xem Chi Tiết  */}
+          <DropdownMenuItem onClick={() => setViewOpen(true)}>
             <Eye className="mr-2 h-4 w-4" />
             View Details
           </DropdownMenuItem>
 
-          <DropdownMenuItem onClick={handleEdit}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit
+          {/* Sửa */}
+          <DropdownMenuItem
+            onClick={() =>
+              router.push(`/${params.storeId}/billboards/${data.id}`)
+            }
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Update
           </DropdownMenuItem>
 
+          {/* Xóa */}
           <DropdownMenuItem
-            onClick={() => setOpenAlert(true)}
+            onClick={() => setOpen(true)}
             className="text-red-600 focus:text-red-600"
           >
-            <Trash2 className="mr-2 h-4 w-4" />
+            <Trash className="mr-2 h-4 w-4" />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>

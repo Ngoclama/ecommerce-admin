@@ -1,143 +1,157 @@
-// src/app/(dashboard)/[storeId]/(routes)/page.tsx
-import { getGraphRevenue } from "@/action/get-graph-revenue";
-import getSalesCount from "@/action/get-sale-count";
-import getStockCount from "@/action/get-stock-count";
-import getTotalRevenue from "@/action/get-total-revenue";
-import { getCategoryRevenue } from "@/action/get-category-revenue";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import {
+  CreditCard,
+  DollarSign,
+  Package,
+  Users,
+  Star,
+  Box,
+} from "lucide-react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
-import prisma from "@/lib/prisma";
+import { Overview } from "@/components/overview";
+import { OverviewPie } from "@/components/overview-pie"; 
 import { formatter } from "@/lib/utils";
-import { CreditCard, DollarSign, Package } from "lucide-react";
-import Overview from "@/components/overview";
-import { OverviewPie } from "@/components/overview-pie";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, ShoppingBag } from "lucide-react";
-import { getRecentOrders } from "@/action/get-recent-orders";
-const DashboardPage = async ({
-  params,
-}: {
-  params: Promise<{ storeId: string }>;
-}) => {
-  const { storeId } = await params;
 
- const [
-    totalRevenue,
-    salesCount,
-    stockCount,
-    graphRevenue,
-    categoryRevenue,
-    recentOrders
-  ] = await Promise.all([
-    getTotalRevenue(storeId),
-    getSalesCount(storeId),
-    getStockCount(storeId),
-    getGraphRevenue(storeId),
-    getCategoryRevenue(storeId),
-    getRecentOrders(storeId)
-  ]);
+import { getTotalRevenue } from "@/action/get-total-revenue";
+import { getSalesCount } from "@/action/get-sale-count";
+import { getStockCount } from "@/action/get-stock-count";
+import { getGraphRevenue } from "@/action/get-graph-revenue";
+import { getNewStats } from "@/action/get-new-stats"; 
+
+interface DashboardPageProps {
+  params: { storeId: string };
+}
+
+const DashboardPage: React.FC<DashboardPageProps> = async ({ params }) => {
+  const totalRevenue = await getTotalRevenue(params.storeId);
+  const salesCount = await getSalesCount(params.storeId);
+  const stockCount = await getStockCount(params.storeId);
+  const graphRevenue = await getGraphRevenue(params.storeId);
+  const newStats = await getNewStats(params.storeId);
+
+  const glassCardEffect =
+    "rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur-md shadow-md transition-all hover:shadow-lg";
+
   return (
     <div className="flex-col">
-      <div className="flex-1 p-8 pt-6 space-y-4">
-        <Heading title="Dashboard" description="Tổng quan cửa hàng của bạn" />
+      <div className="flex-1 space-y-6 p-8 pt-24">
+        {/* Header */}
+        <div className="rounded-2xl px-6 py-4 bg-white/70 dark:bg-neutral-900/60 backdrop-blur-xl shadow-sm">
+          <Heading title="Dashboard" description="Tổng quan cửa hàng của bạn" />
+        </div>
         <Separator />
 
-        <div className="grid grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
+          <Card className={glassCardEffect}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Tổng Doanh Thu
               </CardTitle>
-              <DollarSign className="w-4 h-4 text-muted-foreground" />
+              <DollarSign className="h-5 w-5 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold text-neutral-900 dark:text-white">
                 {formatter.format(totalRevenue)}
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Đơn hàng</CardTitle>
-              <CreditCard className="w-4 h-4 text-muted-foreground" />
+
+          <Card className={glassCardEffect}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Đã Bán</CardTitle>
+              <CreditCard className="h-5 w-5 text-blue-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">+{salesCount}</div>
+              <div className="text-2xl font-bold text-neutral-900 dark:text-white">
+                +{salesCount}
+              </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+
+          <Card className={glassCardEffect}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Sản phẩm tồn kho
+                Sản Phẩm Trong Kho
               </CardTitle>
-              <Package className="w-4 h-4 text-muted-foreground" />
+              <Package className="h-5 w-5 text-amber-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stockCount}</div>
+              <div className="text-2xl font-bold text-neutral-900 dark:text-white">
+                {stockCount}
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
-          <Card className="col-span-1 lg:col-span-4">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
+          <Card className={glassCardEffect}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Users Mới (Tháng)
+              </CardTitle>
+              <Users className="h-5 w-5 text-indigo-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-neutral-900 dark:text-white">
+                +{newStats.newUsersCount}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className={glassCardEffect}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Tổng VIP Users
+              </CardTitle>
+              <Star className="h-5 w-5 text-yellow-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-neutral-900 dark:text-white">
+                {newStats.totalVIPUsers}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className={glassCardEffect}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Sản Phẩm Mới (Tháng)
+              </CardTitle>
+              <Box className="h-5 w-5 text-cyan-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-neutral-900 dark:text-white">
+                +{newStats.newProductsCount}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+          <Card className={`${glassCardEffect} lg:col-span-2`}>
             <CardHeader>
-              <CardTitle>Doanh thu theo tháng</CardTitle>
+              <CardTitle className="text-xl font-semibold">
+                Biểu Đồ Doanh Thu (12 Tháng)
+              </CardTitle>
             </CardHeader>
             <CardContent className="pl-2">
               <Overview data={graphRevenue} />
             </CardContent>
           </Card>
 
-          <Card className="col-span-1 lg:col-span-3">
+          <Card className={glassCardEffect}>
             <CardHeader>
-              <CardTitle>Doanh thu theo Danh mục</CardTitle>
+              <CardTitle className="text-xl font-semibold">
+                Phân Phối Sản Phẩm
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">Theo Danh mục</p>
             </CardHeader>
-            <CardContent>
-              <OverviewPie data={categoryRevenue} />
+            <CardContent className="pl-2 flex justify-center">
+              <OverviewPie data={newStats.productDistribution} />
             </CardContent>
           </Card>
-
-          <div className="grid grid-cols-1 gap-4">
-            <Card className="col-span-1">
-              <CardHeader>
-                <CardTitle>Đơn hàng gần đây</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-8">
-                  {recentOrders.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      Chưa có đơn hàng nào.
-                    </p>
-                  )}
-                  {recentOrders.map((order) => (
-                    <div key={order.id} className="flex items-center">
-                      <Avatar className="h-9 w-9">
-                        <AvatarImage
-                          src={order.user?.imageUrl || ""}
-                          alt="Avatar"
-                        />
-                        <AvatarFallback>
-                          <User className="h-4 w-4" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="ml-4 space-y-1">
-                        <p className="text-sm font-medium leading-none">
-                          {order.user?.name || "Khách vãng lai"}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {order.phone || order.user?.email}
-                        </p>
-                      </div>
-                      <div className="ml-auto font-medium">
-                        +{formatter.format(order.totalPrice)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </div>
     </div>

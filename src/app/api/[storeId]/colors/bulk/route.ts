@@ -1,3 +1,4 @@
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
@@ -6,6 +7,19 @@ export async function POST(
   { params }: { params: { storeId: string } }
 ) {
   try {
+    const { userId } = await auth();
+    if (!userId) return new NextResponse("Unauthenticated", { status: 401 });
+
+    if (!params.storeId)
+      return new NextResponse("Store ID is required", { status: 400 });
+
+    const storeByUserId = await prisma.store.findFirst({
+      where: { id: params.storeId, userId },
+    });
+
+    if (!storeByUserId)
+      return new NextResponse("Unauthorized", { status: 403 });
+
     const body = await req.json();
     const { rows } = body;
 
@@ -13,20 +27,18 @@ export async function POST(
       return new NextResponse("Invalid data", { status: 400 });
     }
 
-    // Lọc dữ liệu hợp lệ (cần cả name và value)
     const data = rows
       .filter((r: any) => r.name && r.value)
       .map((r: any) => ({
-        name: r.name,
-        value: r.value, // Ví dụ: "#FF0000"
         storeId: params.storeId,
+        name: r.name,
+        value: r.value,
       }));
 
     if (data.length === 0) {
-      return new NextResponse("No valid colors to create", { status: 400 });
+      return new NextResponse("No valid data", { status: 400 });
     }
 
-    // Lưu hàng loạt vào DB
     await prisma.color.createMany({
       data,
     });

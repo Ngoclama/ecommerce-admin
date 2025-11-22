@@ -1,62 +1,41 @@
 const { PrismaClient } = require("@prisma/client");
-const slugify = require("slugify");
+const slugify = require("slugify"); // Bạn đã có thư viện này trong package.json
 
 const db = new PrismaClient();
 
 async function main() {
-  console.log("🔄 Bắt đầu sửa lỗi trùng lặp Slug...");
+  try {
+    // 1. Lấy tất cả sản phẩm chưa có slug hoặc slug rỗng
+    const products = await db.product.findMany({
+      where: {
+        OR: [{ slug: null }, { slug: "" }],
+      },
+    });
 
-  // Lấy tất cả category
-  const categories = await db.category.findMany();
+    console.log(`🔍 Tìm thấy ${products.length} sản phẩm cần cập nhật slug...`);
 
-  // Tạo một Set để theo dõi các slug đã dùng
-  const usedSlugs = new Set();
+    // 2. Cập nhật từng sản phẩm
+    for (const product of products) {
+      let newSlug = slugify(product.name, { lower: true, strict: true });
 
-  for (const category of categories) {
-    // 1. Tạo slug gốc từ tên (hoặc lấy slug hiện tại nếu có nhưng cần check trùng)
-    let baseSlug = category.slug;
+      // Xử lý trường hợp trùng slug (đơn giản: thêm id vào đuôi)
+      // Để chắc chắn không trùng, ta tạm thời append ID ngắn hoặc random string
+      const randomString = Math.random().toString(36).substring(2, 7);
+      newSlug = `${newSlug}-${randomString}`;
 
-    // Nếu chưa có slug hoặc slug nhìn giống số "1" (dữ liệu rác), hãy tạo lại từ name
-    if (!baseSlug || baseSlug === "1") {
-      baseSlug = slugify(category.name || "category", {
-        lower: true,
-        strict: true,
+      await db.product.update({
+        where: { id: product.id },
+        data: { slug: newSlug },
       });
+      console.log(`✅ Updated: ${product.name} -> ${newSlug}`);
     }
 
-    // 2. Kiểm tra trùng lặp và tạo slug duy nhất
-    let uniqueSlug = baseSlug;
-    let counter = 1;
-
-    while (usedSlugs.has(uniqueSlug)) {
-      // Nếu trùng, thêm số vào đuôi: ao-thun -> ao-thun-1
-      uniqueSlug = `${baseSlug}-${counter}`;
-      counter++;
-    }
-
-    // 3. Lưu vào danh sách đã dùng
-    usedSlugs.add(uniqueSlug);
-
-    // 4. Cập nhật vào Database (chỉ update nếu khác cũ)
-    if (category.slug !== uniqueSlug) {
-      console.log(
-        `🛠 Sửa: "${category.name}" | Cũ: ${category.slug} -> Mới: ${uniqueSlug}`
-      );
-      await db.category.update({
-        where: { id: category.id },
-        data: { slug: uniqueSlug },
-      });
-    }
+    console.log("🎉 Hoàn tất cập nhật slug!");
+  } catch (error) {
+    console.error("Lỗi:", error);
+  } finally {
+    await db.$disconnect();
   }
-
-  console.log("✅ Đã xử lý xong! Tất cả Slug giờ đây là duy nhất.");
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await db.$disconnect();
-  });
+main();

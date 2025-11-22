@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import prisma from "@/lib/prisma";
 import { formatter } from "@/lib/utils";
+
 import { OrderClient } from "./components/client";
 import { OrderColumn } from "./components/columns";
 
@@ -30,14 +31,13 @@ const OrdersPage = async ({ params }: { params: { storeId: string } }) => {
     products: item.orderItems
       .map((orderItem) => orderItem.product.name)
       .join(", "),
-    totalPrice: formatter.format(
-      item.orderItems.reduce((total, item) => {
-        return total + Number(item.product.price);
-      }, 0)
-    ),
+    totalPrice: formatter.format(Number(item.totalPrice)),
     isPaid: item.isPaid,
-    status: item.status,
     createdAt: format(item.createdAt, "MMMM do, yyyy"),
+    // Map các trường mới vào đây:
+    status: item.status || "PENDING",
+    shippingProvider: item.shippingProvider || null,
+    trackingNumber: item.trackingNumber || null,
   }));
 
   return (

@@ -1,88 +1,103 @@
 "use client";
 
-import Image from "next/image";
-import { Trash, ImagePlus } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ImagePlus, Trash } from "lucide-react";
+import Image from "next/image";
 import { UploadButton } from "@/utils/uploadthing";
+import { generateUploadButton } from "@uploadthing/react";
 import type { OurFileRouter } from "@/app/api/uploadthing/core";
+
+export const UploadButtonComponent = generateUploadButton<OurFileRouter>();
 
 interface ImageUploadProps {
   disabled?: boolean;
+  onChange: (value: string[]) => void;
+  onRemove: (value: string) => void;
   value: string[];
-  onChange: (url: string) => void;
-  onRemove: (url: string) => void;
 }
 
-const ImageUpload = ({
+const ImageUpload: React.FC<ImageUploadProps> = ({
   disabled,
-  value,
   onChange,
   onRemove,
-}: ImageUploadProps) => {
+  value,
+}) => {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null;
+  }
+
+  const safeValue = Array.isArray(value) ? value : [];
+  const validImages = safeValue.filter(
+    (url) => typeof url === "string" && url.trim() !== ""
+  );
+
   return (
-    <div className="flex flex-col gap-6">
-      {/* Preview ảnh */}
-      <div className="flex flex-wrap gap-5">
-        {value.map((url) => (
-          <div
-            key={url}
-            className="relative w-40 h-40 rounded-2xl overflow-hidden border border-white/20 
-                       bg-white/10 dark:bg-neutral-800/30 
-                       shadow-[0_4px_20px_rgba(0,0,0,0.15)] 
-                       backdrop-blur-xl backdrop-saturate-150
-                       transition-all hover:scale-[1.03]"
-          >
-            {/* Nút xoá */}
-            <div className="absolute top-2 right-2 z-10">
-              <Button
-                type="button"
-                onClick={() => onRemove(url)}
-                size="icon"
-                variant="destructive"
-                className="h-8 w-8 rounded-full shadow-lg backdrop-blur-md 
-                           bg-red-500/80 hover:bg-red-600/90 transition-all"
-              >
-                <Trash className="h-4 w-4 text-white" />
-              </Button>
+    <div className="space-y-4">
+      {validImages.length > 0 && (
+        <div className="mb-4 flex items-center gap-4 flex-wrap">
+          {validImages.map((url) => (
+            <div
+              key={url}
+              className="relative w-[200px] h-[200px] rounded-md overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-800"
+            >
+              <div className="z-10 absolute top-2 right-2">
+                <Button
+                  type="button"
+                  onClick={() => onRemove(url)}
+                  variant="destructive"
+                  size="icon"
+                  className="h-8 w-8 opacity-80 hover:opacity-100"
+                >
+                  <Trash className="h-4 w-4" />
+                </Button>
+              </div>
+              <Image
+                fill
+                className="object-cover"
+                alt="Image"
+                src={url}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
             </div>
+          ))}
+        </div>
+      )}
 
-            {/* Ảnh từ URL thật */}
-            <Image
-              fill
-              src={url}
-              alt="Uploaded image"
-              className="object-cover transition-all duration-300 hover:scale-105"
-            />
-          </div>
-        ))}
-      </div>
-
-      {/* Nút UploadThing */}
-      <UploadButton
+      <UploadButtonComponent
         endpoint="imageUploader"
         onClientUploadComplete={(res) => {
-          if (!res) return;
-          for (const file of res) {
-            onChange(file.url);
+          if (res && res.length > 0) {
+            // Lấy danh sách URL mới từ response
+            const newUrls = res.map((file) => file.ufsUrl || file.url);
+            onChange(newUrls);
           }
         }}
-        onUploadError={(err) => console.error(err)}
+        onUploadError={(error: Error) => {
+          console.log(error);
+          alert(`ERROR! ${error.message}`);
+        }}
         appearance={{
           button:
-            "flex flex-col items-center justify-center gap-2 w-40 h-40 border-2 border-dashed rounded-2xl cursor-pointer text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white/10 dark:bg-neutral-900/40 shadow-inner backdrop-blur-xl transition-all hover:scale-[1.03]",
+            "bg-neutral-100 text-neutral-800 border border-neutral-300 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-white dark:border-neutral-700 w-full h-[100px] flex flex-col gap-2 transition-colors",
+          allowedContent: "hidden",
         }}
         content={{
-          button: (
-            <div className="flex flex-col items-center gap-1">
-              <ImagePlus className="w-6 h-6 opacity-80" />
-              <span>Upload Image</span>
-
-              {/* Dòng mô tả thêm */}
-              <span className="text-[10px] text-neutral-500 dark:text-neutral-400">
-                Upload Image
-              </span>
-            </div>
-          ),
+          button({ ready }) {
+            if (ready)
+              return (
+                <div className="flex flex-col items-center gap-2 text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                  <ImagePlus className="h-6 w-6" /> Upload Images
+                </div>
+              );
+            return "Getting ready...";
+          },
         }}
       />
     </div>

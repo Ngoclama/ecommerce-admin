@@ -43,7 +43,6 @@ const AlertModalWrapper: React.FC = () => {
 export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
   const [isMounted, setIsMounted] = useState(false);
 
-  // Ngăn chặn Hydration Error bằng cách chỉ render trên Client
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -58,7 +57,6 @@ export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
                 <BulkMaterialModalProvider>
                   {children}
 
-                  {/* Global Modals (render only after mount to keep hook order stable) */}
                   {isMounted && (
                     <>
                       <AlertModalWrapper />

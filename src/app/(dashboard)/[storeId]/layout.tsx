@@ -2,8 +2,8 @@ import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/navbar";
-import { StoreModal } from "@/components/modals/store-modal";
-import { Inter } from "next/font/google";
+import { cn } from "@/lib/utils";
+
 export default async function DashboardLayout({
   children,
   params,
@@ -15,6 +15,7 @@ export default async function DashboardLayout({
   if (!userId) {
     redirect("/sign-in");
   }
+
   const store = await prisma.store.findFirst({
     where: {
       id: params.storeId,
@@ -28,9 +29,16 @@ export default async function DashboardLayout({
 
   return (
     <>
-      <Navbar></Navbar>
-      <StoreModal />
-      <div className="max-w-full px-6 md:px-10 py-10">{children}</div>
+      <Navbar />
+
+      <div
+        className={cn(
+          "max-w-full px-4 md:px-10 pt-20 pb-10 min-h-screen",
+          "dark:bg-neutral-950/50"
+        )}
+      >
+        {children}
+      </div>
     </>
   );
 }

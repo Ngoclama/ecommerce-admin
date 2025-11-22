@@ -12,21 +12,22 @@ import {
 import { Input } from "@/components/ui/input";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
-import { Color } from "@/generated/prisma";
+import { Color } from "@prisma/client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Trash } from "lucide-react";
+import { Eye, Trash } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
 import { AlertModal } from "@/components/modals/alert-modal";
+import { ColorViewModal } from "@/components/modals/color-view";
 import { motion } from "framer-motion";
 
 const formSchema = z.object({
-  name: z.string().min(1, "Color name is required"),
+  name: z.string().min(1, "Name is required"),
   value: z.string().min(4).regex(/^#/, {
-    message: "Color value must be a valid hex code",
+    message: "String must be a valid hex code (e.g., #FF0000)",
   }),
 });
 
@@ -40,6 +41,7 @@ export const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
   const router = useRouter();
   const params = useParams();
   const [isOpen, setIsOpen] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const title = initialData ? "Edit Color" : "Create Color";
@@ -50,37 +52,29 @@ export const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
       name: "",
-      value: "",
+      value: "#000000", // Mặc định màu đen nếu tạo mới
     },
   });
 
   const onSubmit = async (data: ColorFormValues) => {
     try {
       setIsLoading(true);
-
       const endpoint = initialData
         ? `/api/${params.storeId}/colors/${params.colorId}`
         : `/api/${params.storeId}/colors`;
-
       const method = initialData ? "PATCH" : "POST";
 
-      const res = await fetch(endpoint, {
+      await fetch(endpoint, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
 
-      if (!res.ok)
-        throw new Error(
-          initialData ? "Failed to update color" : "Failed to create color"
-        );
-
       toast.success(initialData ? "Color updated!" : "Color created!");
       router.refresh();
       router.push(`/${params.storeId}/colors`);
     } catch (error) {
-      toast.error("Something went wrong!");
-      console.error("[onSubmit Color]", error);
+      toast.error("Something went wrong.");
     } finally {
       setIsLoading(false);
     }
@@ -92,9 +86,9 @@ export const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
       await fetch(`/api/${params.storeId}/colors/${params.colorId}`, {
         method: "DELETE",
       });
-      toast.success("Color deleted successfully");
-      router.push(`/${params.storeId}/colors`);
+      toast.success("Color deleted.");
       router.refresh();
+      router.push(`/${params.storeId}/colors`);
     } catch (error) {
       toast.error("Make sure you removed all products using this color first.");
     } finally {
@@ -112,24 +106,39 @@ export const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
         loading={isLoading}
       />
 
-      <div
-        className="flex items-center justify-between px-6 py-4 
-                 rounded-2xl border border-neutral-200 dark:border-neutral-800 
-                 bg-white/70 dark:bg-neutral-900/60 backdrop-blur-xl 
-                 shadow-md hover:shadow-lg transition-all duration-300"
-      >
+      <ColorViewModal
+        isOpen={isViewOpen}
+        onClose={() => setIsViewOpen(false)}
+        colorId={params.colorId as string}
+        storeId={params.storeId as string}
+      />
+
+      <div className="flex items-center justify-between px-6 py-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur-xl shadow-md hover:shadow-lg transition-all duration-300">
         <Heading title={title} description={description} />
-        {initialData && (
-          <Button
-            disabled={isLoading}
-            variant="destructive"
-            size="icon"
-            onClick={() => setIsOpen(true)}
-            className="rounded-xl hover:scale-105 transition-all"
-          >
-            <Trash className="h-5 w-5" />
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {initialData && (
+            <Button
+              disabled={isLoading}
+              variant="outline"
+              size="icon"
+              onClick={() => setIsViewOpen(true)}
+              className="rounded-xl hover:scale-105 transition-all"
+            >
+              <Eye className="h-5 w-5" />
+            </Button>
+          )}
+          {initialData && (
+            <Button
+              disabled={isLoading}
+              variant="destructive"
+              size="icon"
+              onClick={() => setIsOpen(true)}
+              className="rounded-xl hover:scale-105 transition-all"
+            >
+              <Trash className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
       </div>
 
       <Separator className="my-5" />
@@ -142,78 +151,78 @@ export const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-8 rounded-2xl border border-neutral-200 
-                     dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 
-                     shadow-md backdrop-blur-lg p-8 transition-all hover:shadow-xl"
+            transition={{ duration: 0.4 }}
+            className="flex flex-col gap-8 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 shadow-md backdrop-blur-lg p-8"
           >
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
-                    Name
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Enter color name..."
-                      disabled={isLoading}
-                      {...field}
-                      className="rounded-xl border border-neutral-300 dark:border-neutral-700 
-                               focus-visible:ring-2 focus-visible:ring-blue-500/50 
-                               focus-visible:border-blue-400 dark:focus-visible:ring-blue-400/50 
-                               transition-all bg-white/80 dark:bg-neutral-800/80 backdrop-blur-md"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="value"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
-                    Value
-                  </FormLabel>
-                  <FormControl>
-                    <div className="flex items-center gap-x-4">
-                      <input
-                        type="color"
-                        disabled={isLoading}
-                        value={field.value}
-                        onChange={(e) => field.onChange(e.target.value)}
-                        className="w-12 h-12 cursor-pointer rounded-md border border-neutral-300 
-               dark:border-neutral-700 bg-transparent p-0"
-                        title="Enter color name.."
-                      />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
                       <Input
-                        placeholder="#FFFFFF"
                         disabled={isLoading}
-                        value={field.value}
-                        onChange={(e) => field.onChange(e.target.value)}
-                        className="rounded-xl border border-neutral-300 dark:border-neutral-700 
-             focus-visible:ring-2 focus-visible:ring-blue-500/50 
-             focus-visible:border-blue-400 dark:focus-visible:ring-blue-400/50 
-             transition-all bg-white/80 dark:bg-neutral-800/80 backdrop-blur-md w-32"
+                        placeholder="Color name (e.g. Red)"
+                        {...field}
+                        className="rounded-xl border-neutral-300 dark:border-neutral-700 focus-visible:ring-blue-500/50"
                       />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </motion.div>
-          <div className="flex justify-end pt-4">
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-              <Button disabled={isLoading} type="submit" variant={"outline"}>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="value"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Value</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center gap-4">
+                        <div className="relative h-10 w-10 rounded-full overflow-hidden shadow-sm border cursor-pointer hover:scale-110 transition-transform">
+                          <input
+                            type="color"
+                            disabled={isLoading}
+                            value={field.value}
+                            onChange={(e) => field.onChange(e.target.value)}
+                            className="absolute -top-2 -left-2 h-16 w-16 p-0 border-0 cursor-pointer opacity-0"
+                            title="Choose a color"
+                          />
+                          <div
+                            className="w-full h-full pointer-events-none"
+                            style={{ backgroundColor: field.value }}
+                          />
+                        </div>
+
+                        {/* Hex Code Input */}
+                        <Input
+                          disabled={isLoading}
+                          placeholder="Hex code (e.g. #FF0000)"
+                          {...field}
+                          className="rounded-xl border-neutral-300 dark:border-neutral-700 focus-visible:ring-blue-500/50 uppercase font-mono"
+                          maxLength={7}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <Button
+                disabled={isLoading}
+                type="submit"
+                className="rounded-xl px-8"
+              >
                 {isLoading ? "Processing..." : action}
               </Button>
-            </motion.div>
-          </div>
+            </div>
+          </motion.div>
         </form>
       </Form>
     </>

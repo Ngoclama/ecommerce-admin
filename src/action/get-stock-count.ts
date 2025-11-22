@@ -1,0 +1,15 @@
+import prisma from "@/lib/prisma";
+
+export const getStockCount = async (storeId: string) => {
+  const stockCount = await prisma.product.count({
+    where: {
+      storeId,
+      isArchived: false,
+      inventory: {
+        gt: 0,
+      },
+    },
+  });
+
+  return stockCount;
+};

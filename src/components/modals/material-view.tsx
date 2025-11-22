@@ -1,155 +1,131 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import axios from "axios";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import axios from "axios";
-import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Loader2, Calendar, Layers, Hash } from "lucide-react";
+import { format } from "date-fns";
 
 interface MaterialViewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  storeId: string;
   materialId: string | null;
+  storeId: string;
 }
 
-type MaterialDetails = {
+interface Material {
   id: string;
   name: string;
   value: string;
   createdAt: string;
-  updatedAt: string;
-};
+}
 
 export const MaterialViewModal: React.FC<MaterialViewModalProps> = ({
   isOpen,
   onClose,
-  storeId,
   materialId,
+  storeId,
 }) => {
-  const [data, setData] = useState<MaterialDetails | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [data, setData] = useState<Material | null>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (isOpen && materialId && storeId) {
-        try {
-          setLoading(true);
-          const response = await axios.get(`/api/${storeId}/materials/${materialId}`);
-          if ("data" in response && typeof response.data === "object") {
-            setData(response.data as MaterialDetails);
-          }
-        } catch (error) {
-          toast.error("Failed to load material details.");
-          onClose();
-        } finally {
-          setLoading(false);
+      if (!materialId || !isOpen) return;
+
+      try {
+        setIsLoading(true);
+        const response = await axios.get(
+          `/api/${storeId}/materials/${materialId}`
+        );
+        if (response.data) {
+          setData(response.data as Material);
         }
+      } catch (error) {
+        console.error("Failed to fetch material details:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchData();
-  }, [isOpen, materialId, storeId, onClose]);
+  }, [materialId, storeId, isOpen]);
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  if (!isMounted) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+      <DialogContent className="max-w-md overflow-hidden bg-white dark:bg-neutral-900">
         <DialogHeader>
           <DialogTitle>Material Details</DialogTitle>
           <DialogDescription>
-            Information about this material attribute.
+            Information about this material.
           </DialogDescription>
         </DialogHeader>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
+        <Separator />
+
+        {isLoading ? (
+          <div className="flex h-40 w-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
           </div>
         ) : data ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid grid-cols-1 gap-2">
-                <Label className="text-neutral-500 dark:text-neutral-400">
+          <div className="space-y-6 pt-2">
+            {/* Name Section */}
+            <div className="p-4 rounded-lg border bg-neutral-50 dark:bg-neutral-800/50 flex items-start gap-3">
+              <div className="p-2 bg-white dark:bg-neutral-900 rounded-md border shadow-sm">
+                <Layers className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
                   Name
-                </Label>
-                <div className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-800 text-sm font-medium">
+                </h3>
+                <p className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
                   {data.name}
-                </div>
+                </p>
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 gap-2">
-                <Label className="text-neutral-500 dark:text-neutral-400">
-                  Value
-                </Label>
-                <div className="flex items-center gap-x-3">
-                  <div className="flex-1 p-3 rounded-md bg-neutral-100 dark:bg-neutral-800 text-sm font-medium">
-                    {data.value}
-                  </div>
-                  <div
-                    className="h-10 w-10 rounded-full border border-neutral-300 shadow-sm"
-                    style={{ backgroundColor: data.value }}
-                  />
+            <div className="grid grid-cols-1 gap-4">
+              {/* Value */}
+              <div>
+                <h3 className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1 flex items-center gap-1">
+                  <Hash className="h-3 w-3" /> Value
+                </h3>
+                <div className="text-sm text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 px-3 py-2 rounded-md border">
+                  {data.value}
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid grid-cols-1 gap-2">
-                <Label className="text-neutral-500 dark:text-neutral-400">
-                  Created At
-                </Label>
-                <Input
-                  disabled
-                  value={formatDate(data.createdAt)}
-                  className="bg-neutral-100 dark:bg-neutral-800 border-none focus-visible:ring-0"
-                />
+            {/* Footer Info */}
+            <div className="flex items-center justify-between text-xs text-neutral-500 border-t pt-4">
+              <div className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                <span>
+                  Created:{" "}
+                  {data.createdAt
+                    ? format(new Date(data.createdAt), "MMM do, yyyy")
+                    : "Unknown"}
+                </span>
               </div>
-
-              <div className="grid grid-cols-1 gap-2">
-                <Label className="text-neutral-500 dark:text-neutral-400">
-                  Updated At
-                </Label>
-                <Input
-                  disabled
-                  value={formatDate(data.updatedAt)}
-                  className="bg-neutral-100 dark:bg-neutral-800 border-none focus-visible:ring-0"
-                />
-              </div>
-            </div>
-
-            <Separator className="my-2" />
-
-            <div className="grid grid-cols-1 gap-2">
-              <Label className="text-xs text-neutral-400">System ID</Label>
-              <div className="flex items-center gap-2">
-                <code className="relative rounded bg-neutral-100 px-[0.3rem] py-[0.2rem] font-mono text-xs dark:bg-neutral-800 w-full">
-                  {data.id}
-                </code>
-              </div>
+              <div className="font-mono text-[10px]">ID: {data.id}</div>
             </div>
           </div>
         ) : (
-          <div className="py-4 text-center text-neutral-500">
+          <div className="flex h-40 items-center justify-center text-neutral-500">
             No data found.
           </div>
         )}

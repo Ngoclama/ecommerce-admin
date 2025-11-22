@@ -3,14 +3,13 @@
 import { useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { NumericFormat } from "react-number-format";
-import TextareaAutosize from "react-textarea-autosize";
 import { motion } from "framer-motion";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Trash } from "lucide-react";
-
+import { Trash, Eye } from "lucide-react";
+import { Editor } from "@/components/ui/editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -33,9 +32,9 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertModal } from "@/components/modals/alert-modal";
+import { ProductViewModal } from "@/components/modals/product-view";
 import ImageUpload from "@/components/ui/image-upload";
 
-// Thêm Material vào import
 import {
   Category,
   Color,
@@ -43,19 +42,17 @@ import {
   Product,
   Size,
   Material,
-} from "@/generated/prisma";
+} from "@prisma/client";
 
-//
-// ─── ZOD SCHEMA UPDATE ────────────────────────────────────────────────────────
-//
 const formSchema = z.object({
   name: z.string().min(1, "Product label is required"),
-  images: z.array(z.object({ url: z.string() })),
+  images: z
+    .array(z.object({ url: z.string() }))
+    .min(1, "At least one image is required"),
   price: z.preprocess(
     (val) => Number(val),
     z.number().min(0, "Price must be greater than or equal to 0")
   ),
-  // Mới: Inventory
   inventory: z.preprocess(
     (val) => Number(val),
     z.number().min(0, "Inventory must be 0 or more")
@@ -64,9 +61,7 @@ const formSchema = z.object({
   categoryId: z.string().min(1, "Category is required"),
   sizeId: z.string().min(1, "Size is required"),
   colorId: z.string().min(1, "Color is required"),
-  // Mới: Material (Optional vì trong DB là String?)
   materialId: z.string().optional(),
-  // Mới: Gender
   gender: z.enum(["MEN", "WOMEN", "KIDS", "UNISEX"]).default("UNISEX"),
   isFeatured: z.boolean().default(false).optional(),
   isArchived: z.boolean().default(false).optional(),
@@ -147,7 +142,7 @@ interface ProductFormProps {
   categories: Category[];
   sizes: Size[];
   colors: Color[];
-  materials: Material[]; // Mới: Thêm materials vào props
+  materials: Material[];
 }
 
 export const ProductForm: React.FC<ProductFormProps> = ({
@@ -155,11 +150,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   categories,
   sizes,
   colors,
-  materials, // Destructure materials
+  materials,
 }) => {
   const router = useRouter();
   const params = useParams();
   const [isOpen, setIsOpen] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const title = initialData ? "Edit Product" : "Create Product";
@@ -177,7 +173,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
           categoryId: initialData.categoryId ?? "",
           sizeId: initialData.sizeId ?? "",
           colorId: initialData.colorId ?? "",
-          // Map các trường mới
           inventory: initialData.inventory ?? 10,
           materialId: initialData.materialId ?? "",
           gender:
@@ -191,7 +186,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
           name: "",
           description: "",
           price: 0,
-          inventory: 10, // Default inventory
+          inventory: 10,
           categoryId: "",
           sizeId: "",
           colorId: "",
@@ -261,6 +256,13 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         loading={isLoading}
       />
 
+      <ProductViewModal
+        isOpen={isViewOpen}
+        onClose={() => setIsViewOpen(false)}
+        productId={params.productId as string}
+        storeId={params.storeId as string}
+      />
+
       <div
         className="flex items-center justify-between px-6 py-4 
                 rounded-2xl border border-white/20 dark:border-white/10 
@@ -270,17 +272,32 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 transition-all duration-300 hover:shadow-[0_12px_40px_rgba(0,0,0,0.25)]"
       >
         <Heading title={title} description={description} />
-        {initialData && (
-          <Button
-            disabled={isLoading}
-            variant="destructive"
-            size="icon"
-            onClick={() => setIsOpen(true)}
-            className="rounded-xl backdrop-blur-md bg-red-500/80 hover:bg-red-600/90 text-white shadow-lg hover:scale-105 transition-all"
-          >
-            <Trash className="h-5 w-5" />
-          </Button>
-        )}
+
+        <div className="flex items-center gap-2">
+          {initialData && (
+            <Button
+              disabled={isLoading}
+              variant="outline"
+              size="icon"
+              onClick={() => setIsViewOpen(true)}
+              className="rounded-xl backdrop-blur-md bg-white/20 hover:bg-white/30 shadow-sm hover:scale-105 transition-all"
+            >
+              <Eye className="h-5 w-5" />
+            </Button>
+          )}
+
+          {initialData && (
+            <Button
+              disabled={isLoading}
+              variant="destructive"
+              size="icon"
+              onClick={() => setIsOpen(true)}
+              className="rounded-xl backdrop-blur-md bg-red-500/80 hover:bg-red-600/90 text-white shadow-lg hover:scale-105 transition-all"
+            >
+              <Trash className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
       </div>
 
       <Separator className="my-6 opacity-60" />
@@ -295,10 +312,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="flex flex-col gap-8 rounded-3xl border border-white/20 dark:border-white/10 
-                     bg-white/10 dark:bg-neutral-900/30
-                     backdrop-blur-2xl backdrop-saturate-150
-                     shadow-[0_8px_32px_rgba(0,0,0,0.2)]
-                     p-8 transition-all hover:shadow-[0_12px_48px_rgba(0,0,0,0.3)]"
+                      bg-white/10 dark:bg-neutral-900/30
+                      backdrop-blur-2xl backdrop-saturate-150
+                      shadow-[0_8px_32px_rgba(0,0,0,0.2)]
+                      p-8 transition-all hover:shadow-[0_12px_48px_rgba(0,0,0,0.3)]"
           >
             {/* Name */}
             <FormField
@@ -320,10 +337,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Price */}
               <PriceField form={form} isLoading={isLoading} currency="VND" />
 
-              {/* MỚI: Inventory */}
               <FormField
                 control={form.control}
                 name="inventory"
@@ -348,9 +363,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
               />
             </div>
 
-            {/* Grid cho các thuộc tính */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Category */}
               <FormField
                 control={form.control}
                 name="categoryId"
@@ -381,7 +394,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 )}
               />
 
-              {/* Size */}
               <FormField
                 control={form.control}
                 name="sizeId"
@@ -412,7 +424,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 )}
               />
 
-              {/* Color */}
               <FormField
                 control={form.control}
                 name="colorId"
@@ -443,7 +454,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 )}
               />
 
-              {/* MỚI: Material (Có thể trống) */}
               <FormField
                 control={form.control}
                 name="materialId"
@@ -474,7 +484,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 )}
               />
 
-              {/* MỚI: Gender */}
               <FormField
                 control={form.control}
                 name="gender"
@@ -505,7 +514,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
               />
             </div>
 
-            {/* Description */}
             <FormField
               control={form.control}
               name="description"
@@ -513,7 +521,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 <FormItem className="space-y-2">
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <TextareaAutosize
+                    <Editor
                       placeholder="Write something engaging about this product..."
                       minRows={3}
                       maxRows={8}
@@ -536,7 +544,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
               )}
             />
 
-            {/* Featured & Archived Checkboxes */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
               <FormField
                 control={form.control}
@@ -546,9 +553,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                     <FormControl>
                       <Checkbox
                         checked={field.value}
-                        onCheckedChange={(checked) =>
-                          field.onChange(checked === true)
-                        }
+                        onCheckedChange={field.onChange}
                         disabled={isLoading}
                       />
                     </FormControl>
@@ -572,9 +577,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                     <FormControl>
                       <Checkbox
                         checked={field.value}
-                        onCheckedChange={(checked) =>
-                          field.onChange(checked === true)
-                        }
+                        onCheckedChange={field.onChange}
                         disabled={isLoading}
                       />
                     </FormControl>
@@ -591,7 +594,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
               />
             </div>
 
-            {/* Images */}
             <FormField
               control={form.control}
               name="images"
@@ -602,9 +604,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                     <ImageUpload
                       value={field.value.map((image) => image.url)}
                       disabled={isLoading}
-                      onChange={(url) =>
-                        field.onChange([...field.value, { url }])
-                      }
+                      onChange={(urls) => {
+                        const newImages = urls.map((url) => ({ url }));
+                        field.onChange([...field.value, ...newImages]);
+                      }}
                       onRemove={(url) =>
                         field.onChange(
                           field.value.filter((current) => current.url !== url)
@@ -617,7 +620,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
               )}
             />
 
-            {/* Submit */}
             <div className="flex justify-end pt-4">
               <motion.div
                 whileHover={{ scale: 1.05 }}

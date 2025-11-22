@@ -18,7 +18,7 @@ import { useStoreModal } from "@/hooks/use-store-modal";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-
+import { Loader2 } from "lucide-react"; 
 const formSchema = z.object({
   name: z.string().min(3, "Tên cửa hàng phải có ít nhất 3 ký tự.").max(255),
 });
@@ -32,12 +32,14 @@ function GlassStoreModal({ form, onSubmit, storeModal, loading }: any) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          onClick={storeModal.onClose} 
         >
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             transition={{ type: "spring", stiffness: 180, damping: 20 }}
+            onClick={(e) => e.stopPropagation()}
             className={cn(
               "relative w-full max-w-md p-6 rounded-3xl overflow-hidden",
               "backdrop-blur-2xl bg-white/20 dark:bg-neutral-800/30",
@@ -87,7 +89,7 @@ function GlassStoreModal({ form, onSubmit, storeModal, loading }: any) {
                     type="button"
                     className={cn(
                       "bg-white/20 dark:bg-neutral-800/30 border-white/30 text-white",
-                      "hover:bg-white/30 transition-all"
+                      "hover:bg-white/30 transition-all shadow-sm"
                     )}
                   >
                     Cancel
@@ -95,12 +97,17 @@ function GlassStoreModal({ form, onSubmit, storeModal, loading }: any) {
                   <Button
                     disabled={loading}
                     type="submit"
+                    // [ĐỒNG BỘ UI] Đặt màu nền solid cho nút Submit
                     className={cn(
-                      "bg-white/30 dark:bg-neutral-700/50 border border-white/20 text-white",
-                      "hover:bg-white/40 backdrop-blur-lg"
+                      "bg-primary/90 dark:bg-primary/80 border-none text-white font-semibold",
+                      "hover:bg-primary transition-all shadow-lg shadow-primary/30"
                     )}
                   >
-                    Continue
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      "Continue"
+                    )}
                   </Button>
                 </div>
               </form>
@@ -134,27 +141,28 @@ export const StoreModal = () => {
         body: JSON.stringify(values),
       });
 
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ message: "Something went wrong." }));
-        toast.error(errorData.message || "Something went wrong.");
-        return;
-      }
-
-      const result = await response.json();
+      const result = await response
+        .json()
+        .catch(() => ({ message: "Invalid JSON response." }));
 
       if (!response.ok) {
-        toast.error(result.message || "Something went wrong.");
+        const errorMessage = result.message || "Failed to create store.";
+        toast.error(errorMessage);
         return;
       }
 
       toast.success("Store created successfully.");
-      storeModal.onClose();
-      router.push(`/${result.data.id}`);
+
+      if (result.id) {
+        storeModal.onClose();
+        router.push(`/${result.id}`);
+      } else {
+        toast.error("Store created, but missing ID for redirection.");
+        router.refresh();
+      }
     } catch (error) {
       console.error("[STORE_CREATE_ERROR]", error);
-      toast.error("An unexpected error occurred.");
+      toast.error("An unexpected network error occurred.");
     } finally {
       setLoading(false);
     }

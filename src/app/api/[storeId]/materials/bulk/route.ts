@@ -1,46 +1,42 @@
-import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ storeId: string }> }
+  { params }: { params: { storeId: string } }
 ) {
   try {
     const { userId } = await auth();
-    const { storeId } = await params; 
+    if (!userId) return new NextResponse("Unauthenticated", { status: 401 });
+
+    if (!params.storeId)
+      return new NextResponse("Store ID is required", { status: 400 });
+
+    const storeByUserId = await prisma.store.findFirst({
+      where: { id: params.storeId, userId },
+    });
+
+    if (!storeByUserId)
+      return new NextResponse("Unauthorized", { status: 403 });
+
     const body = await req.json();
     const { rows } = body;
-
-    if (!userId) {
-      return new NextResponse("Unauthenticated", { status: 401 });
-    }
 
     if (!rows || !Array.isArray(rows)) {
       return new NextResponse("Invalid data", { status: 400 });
     }
 
-    const storeByUserId = await prisma.store.findFirst({
-      where: {
-        id: storeId,
-        userId,
-      },
-    });
-
-    if (!storeByUserId) {
-      return new NextResponse("Unauthorized", { status: 403 });
-    }
-
     const data = rows
       .filter((r: any) => r.name && r.value)
       .map((r: any) => ({
+        storeId: params.storeId,
         name: r.name,
         value: r.value,
-        storeId: storeId,
       }));
 
     if (data.length === 0) {
-      return new NextResponse("No valid materials to create", { status: 400 });
+      return new NextResponse("No valid data", { status: 400 });
     }
 
     await prisma.material.createMany({

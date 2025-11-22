@@ -13,11 +13,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "utfs.io",
-      },
-      {
-        protocol: "https",
-        hostname: "uploadthing.com",
+        hostname: "**",
       },
     ],
   },

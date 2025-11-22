@@ -15,14 +15,22 @@ import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
 import { useBulkMaterialModal } from "@/hooks/use-bulk-material-modal";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash, Save } from "lucide-react"; // Import icons
+import {
+  Plus,
+  Trash2,
+  Loader2,
+  CheckCircle2,
+  Layers,
+  AlertCircle,
+} from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type Row = {
   name: string;
   value: string;
 };
 
-export const BulkCreateMaterialModal = () => {
+export const BulkCreateMaterialModal: React.FC = () => {
   const { isOpen, onClose } = useBulkMaterialModal();
   const [rows, setRows] = useState<Row[]>([{ name: "", value: "" }]);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,17 +39,23 @@ export const BulkCreateMaterialModal = () => {
 
   useEffect(() => {
     if (!isOpen) {
-      setRows([{ name: "", value: "" }]);
+      setTimeout(() => {
+        setRows([{ name: "", value: "" }]);
+      }, 300);
     }
   }, [isOpen]);
 
   const handleAddRow = () => {
     setRows([...rows, { name: "", value: "" }]);
+    setTimeout(() => {
+      const element = document.getElementById("bulk-material-scroll-container");
+      if (element) element.scrollTop = element.scrollHeight;
+    }, 100);
   };
 
   const handleRemoveRow = (index: number) => {
-    const newRows = rows.filter((_, i) => i !== index);
-    setRows(newRows);
+    if (rows.length === 1) return;
+    setRows(rows.filter((_, i) => i !== index));
   };
 
   const handleChange = (index: number, field: keyof Row, value: string) => {
@@ -50,7 +64,23 @@ export const BulkCreateMaterialModal = () => {
     setRows(newRows);
   };
 
+  const validateForm = () => {
+    for (let i = 0; i < rows.length; i++) {
+      if (!rows[i].name.trim()) {
+        toast.error(`Row ${i + 1}: Name is required.`);
+        return false;
+      }
+      if (!rows[i].value.trim()) {
+        toast.error(`Row ${i + 1}: Value is required.`);
+        return false;
+      }
+    }
+    return true;
+  };
+
   const onSubmit = async () => {
+    if (!validateForm()) return;
+
     try {
       setIsLoading(true);
 
@@ -58,20 +88,18 @@ export const BulkCreateMaterialModal = () => {
         (row) => row.name.trim() !== "" && row.value.trim() !== ""
       );
 
-      if (validRows.length === 0) {
-        toast.error("Please enter at least one valid material.");
-        return;
-      }
-
       await axios.post(`/api/${params.storeId}/materials/bulk`, {
         rows: validRows,
       });
+
       toast.success(`Successfully created ${validRows.length} materials!`);
       router.refresh();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error("Something went wrong.");
+      const errorMessage =
+        error.response?.data || "Failed to create materials.";
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -79,104 +107,141 @@ export const BulkCreateMaterialModal = () => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
-        <DialogHeader>
-          <DialogTitle>Bulk Create Materials</DialogTitle>
-          <DialogDescription>
-            Add multiple materials at once. Example: Name: "Cotton", Value:
-            "100% Organic Cotton".
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="mt-4 max-h-[60vh] overflow-y-auto px-1">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b dark:border-neutral-800">
-                <th className="p-3 text-sm font-medium text-neutral-500 w-[45%]">
-                  Name (e.g. Cotton)
-                </th>
-                <th className="p-3 text-sm font-medium text-neutral-500 w-[45%]">
-                  Value (e.g. 100% Cotton)
-                </th>
-                <th className="p-3 w-[10%] text-center"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <AnimatePresence>
-                {rows.map((row, index) => (
-                  <motion.tr
-                    key={index}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="group"
-                  >
-                    <td className="p-2">
-                      <Input
-                        disabled={isLoading}
-                        placeholder="Material Name"
-                        value={row.name}
-                        onChange={(e) =>
-                          handleChange(index, "name", e.target.value)
-                        }
-                        className="bg-transparent"
-                      />
-                    </td>
-                    <td className="p-2">
-                      <Input
-                        disabled={isLoading}
-                        placeholder="Material Value"
-                        value={row.value}
-                        onChange={(e) =>
-                          handleChange(index, "value", e.target.value)
-                        }
-                        className="bg-transparent"
-                      />
-                    </td>
-                    <td className="p-2 text-center">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemoveRow(index)}
-                        disabled={rows.length === 1 || isLoading}
-                        className="h-8 w-8 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </motion.tr>
-                ))}
-              </AnimatePresence>
-            </tbody>
-          </table>
+      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 bg-white dark:bg-neutral-900 overflow-hidden border-none shadow-2xl">
+        <div className="px-6 py-5 border-b dark:border-neutral-800 bg-white dark:bg-neutral-900 z-20">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2 text-neutral-900 dark:text-neutral-100">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Layers className="w-6 h-6 text-primary" />
+              </div>
+              Bulk Create Materials
+            </DialogTitle>
+            <DialogDescription className="text-neutral-500">
+              Add multiple materials (e.g., Cotton, Silk) at once.
+            </DialogDescription>
+          </DialogHeader>
         </div>
 
-        <div className="flex justify-between mt-6 pt-4 border-t dark:border-neutral-800">
-          <Button
-            type="button"
-            variant="outline"
+        {/* 2. Table Header (Sticky) */}
+        <div className="bg-neutral-50/80 dark:bg-neutral-900/80 backdrop-blur-sm border-b dark:border-neutral-800 z-10 px-6 py-3 grid grid-cols-12 gap-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+          <div className="col-span-5">Name (e.g., Cotton)</div>
+          <div className="col-span-5">Value (e.g., 100% Cotton)</div>
+          <div className="col-span-2 text-center">Action</div>
+        </div>
+
+        {/* 3. Scrollable Content Container */}
+        <div
+          id="bulk-material-scroll-container"
+          className="flex-1 overflow-y-auto p-6 bg-neutral-50/30 dark:bg-neutral-950/30 space-y-3"
+        >
+          <AnimatePresence mode="popLayout" initial={false}>
+            {rows.map((row, index) => (
+              <motion.div
+                key={index}
+                layout
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="group relative bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3 shadow-sm hover:shadow-md transition-all duration-200 grid grid-cols-12 gap-4 items-center"
+              >
+                {/* Name Input */}
+                <div className="col-span-5">
+                  <Input
+                    disabled={isLoading}
+                    placeholder="Material Name"
+                    value={row.name}
+                    onChange={(e) =>
+                      handleChange(index, "name", e.target.value)
+                    }
+                    className={
+                      !row.name && rows.length > 1
+                        ? "border-red-300 focus-visible:ring-red-200 bg-red-50/50"
+                        : "h-10"
+                    }
+                  />
+                </div>
+
+                {/* Value Input */}
+                <div className="col-span-5">
+                  <Input
+                    disabled={isLoading}
+                    placeholder="Material Value"
+                    value={row.value}
+                    onChange={(e) =>
+                      handleChange(index, "value", e.target.value)
+                    }
+                    className={
+                      !row.value && rows.length > 1
+                        ? "border-red-300 focus-visible:ring-red-200 bg-red-50/50"
+                        : "h-10"
+                    }
+                  />
+                </div>
+
+                {/* Action Button */}
+                <div className="col-span-2 flex justify-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveRow(index)}
+                    disabled={rows.length === 1 || isLoading}
+                    className="h-9 w-9 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                {/* Row Number (for visual reference) */}
+                <div className="absolute -left-3 top-1/2 -translate-y-1/2 h-6 w-6 items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-800 text-xs font-bold text-neutral-500 opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex">
+                  {index + 1}
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {/* Add Row Button (Bottom of list) */}
+          <motion.button
+            layout
             onClick={handleAddRow}
             disabled={isLoading}
-            className="flex items-center gap-2"
+            className="w-full py-3 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl text-neutral-500 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2 font-medium text-sm"
           >
-            <Plus className="h-4 w-4" /> Add Another
-          </Button>
+            <Plus className="w-4 h-4" />
+            Add Another Material
+          </motion.button>
+        </div>
+
+        {/* 4. Footer Cố định */}
+        <div className="p-6 py-4 border-t dark:border-neutral-800 bg-white dark:bg-neutral-900 flex justify-between items-center z-20">
           <Button
-            type="button"
-            variant="outline"
-            onClick={onSubmit}
+            variant="ghost"
+            onClick={onClose}
             disabled={isLoading}
-            className="flex items-center gap-2"
+            className="h-11 px-6 text-neutral-500 hover:text-neutral-900"
           >
-            {isLoading ? (
-              "Saving..."
-            ) : (
-              <>
-                <Save className="h-4 w-4" /> Save All
-              </>
-            )}
+            Cancel
           </Button>
+
+          <div className="flex gap-3">
+            <Button
+              onClick={onSubmit}
+              disabled={isLoading}
+              className="h-11 px-8 text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Save ({rows.length}) Materials
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

@@ -1,19 +1,23 @@
+import { format } from "date-fns";
 import prisma from "@/lib/prisma";
 import { formatter } from "@/lib/utils";
+
 import { ProductClient } from "./components/client";
-import { format } from "date-fns";
 import { ProductColumn } from "./components/columns";
 
-const ProductPage = async ({ params }: { params: { storeId: string } }) => {
+const ProductsPage = async ({ params }: { params: { storeId: string } }) => {
+  const { storeId } = await params;
+
   const products = await prisma.product.findMany({
     where: {
-      storeId: params.storeId,
+      storeId: storeId,
     },
     include: {
       category: true,
-      color: true,
       size: true,
-      material: true,
+      color: true,
+      material: true, 
+      images: true,
     },
     orderBy: {
       createdAt: "desc",
@@ -25,14 +29,15 @@ const ProductPage = async ({ params }: { params: { storeId: string } }) => {
     name: item.name,
     isFeatured: item.isFeatured,
     isArchived: item.isArchived,
-    price: formatter.format(item.price),
+    price: formatter.format(Number(item.price)),
     category: item.category.name,
     size: item.size.name,
     color: item.color.value,
-    inventory: item.inventory.toString(),
-    material: item.material?.name || "N/A",
+    inventory: item.inventory,
+    material: item.material?.name || "N/A", 
     gender: item.gender || "UNISEX",
     createdAt: format(item.createdAt, "MMMM do, yyyy"),
+    images: item.images,
   }));
 
   return (
@@ -44,4 +49,4 @@ const ProductPage = async ({ params }: { params: { storeId: string } }) => {
   );
 };
 
-export default ProductPage;
+export default ProductsPage;

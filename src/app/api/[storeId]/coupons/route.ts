@@ -17,12 +17,26 @@ export async function POST(
     if (!value) return new NextResponse("Value is required", { status: 400 });
     if (!type) return new NextResponse("Type is required", { status: 400 });
 
+    if (!params.storeId)
+      return new NextResponse("Store id is required", { status: 400 });
+
     const storeByUserId = await prisma.store.findFirst({
       where: { id: params.storeId, userId },
     });
 
     if (!storeByUserId)
       return new NextResponse("Unauthorized", { status: 405 });
+
+    const existingCoupon = await prisma.coupon.findFirst({
+      where: {
+        storeId: params.storeId,
+        code: code,
+      },
+    });
+
+    if (existingCoupon) {
+      return new NextResponse("Coupon code already exists", { status: 409 });
+    }
 
     const coupon = await prisma.coupon.create({
       data: {
@@ -57,6 +71,41 @@ export async function GET(
     return NextResponse.json(coupons);
   } catch (error) {
     console.log("[COUPONS_GET]", error);
+    return new NextResponse("Internal error", { status: 500 });
+  }
+}
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: { storeId: string } }
+) {
+  try {
+    const { userId } = await auth();
+
+    if (!userId) return new NextResponse("Unauthenticated", { status: 403 });
+
+    if (!params.storeId)
+      return new NextResponse("Store id is required", { status: 400 });
+
+    const storeByUserId = await prisma.store.findFirst({
+      where: { id: params.storeId, userId },
+    });
+
+    if (!storeByUserId)
+      return new NextResponse("Unauthorized", { status: 405 });
+
+    const result = await prisma.coupon.deleteMany({
+      where: {
+        storeId: params.storeId,
+      },
+    });
+
+    return NextResponse.json({
+      message: "All coupons deleted",
+      count: result.count,
+    });
+  } catch (error) {
+    console.log("[COUPONS_DELETE_ALL]", error);
     return new NextResponse("Internal error", { status: 500 });
   }
 }

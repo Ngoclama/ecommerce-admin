@@ -1,67 +1,86 @@
-import Stripe from "stripe";
+import { Webhook } from "svix";
 import { headers } from "next/headers";
-import { NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { WebhookEvent } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  const body = await req.text();
-  const signature = (await headers()).get("Stripe-Signature") as string;
+  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 
-  let event: Stripe.Event;
+  if (!WEBHOOK_SECRET) {
+    throw new Error(
+      "Please add CLERK_WEBHOOK_SECRET from Clerk Dashboard to .env"
+    );
+  }
+
+  const headerPayload = await headers();
+  const svix_id = headerPayload.get("svix-id");
+  const svix_timestamp = headerPayload.get("svix-timestamp");
+  const svix_signature = headerPayload.get("svix-signature");
+
+  if (!svix_id || !svix_timestamp || !svix_signature) {
+    return new NextResponse("Error occured -- no svix headers", {
+      status: 400,
+    });
+  }
+
+  const payload = await req.json();
+  const body = JSON.stringify(payload);
+  const wh = new Webhook(WEBHOOK_SECRET);
+
+  let evt: WebhookEvent;
 
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
-  } catch (error: any) {
-    return new NextResponse(`Webhook Error: ${error.message}`, { status: 400 });
+    evt = wh.verify(body, {
+      "svix-id": svix_id,
+      "svix-timestamp": svix_timestamp,
+      "svix-signature": svix_signature,
+    }) as WebhookEvent;
+  } catch (err) {
+    console.error("Error verifying webhook:", err);
+    return new NextResponse("Error occured", { status: 400 });
   }
 
-  const session = event.data.object as Stripe.Checkout.Session;
-  const address = session?.customer_details?.address;
+  const eventType = evt.type;
 
-  const addressComponents = [
-    address?.line1,
-    address?.line2,
-    address?.city,
-    address?.state,
-    address?.postal_code,
-    address?.country,
-  ];
+  // 1. KHI USER ĐĂNG KÝ MỚI TRÊN CLERK -> TẠO USER TRONG MONGO
+  if (eventType === "user.created") {
+    const { id, email_addresses, first_name, last_name, image_url } = evt.data;
 
-  const addressString = addressComponents.filter((c) => c !== null).join(", ");
-
-  if (event.type === "checkout.session.completed") {
-    const order = await prisma.order.update({
-      where: {
-        id: session?.metadata?.orderId,
-      },
+    await prisma.user.create({
       data: {
-        isPaid: true,
-        address: addressString,
-        phone: session?.customer_details?.phone || "",
-      },
-      include: {
-        orderItems: true,
-      },
-    });
-
-    const productIds = order.orderItems.map((orderItem) => orderItem.productId);
-
-    await prisma.product.updateMany({
-      where: {
-        id: {
-          in: [...productIds],
-        },
-      },
-      data: {
-        isArchived: true,
+        clerkId: id,
+        email: email_addresses[0].email_address,
+        name: `${first_name || ""} ${last_name || ""}`.trim(),
+        imageUrl: image_url,
+        role: "CUSTOMER", // Mặc định là khách hàng
       },
     });
   }
 
-  return new NextResponse(null, { status: 200 });
+  // 2. KHI USER UPDATE PROFILE TRÊN CLERK -> UPDATE MONGO
+  if (eventType === "user.updated") {
+    const { id, email_addresses, first_name, last_name, image_url } = evt.data;
+
+    await prisma.user.update({
+      where: { clerkId: id },
+      data: {
+        email: email_addresses[0].email_address,
+        name: `${first_name || ""} ${last_name || ""}`.trim(),
+        imageUrl: image_url,
+      },
+    });
+  }
+
+  // 3. KHI USER BỊ XÓA
+  if (eventType === "user.deleted") {
+    const { id } = evt.data;
+    if (id) {
+      await prisma.user.delete({
+        where: { clerkId: id },
+      });
+    }
+  }
+
+  return new NextResponse("", { status: 200 });
 }

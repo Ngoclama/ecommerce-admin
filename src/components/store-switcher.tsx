@@ -1,4 +1,5 @@
 "use client";
+
 import {
   Check,
   ChevronDown,
@@ -6,13 +7,16 @@ import {
   Store as StoreIcon,
 } from "lucide-react";
 import React, { useState } from "react";
-import { Store } from "@/generated/prisma";
+import { Store } from "@prisma/client";
 import { useParams, useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import { ViewAllStoresModal } from "@/components/modals/view-all-stores";
 
-import { Button } from "./ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useStoreModal } from "@/hooks/use-store-modal";
 import { cn } from "@/lib/utils";
 import {
@@ -23,133 +27,24 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "./ui/command";
+} from "@/components/ui/command";
 
 type PopoverTriggerProps = React.ComponentPropsWithoutRef<
   typeof PopoverTrigger
 >;
+
 interface StoreSwitcherProps extends PopoverTriggerProps {
   items: Store[];
-}
-
-function GlassStoreSwitcher({
-  formattedItems,
-  currentStore,
-  onStoreSelect,
-  storeModel,
-  className,
-  onViewAllStores,
-}: any) {
-  const [open, setOpen] = useState(false);
-  const router = useRouter();
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          role="combobox"
-          aria-expanded={open}
-          aria-label="Select a store"
-          className={cn(
-            "w-[220px] justify-between rounded-xl font-medium",
-            "bg-white/10 dark:bg-zinc-900/20 backdrop-blur-xl border border-white/20 dark:border-white/10",
-            "shadow-[0_4px_30px_rgba(0,0,0,0.1)] text-black hover:bg-white/20 dark:hover:bg-white/10",
-            "transition-all duration-300 ",
-            className
-          )}
-        >
-          <div className="flex items-center gap-2">
-            <StoreIcon className="h-4 w-4 opacity-80" />
-            {currentStore?.label || "Select a store"}
-          </div>
-          <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-70" />
-        </Button>
-      </PopoverTrigger>
-
-      <AnimatePresence>
-        {open && (
-          <PopoverContent asChild sideOffset={6} align="start">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.97, y: -4 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.97, y: -4 }}
-              transition={{ duration: 0.18, ease: "easeOut" }}
-              className={cn(
-                "w-[220px] p-0 overflow-hidden rounded-2xl backdrop-blur-2xl",
-                "bg-white/15 dark:bg-neutral-800/40 border border-white/20 dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.3)]"
-              )}
-            >
-              <Command>
-                <CommandInput
-                  placeholder="Search store..."
-                  className="bg-transparent border-b border-white/10 placeholder:text-black/60 text-black/80"
-                />
-                <CommandList className="max-h-[220px] overflow-y-auto">
-                  <CommandEmpty className="text-black/70 p-3 text-center">
-                    No store found.
-                  </CommandEmpty>
-
-                  <CommandGroup heading="Stores" className="text-black/80">
-                    {formattedItems.map((store: any) => (
-                      <CommandItem
-                        key={store.value}
-                        onSelect={() => onStoreSelect(store)}
-                        className="flex items-center gap-2 text-sm text-black/80 hover:bg-white/20 transition-all rounded-md"
-                      >
-                        <StoreIcon className="h-4 w-4 opacity-80" />
-                        {store.label}
-                        {currentStore?.value === store.value && (
-                          <Check className="ml-auto h-4 w-4 text-black" />
-                        )}
-                      </CommandItem>
-                    ))}
-                    <CommandItem
-                      onSelect={() => {
-                        setOpen(false);
-                        storeModel.onOpen();
-                      }}
-                      className="text-black/80 hover:bg-white/20 rounded-md transition-all"
-                    >
-                      <PlusCircle className="h-4 w-4 mr-2" />+ Create Store
-                    </CommandItem>
-                  </CommandGroup>
-                </CommandList>
-
-                <CommandSeparator className="bg-black/20" />
-
-                <CommandList>
-                  <CommandGroup>
-                    <CommandItem
-                      onSelect={() => {
-                        setOpen(false);
-                        onViewAllStores();
-                      }}
-                      className="text-black/80 hover:bg-white/20 rounded-md transition-all"
-                    >
-                      <StoreIcon className="mr-2 h-4 w-4 opacity-80" />
-                      View All Stores
-                    </CommandItem>
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </motion.div>
-          </PopoverContent>
-        )}
-      </AnimatePresence>
-    </Popover>
-  );
 }
 
 export default function StoreSwitcher({
   className,
   items = [],
 }: StoreSwitcherProps) {
-  const storeModel = useStoreModal();
+  const storeModal = useStoreModal();
   const params = useParams();
   const router = useRouter();
-
+  const [open, setOpen] = useState(false);
   const [showStoresModal, setShowStoresModal] = useState(false);
 
   const formattedItems = items.map((item) => ({
@@ -162,20 +57,15 @@ export default function StoreSwitcher({
   );
 
   const onStoreSelect = (store: { label: string; value: string }) => {
+    setOpen(false);
     router.push(`/${store.value}`);
   };
 
+  const glassEffect =
+    "bg-white/60 dark:bg-black/60 backdrop-blur-xl backdrop-saturate-150 border border-white/20 dark:border-white/10 shadow-lg";
+
   return (
     <>
-      <GlassStoreSwitcher
-        formattedItems={formattedItems}
-        currentStore={currentStore}
-        onStoreSelect={onStoreSelect}
-        storeModel={storeModel}
-        className={className}
-        onViewAllStores={() => setShowStoresModal(true)} // ✅ truyền callback
-      />
-
       <ViewAllStoresModal
         stores={formattedItems.map((s: any) => ({
           id: s.value,
@@ -184,6 +74,108 @@ export default function StoreSwitcher({
         isOpen={showStoresModal}
         onClose={() => setShowStoresModal(false)}
       />
+
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            role="combobox"
+            aria-expanded={open}
+            aria-label="Select a store"
+            className={cn(
+              "w-[200px] justify-between rounded-2xl h-10 transition-all duration-300",
+              glassEffect, 
+              "hover:bg-white/40 dark:hover:bg-white/10", // Hover effect nhẹ
+              "text-neutral-900 dark:text-white font-medium",
+              className
+            )}
+          >
+            <div className="flex items-center gap-2 truncate">
+              <StoreIcon className="mr-2 h-4 w-4 opacity-70" />
+              {currentStore?.label}
+            </div>
+            <ChevronDown
+              className={cn(
+                "ml-auto h-4 w-4 shrink-0 opacity-50 transition-transform duration-200",
+                open ? "rotate-180" : ""
+              )}
+            />
+          </Button>
+        </PopoverTrigger>
+
+        <PopoverContent
+          className={cn(
+            "w-[200px] p-0 rounded-2xl border-none overflow-hidden mt-2",
+            "bg-white/80 dark:bg-black/80 backdrop-blur-2xl backdrop-saturate-150",
+            "shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-white/20 dark:border-white/10 ring-1 ring-black/5"
+          )}
+        >
+          <Command className="bg-transparent">
+            <CommandList>
+              <CommandInput
+                placeholder="Search store..."
+                className="bg-transparent border-none focus:ring-0 text-sm h-11 placeholder:text-neutral-500"
+              />
+              <CommandEmpty className="py-6 text-center text-xs text-muted-foreground">
+                No store found.
+              </CommandEmpty>
+
+              <CommandGroup
+                heading="Stores"
+                className="text-muted-foreground font-medium px-1"
+              >
+                {formattedItems.map((store) => (
+                  <CommandItem
+                    key={store.value}
+                    onSelect={() => onStoreSelect(store)}
+                    className="text-sm rounded-lg aria-selected:bg-black/5 dark:aria-selected:bg-white/15 cursor-pointer py-2.5 px-2 my-1 transition-colors"
+                  >
+                    <StoreIcon className="mr-2 h-4 w-4" />
+                    {store.label}
+                    <Check
+                      className={cn(
+                        "ml-auto h-4 w-4 text-primary",
+                        currentStore?.value === store.value
+                          ? "opacity-100"
+                          : "opacity-0"
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+
+            <CommandSeparator className="bg-neutral-200/50 dark:bg-neutral-700/50" />
+
+            <CommandList>
+              <CommandGroup className="px-1 pb-1">
+                <CommandItem
+                  onSelect={() => {
+                    setOpen(false);
+                    storeModal.onOpen();
+                  }}
+                  className="text-sm rounded-lg aria-selected:bg-black/5 dark:aria-selected:bg-white/15 cursor-pointer py-2.5 px-2 my-1"
+                >
+                  <PlusCircle className="mr-2 h-5 w-5" />
+                  Create Store
+                </CommandItem>
+
+                <CommandItem
+                  onSelect={() => {
+                    setOpen(false);
+                    setShowStoresModal(true);
+                  }}
+                  className="text-sm rounded-lg aria-selected:bg-black/5 dark:aria-selected:bg-white/15 cursor-pointer py-2.5 px-2 my-1"
+                >
+                  <StoreIcon className="mr-2 h-5 w-5" />
+                  View All Stores
+                </CommandItem>
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
     </>
   );
 }

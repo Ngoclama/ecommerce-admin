@@ -7,8 +7,7 @@ export type SizeColumn = {
   id: string;
   name: string;
   value: string;
-  createAt: string;
-  productsCount: string;
+  createdAt: string;
 };
 
 export const columns: ColumnDef<SizeColumn>[] = [
@@ -19,13 +18,14 @@ export const columns: ColumnDef<SizeColumn>[] = [
   {
     accessorKey: "value",
     header: "Value",
+    cell: ({ row }) => (
+      <div className="font-mono text-sm bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded-md inline-block border border-neutral-200 dark:border-neutral-700">
+        {row.original.value}
+      </div>
+    ),
   },
   {
-    accessorKey: "productsCount",
-    header: "Products",
-  },
-  {
-    accessorKey: "createAt",
+    accessorKey: "createdAt",
     header: "Date",
   },
   {

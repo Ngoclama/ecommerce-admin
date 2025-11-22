@@ -19,20 +19,20 @@ export async function POST(
       return new NextResponse("Label is required", { status: 400 });
     }
     if (!imageUrl) {
-      return new NextResponse("ImageUrl is required", { status: 400 });
+      return new NextResponse("Image URL is required", { status: 400 });
     }
     if (!params.storeId) {
       return new NextResponse("Store id is required", { status: 400 });
     }
+
     const storeByUserId = await prisma.store.findFirst({
-      where: {
-        id: params.storeId,
-        userId,
-      },
+      where: { id: params.storeId, userId },
     });
+
     if (!storeByUserId) {
-      return new NextResponse("Unauthorized"), { status: 403 };
+      return new NextResponse("Unauthorized", { status: 403 });
     }
+
     const billboard = await prisma.billboard.create({
       data: {
         label,
@@ -68,6 +68,7 @@ export async function GET(
     return new NextResponse("Internal error", { status: 500 });
   }
 }
+
 export async function DELETE(
   req: Request,
   { params }: { params: { storeId: string } }
@@ -78,23 +79,49 @@ export async function DELETE(
       return new NextResponse("Unauthenticated", { status: 401 });
     }
 
+    if (!params.storeId) {
+      return new NextResponse("Store id is required", { status: 400 });
+    }
+
     const storeByUserId = await prisma.store.findFirst({
-      where: {
-        id: params.storeId,
-        userId,
-      },
+      where: { id: params.storeId, userId },
     });
+
     if (!storeByUserId) {
       return new NextResponse("Unauthorized", { status: 403 });
     }
 
-    await prisma.billboard.deleteMany({
-      where: {
-        storeId: params.storeId,
+    const allBillboards = await prisma.billboard.findMany({
+      where: { storeId: params.storeId },
+      include: {
+        _count: {
+          select: { categories: true },
+        },
       },
     });
 
-    return NextResponse.json({ message: "All categories deleted" });
+    const safeToDeleteIds = allBillboards
+      .filter((bb) => bb._count.categories === 0)
+      .map((bb) => bb.id);
+
+    const skippedCount = allBillboards.length - safeToDeleteIds.length;
+
+    let deletedCount = 0;
+
+    if (safeToDeleteIds.length > 0) {
+      const result = await prisma.billboard.deleteMany({
+        where: {
+          id: { in: safeToDeleteIds },
+        },
+      });
+      deletedCount = result.count;
+    }
+
+    return NextResponse.json({
+      message: `${deletedCount} billboards deleted. ${skippedCount} billboards were skipped because they still have linked categories.`,
+      deletedCount: deletedCount,
+      skippedCount: skippedCount,
+    });
   } catch (error) {
     console.error("[Billboard_DELETE_ALL]", error);
     return new NextResponse("Internal Server Error", { status: 500 });

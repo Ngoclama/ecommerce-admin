@@ -15,7 +15,8 @@ const BillboardPage = async ({ params }: { params: { storeId: string } }) => {
   const formattedBillboards: BillboardColumn[] = billboards.map((item) => ({
     id: item.id,
     label: item.label,
-    createAt: format(item.createdAt, "MMMM do ,yyyy"),
+    imageUrl: item.imageUrl,
+    createdAt: format(item.createdAt, "MMMM do ,yyyy"),
   }));
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-8">

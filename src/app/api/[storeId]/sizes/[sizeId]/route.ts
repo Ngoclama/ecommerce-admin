@@ -14,13 +14,15 @@ export async function PATCH(
     if (!userId) return new NextResponse("Unauthorized", { status: 401 });
     if (!name) return new NextResponse("Name is required", { status: 400 });
     if (!value) return new NextResponse("Value is required", { status: 400 });
-    if (!params.sizeId) return new NextResponse("Size ID is required", { status: 400 });
+    if (!params.sizeId)
+      return new NextResponse("Size ID is required", { status: 400 });
 
     const storeByUserId = await prisma.store.findFirst({
       where: { id: params.storeId, userId },
     });
 
-    if (!storeByUserId) return new NextResponse("Unauthorized", { status: 403 });
+    if (!storeByUserId)
+      return new NextResponse("Unauthorized", { status: 403 });
 
     const size = await prisma.size.update({
       where: { id: params.sizeId },

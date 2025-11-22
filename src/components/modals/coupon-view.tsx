@@ -1,177 +1,158 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import axios from "axios";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import axios from "axios";
-import { toast } from "sonner";
-import { Loader2, Tag } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Loader2, Calendar, Ticket, Percent, DollarSign, Clock } from "lucide-react";
+import { format } from "date-fns";
+import { formatter } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
 interface CouponViewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  storeId: string;
   couponId: string | null;
+  storeId: string;
 }
 
-type CouponDetails = {
+interface Coupon {
   id: string;
   code: string;
   value: number;
   type: "PERCENT" | "FIXED";
+  expiresAt: string | null;
   createdAt: string;
-  updatedAt: string;
-};
+}
 
 export const CouponViewModal: React.FC<CouponViewModalProps> = ({
   isOpen,
   onClose,
-  storeId,
   couponId,
+  storeId,
 }) => {
-  const [data, setData] = useState<CouponDetails | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [data, setData] = useState<Coupon | null>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (isOpen && couponId && storeId) {
-        try {
-          setLoading(true);
-          const response = await axios.get(
-            `/api/${storeId}/coupons/${couponId}`
-          );
-          if ("data" in response && typeof response.data === "object") {
-            setData(response.data as CouponDetails);
-          }
-        } catch (error) {
-          toast.error("Failed to load coupon details.");
-          onClose();
-        } finally {
-          setLoading(false);
+      if (!couponId || !isOpen) return;
+
+      try {
+        setIsLoading(true);
+        const response = await axios.get(
+          `/api/${storeId}/coupons/${couponId}`
+        );
+        if (response.data) {
+          setData(response.data as Coupon);
         }
+      } catch (error) {
+        console.error("Failed to fetch coupon details:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchData();
-  }, [isOpen, couponId, storeId, onClose]);
+  }, [couponId, storeId, isOpen]);
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  if (!isMounted) return null;
 
-  const formatValue = (val: number, type: string) => {
-    if (type === "PERCENT") {
-      return `${val}%`;
-    }
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(val);
-  };
+  // Kiểm tra tình trạng hết hạn
+  const isExpired = data?.expiresAt && new Date(data.expiresAt) < new Date();
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+      <DialogContent className="max-w-md overflow-hidden bg-white dark:bg-neutral-900">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Tag className="w-5 h-5" />
-            Coupon Details
-          </DialogTitle>
+          <DialogTitle>Coupon Details</DialogTitle>
           <DialogDescription>
             Information about this discount code.
           </DialogDescription>
         </DialogHeader>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
+        <Separator />
+
+        {isLoading ? (
+          <div className="flex h-40 w-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
           </div>
         ) : data ? (
-          <div className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-neutral-500 dark:text-neutral-400">
-                  Code
-                </Label>
-                <div className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-800 text-lg font-bold text-primary tracking-wider">
-                  {data.code}
+          <div className="space-y-6 pt-2">
+            {/* Code Section */}
+            <div className="p-4 rounded-lg border bg-neutral-50 dark:bg-neutral-800/50 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white dark:bg-neutral-900 rounded-md border shadow-sm">
+                        <Ticket className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                        <h3 className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+                            Discount Code
+                        </h3>
+                        <p className="text-xl font-mono font-bold text-neutral-900 dark:text-neutral-100 tracking-wider">
+                            {data.code}
+                        </p>
+                    </div>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-neutral-500 dark:text-neutral-400">
-                  Type
-                </Label>
-                <div className="h-[52px] flex items-center">
-                  <Badge
-                    variant={data.type === "PERCENT" ? "default" : "secondary"}
-                    className="px-3 py-1 text-sm"
-                  >
-                    {data.type === "PERCENT" ? "Percentage" : "Fixed Amount"}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-neutral-500 dark:text-neutral-400">
-                Discount Value
-              </Label>
-              <div className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-800 text-base font-semibold">
-                {formatValue(data.value, data.type)}
-              </div>
+                {isExpired ? <Badge variant="destructive">Expired</Badge> : <Badge variant="default">Active</Badge>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-neutral-500 dark:text-neutral-400">
-                  Created At
-                </Label>
-                <Input
-                  disabled
-                  value={formatDate(data.createdAt)}
-                  className="bg-neutral-100 dark:bg-neutral-800 border-none"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-neutral-500 dark:text-neutral-400">
-                  Updated At
-                </Label>
-                <Input
-                  disabled
-                  value={formatDate(data.updatedAt)}
-                  className="bg-neutral-100 dark:bg-neutral-800 border-none"
-                />
-              </div>
+                {/* Value */}
+                <div className="p-3 border rounded-md">
+                    <h3 className="text-xs font-medium text-neutral-500 mb-1 flex items-center gap-1">
+                        {data.type === "PERCENT" ? <Percent className="h-3 w-3"/> : <DollarSign className="h-3 w-3"/>} 
+                        Value
+                    </h3>
+                    <div className="text-lg font-bold">
+                        {data.type === "PERCENT" ? `${data.value}%` : formatter.format(data.value)}
+                    </div>
+                </div>
+
+                {/* Type */}
+                <div className="p-3 border rounded-md">
+                    <h3 className="text-xs font-medium text-neutral-500 mb-1">Type</h3>
+                    <div className="text-sm font-medium">
+                        {data.type === "PERCENT" ? "Percentage" : "Fixed Amount"}
+                    </div>
+                </div>
             </div>
 
-            <Separator />
+            {/* Expiration */}
+            <div className="flex items-center gap-3 p-3 rounded-md border bg-neutral-50/50 dark:bg-neutral-800/30">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <div>
+                     <h3 className="text-xs font-medium text-neutral-500">Expiration Date</h3>
+                     <p className="text-sm font-medium">
+                        {data.expiresAt 
+                            ? format(new Date(data.expiresAt), "PPP") 
+                            : "No expiration date"}
+                     </p>
+                </div>
+            </div>
 
-            <div className="space-y-2">
-              <Label className="text-xs text-neutral-400">System ID</Label>
-              <code className="block w-full p-2 rounded bg-neutral-100 dark:bg-neutral-800 font-mono text-xs text-neutral-500">
-                {data.id}
-              </code>
+            {/* Footer Info */}
+            <div className="flex items-center justify-between text-xs text-neutral-500 border-t pt-4">
+                <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    <span>Created: {data.createdAt ? format(new Date(data.createdAt), "MMM do, yyyy") : "Unknown"}</span>
+                </div>
+                <div className="font-mono text-[10px]">ID: {data.id}</div>
             </div>
           </div>
         ) : (
-          <div className="py-4 text-center text-neutral-500">
+          <div className="flex h-40 items-center justify-center text-neutral-500">
             No data found.
           </div>
         )}

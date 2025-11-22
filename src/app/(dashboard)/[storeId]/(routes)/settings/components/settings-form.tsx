@@ -34,7 +34,7 @@ const formSchema = z.object({
   name: z.string().min(1),
   address: z.string().optional(),
   phone: z.string().optional(),
-  email: z.string().email().optional().or(z.literal("")), 
+  email: z.string().email().optional().or(z.literal("")),
 });
 
 type SettingsFormValues = z.infer<typeof formSchema>;

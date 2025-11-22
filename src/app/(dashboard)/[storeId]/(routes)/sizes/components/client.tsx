@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AlertModal } from "@/components/modals/alert-modal";
-import { SizeViewModal } from "@/components/modals/size-view ";
+import { SizeViewModal } from "@/components/modals/size-view";
 import { useBulkSizeModal } from "@/hooks/use-bulk-size-modal";
 
 interface SizeClientProps {

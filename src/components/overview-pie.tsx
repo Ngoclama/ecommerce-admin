@@ -14,12 +14,12 @@ interface OverviewPieProps {
 }
 
 const COLORS = [
-  "#0088FE",
-  "#00C49F",
-  "#FFBB28",
-  "#FF8042",
-  "#8884d8",
-  "#82ca9d",
+  "#2980b9", // Primary Blue
+  "#2ecc71", // Green
+  "#f39c12", // Orange
+  "#e74c3c", // Red
+  "#9b59b6", // Purple
+  "#3498db", // Light Blue
 ];
 
 export const OverviewPie: React.FC<OverviewPieProps> = ({ data }) => {
@@ -35,23 +35,47 @@ export const OverviewPie: React.FC<OverviewPieProps> = ({ data }) => {
             `${name} ${((percent || 0) * 100).toFixed(0)}%`
           }
           outerRadius={120}
-          fill="#8884d8"
+          innerRadius={60}
+          paddingAngle={5}
           dataKey="value"
         >
           {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            <Cell
+              key={`cell-${index}`}
+              fill={COLORS[index % COLORS.length]}
+              style={{ transition: "fill 0.2s" }}
+            />
           ))}
         </Pie>
+
         <Tooltip
           formatter={(value: number) =>
             new Intl.NumberFormat("vi-VN", {
               style: "currency",
               currency: "VND",
+              maximumFractionDigits: 0,
             }).format(value)
           }
+          contentStyle={{
+            backgroundColor: "var(--card)",
+            border: "1px solid var(--border)",
+            borderRadius: "0.5rem",
+            padding: "8px",
+            fontSize: "14px",
+          }}
         />
-        <Legend />
+
+        <Legend
+          verticalAlign="bottom"
+          align="center"
+          wrapperStyle={{
+            paddingTop: "20px",
+            fontSize: "13px",
+          }}
+        />
       </PieChart>
     </ResponsiveContainer>
   );
 };
+
+export default OverviewPie;

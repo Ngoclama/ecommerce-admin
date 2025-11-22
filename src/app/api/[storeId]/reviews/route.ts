@@ -1,33 +1,50 @@
-import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
+import { NextResponse } from "next/server";
 
-export async function GET(
+export async function POST(
   req: Request,
   { params }: { params: { storeId: string } }
 ) {
   try {
-    if (!params.storeId) {
-      return new NextResponse("Store id is required", { status: 400 });
-    }
+    const { userId } = await auth();
+    const body = await req.json();
+    const { productId, rating, content, imageUrls } = body;
 
-    const reviews = await prisma.review.findMany({
+    if (!userId) return new NextResponse("Unauthenticated", { status: 401 });
+    if (!rating) return new NextResponse("Rating is required", { status: 400 });
+
+    const hasPurchased = await prisma.order.findFirst({
       where: {
-        product: {
-          storeId: params.storeId,
+        userId: userId,
+        isPaid: true,
+        orderItems: {
+          some: {
+            productId: productId,
+          },
         },
-      },
-      include: {
-        product: true, 
-        user: true,    
-      },
-      orderBy: {
-        createdAt: "desc",
       },
     });
 
-    return NextResponse.json(reviews);
+    if (!hasPurchased) {
+      return new NextResponse("Bạn phải mua sản phẩm này trước khi đánh giá.", {
+        status: 403,
+      });
+    }
+
+    const review = await prisma.review.create({
+      data: {
+        userId,
+        productId,
+        rating,
+        content,
+        imageUrls: imageUrls || [],
+      },
+    });
+
+    return NextResponse.json(review);
   } catch (error) {
-    console.log("[REVIEWS_GET]", error);
-    return new NextResponse("Internal error", { status: 500 });
+    console.log("[REVIEW_POST]", error);
+    return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

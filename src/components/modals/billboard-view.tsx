@@ -11,7 +11,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { Loader2 } from "lucide-react";
+import { Loader2, Calendar } from "lucide-react"; // Thêm icon Calendar
+import { format } from "date-fns"; // Để format ngày tháng
 
 interface BillboardViewModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ interface Billboard {
   id: string;
   label: string;
   imageUrl: string;
+  createdAt: string; 
 }
 
 export const BillboardViewModal: React.FC<BillboardViewModalProps> = ({
@@ -49,7 +51,7 @@ export const BillboardViewModal: React.FC<BillboardViewModalProps> = ({
         const response = await axios.get(
           `/api/${storeId}/billboards/${billboardId}`
         );
-        if ("data" in response && typeof response.data === "object") {
+        if (response.data) {
           setData(response.data as Billboard);
         }
       } catch (error) {
@@ -82,38 +84,55 @@ export const BillboardViewModal: React.FC<BillboardViewModalProps> = ({
           </div>
         ) : data ? (
           <div className="grid gap-6 md:grid-cols-2 mt-4">
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+            <div className="space-y-6">
+              {/* Label Section */}
+              <div className="p-4 rounded-lg border bg-neutral-50 dark:bg-neutral-800/50">
+                <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-1">
                   Label
                 </h3>
-                <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mt-1">
+                <p className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
                   {data.label}
                 </p>
               </div>
 
+              {/* ID Section */}
               <div>
-                <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-                  ID
+                <h3 className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1 uppercase tracking-wider">
+                  Billboard ID
                 </h3>
-                <p className="text-sm font-mono text-neutral-600 dark:text-neutral-300 mt-1 bg-neutral-100 dark:bg-neutral-800 p-2 rounded-md inline-block">
+                <code className="text-xs font-mono text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded block w-fit">
                   {data.id}
-                </p>
+                </code>
+              </div>
+
+              {/* Created At Section */}
+              <div className="flex items-center gap-2 text-sm text-neutral-500">
+                <Calendar className="h-4 w-4" />
+                <span>
+                  Created on:{" "}
+                  {data.createdAt
+                    ? format(new Date(data.createdAt), "MMMM do, yyyy")
+                    : "Unknown"}
+                </span>
               </div>
             </div>
 
-            <div className="aspect-video relative w-full overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800">
+            {/* Image Section */}
+            <div className="aspect-video relative w-full overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-sm">
               <Image
                 fill
                 src={data.imageUrl}
                 alt={data.label}
-                className="object-cover"
+                className="object-cover hover:scale-105 transition-transform duration-500"
               />
             </div>
           </div>
         ) : (
-          <div className="flex h-40 items-center justify-center text-neutral-500">
-            No data found.
+          <div className="flex h-40 items-center justify-center text-neutral-500 flex-col gap-2">
+            <p>No data found.</p>
+            <p className="text-xs text-muted-foreground">
+              This billboard might have been deleted.
+            </p>
           </div>
         )}
       </DialogContent>

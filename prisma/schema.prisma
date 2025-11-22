@@ -7,19 +7,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── 1. USER & AUTH (Đồng bộ với Clerk) ────────────────────────
+// ─── 1. USER & AUTH ───────────────────────────────────────────
 model User {
   id       String  @id @default(auto()) @map("_id") @db.ObjectId
   clerkId  String  @unique
   email    String  @unique
   name     String?
   imageUrl String?
-  role     String  @default("CUSTOMER") // "ADMIN" | "VENDOR" | "CUSTOMER"
+  role     Role    @default(CUSTOMER) // [FIXED] Dùng Enum thay vì String
+  isVIP    Boolean @default(false)
+  isBanned Boolean @default(false)
+  phone    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Quan hệ
   stores    Store[]
   orders    Order[]
   reviews   Review[]
@@ -36,23 +38,20 @@ model Store {
   phone   String? @default("")
   email   String? @default("")
 
-  userId String // Đây là Clerk ID
+  userId String
   user   User   @relation(fields: [userId], references: [clerkId])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Quan hệ Catalog
   billboards Billboard[]
   categories Category[]
   sizes      Size[]
   colors     Color[]
   materials  Material[]
   products   Product[]
-
-  // Quan hệ Business
-  orders  Order[]
-  coupons Coupon[]
+  orders     Order[]
+  coupons    Coupon[]
 }
 
 // ─── 3. CATALOG & ATTRIBUTES ──────────────────────────────────
@@ -113,7 +112,6 @@ model Color {
   @@index([storeId])
 }
 
-// MỚI: Model Chất liệu (Cotton, Silk, Denim...)
 model Material {
   id        String    @id @default(auto()) @map("_id") @db.ObjectId
   storeId   String    @db.ObjectId
@@ -127,7 +125,13 @@ model Material {
   @@index([storeId])
 }
 
-// ─── 4. PRODUCT (SẢN PHẨM) ────────────────────────────────────
+enum Role {
+  ADMIN
+  VENDOR
+  CUSTOMER
+}
+
+// ─── 4. PRODUCT ───────────────────────────────────────────────
 model Product {
   id      String @id @default(auto()) @map("_id") @db.ObjectId
   storeId String @db.ObjectId
@@ -138,33 +142,37 @@ model Product {
 
   name        String
   description String?
-  price       Float
+  slug        String // [FIXED] Bỏ @unique global
+  price       Int // [OK] Int cho VND
+  costPrice   Int?
 
-  // Thuộc tính
   isFeatured Boolean @default(false)
   isArchived Boolean @default(false)
-  inventory  Int     @default(10) // MỚI: Quản lý tồn kho
+  inventory  Int     @default(10)
 
-  // Phân loại chi tiết
+  groupId String? @db.ObjectId // [OK] Gom nhóm biến thể
+
   sizeId String @db.ObjectId
   size   Size   @relation(fields: [sizeId], references: [id])
 
   colorId String @db.ObjectId
   color   Color  @relation(fields: [colorId], references: [id])
 
-  materialId String?   @db.ObjectId // MỚI: Optional
+  materialId String?   @db.ObjectId
   material   Material? @relation(fields: [materialId], references: [id])
 
-  gender String? @default("UNISEX") // "MEN", "WOMEN", "KIDS", "UNISEX"
+  gender String? @default("UNISEX")
 
   images     Image[]
   orderItems OrderItem[]
   reviews    Review[]
   wishlists  Wishlist[]
+  cartItems  CartItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([storeId, slug])
   @@index([storeId])
   @@index([categoryId])
   @@index([sizeId])
@@ -191,26 +199,28 @@ enum OrderStatus {
   CANCELLED
 }
 
-// ─── 5. ORDER & CHECKOUT (QUAN TRỌNG) ─────────────────────────
+// ─── 5. ORDER & CHECKOUT ──────────────────────────────────────
 model Order {
   id      String @id @default(auto()) @map("_id") @db.ObjectId
   storeId String @db.ObjectId
   store   Store  @relation(fields: [storeId], references: [id])
 
-  // Thông tin khách hàng (nếu login)
   userId String? @db.ObjectId
   user   User?   @relation(fields: [userId], references: [id])
 
   orderItems OrderItem[]
   isPaid     Boolean     @default(false)
 
-  // Thông tin giao hàng
-  phone      String      @default("")
-  address    String      @default("")
-  status     OrderStatus @default(PENDING)
-  // Thanh toán
-  totalPrice Float       @default(0)
-  currency   String      @default("VND")
+  phone   String      @default("")
+  address String      @default("")
+  status  OrderStatus @default(PENDING)
+
+  totalPrice Int // [OK] Int
+  currency   String @default("VND")
+
+  shippingProvider String?
+  trackingNumber   String?
+  cancelReason     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -224,13 +234,12 @@ model OrderItem {
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   productId String  @db.ObjectId
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int     @default(1)
 
-  quantity Int @default(1)
-
-  // SNAPSHOT FIELDS (Lưu cứng tên để hiển thị hóa đơn)
+  // SNAPSHOT FIELDS
   productName  String?
-  productPrice Float?
+  productPrice Int? // [FIXED] Đổi sang Int để khớp với Product
   sizeName     String?
   colorName    String?
 
@@ -241,18 +250,18 @@ model OrderItem {
   @@index([productId])
 }
 
-// ─── 6. MARKETING & ENGAGEMENT ────────────────────────────────
+// ─── 6. MARKETING ─────────────────────────────────────────────
 model Coupon {
   id        String    @id @default(auto()) @map("_id") @db.ObjectId
   storeId   String    @db.ObjectId
   store     Store     @relation(fields: [storeId], references: [id])
   code      String
-  value     Float // Giá trị giảm
-  type      String // "PERCENT" hoặc "FIXED"
+  value     Float // Giữ Float nếu hỗ trợ cả % (0.15) và số tiền lẻ
+  type      String // "PERCENT" | "FIXED"
   createdAt DateTime  @default(now())
   expiresAt DateTime?
 
-  @@unique([storeId, code]) // Một store không trùng mã coupon
+  @@unique([storeId, code])
   @@index([storeId])
 }
 
@@ -264,9 +273,9 @@ model Review {
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id])
 
-  rating        Int // 1-5 sao
+  rating        Int
   content       String?
-  imageUrl      String?
+  imageUrls     String[] // [FIXED] Dùng mảng String để lưu nhiều ảnh feedback
   isArchived    Boolean  @default(false)
   adminResponse String?
   createdAt     DateTime @default(now())
@@ -276,34 +285,50 @@ model Review {
 }
 
 model Wishlist {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  userId String @db.ObjectId
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  productId String  @db.ObjectId
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String   @db.ObjectId
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
-  @@unique([userId, productId]) // Một user chỉ wishlist 1 sp một lần
+  @@unique([userId, productId])
   @@index([userId])
   @@index([productId])
 }
 
-// ─── 7. ADDRESS (Sổ địa chỉ khách hàng) ───────────────────────
 model Address {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  userId String @db.ObjectId
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  label     String // "Nhà riêng", "Công ty"
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String
   phone     String
   address   String
   city      String
-  isDefault Boolean @default(false)
-
+  isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+// ─── 7. CART ──────────────────────────────────────────────────
+model Cart {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String?    @unique
+  guestId   String?    @unique // [ADDED] Hỗ trợ khách vãng lai
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  cartId    String  @db.ObjectId
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String  @db.ObjectId
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int
+
+  @@index([cartId]) // Nên thêm index này
 }

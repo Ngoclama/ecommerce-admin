@@ -1,8 +1,12 @@
 "use client";
 
+import axios from "axios";
 import { useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import axios from "axios"; 
+import { Copy, Edit, MoreHorizontal, Trash, Eye } from "lucide-react";
+import { toast } from "sonner";
+import { useParams, useRouter } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,12 +14,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Pencil, Trash2, Eye, Copy } from "lucide-react";
-import { toast } from "sonner";
 import { AlertModal } from "@/components/modals/alert-modal";
-import { CouponViewModal } from "@/components/modals/coupon-view";
 import { CouponColumn } from "./columns";
+import { CouponViewModal } from "@/components/modals/coupon-view"; // Import View Modal
 
 interface CellActionProps {
   data: CouponColumn;
@@ -24,52 +25,45 @@ interface CellActionProps {
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false); // State View Modal
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [openAlert, setOpenAlert] = useState(false); // Modal xóa
-  const [openView, setOpenView] = useState(false); // Modal xem
-
-  const onCopy = (id: string) => {
-    navigator.clipboard.writeText(id);
-    toast.success("Coupon ID copied to clipboard");
-  };
-
-  const handleEdit = () => {
-    router.push(`/${params.storeId}/coupons/${data.id}`);
-  };
-
-  const handleDelete = async () => {
+  const onConfirm = async () => {
     try {
-      setIsLoading(true);
+      setLoading(true);
       await axios.delete(`/api/${params.storeId}/coupons/${data.id}`);
-
-      toast.success("Coupon deleted successfully");
+      toast.success("Coupon deleted.");
       router.refresh();
     } catch (error) {
-      toast.error("Make sure you removed all orders using this coupon first.");
+      toast.error("Something went wrong.");
     } finally {
-      setIsLoading(false);
-      setOpenAlert(false);
+      setLoading(false);
+      setOpen(false);
     }
+  };
+
+  const onCopy = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast.success("Coupon code copied to clipboard.");
   };
 
   return (
     <>
       <AlertModal
-        isOpen={openAlert}
-        onClose={() => setOpenAlert(false)}
-        onConfirm={handleDelete}
-        loading={isLoading}
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        onConfirm={onConfirm}
+        loading={loading}
       />
 
-      {openView && (
-        <CouponViewModal
-          isOpen={openView}
-          onClose={() => setOpenView(false)}
-          storeId={params.storeId as string}
-          couponId={data.id}
-        />
-      )}
+      {/* View Modal */}
+      <CouponViewModal
+        isOpen={viewOpen}
+        onClose={() => setViewOpen(false)}
+        couponId={data.id}
+        storeId={params.storeId as string}
+      />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -78,30 +72,32 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
 
-          <DropdownMenuItem onClick={() => onCopy(data.id)}>
+          <DropdownMenuItem onClick={() => onCopy(data.code)}>
             <Copy className="mr-2 h-4 w-4" />
-            Copy ID
+            Copy Code
           </DropdownMenuItem>
 
-          <DropdownMenuItem onClick={() => setOpenView(true)}>
+          {/* Nút View Details */}
+          <DropdownMenuItem onClick={() => setViewOpen(true)}>
             <Eye className="mr-2 h-4 w-4" />
             View Details
-          </DropdownMenuItem> 
-
-          <DropdownMenuItem onClick={handleEdit}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit
           </DropdownMenuItem>
 
           <DropdownMenuItem
-            onClick={() => setOpenAlert(true)}
-            className="text-red-600 focus:text-red-600"
+            onClick={() => router.push(`/${params.storeId}/coupons/${data.id}`)}
           >
-            <Trash2 className="mr-2 h-4 w-4" />
+            <Edit className="mr-2 h-4 w-4" />
+            Update
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={() => setOpen(true)}
+            className="text-red-600"
+          >
+            <Trash className="mr-2 h-4 w-4" />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>

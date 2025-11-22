@@ -9,7 +9,7 @@ export async function GET(
   try {
     if (!params.billboardId) {
       return NextResponse.json(
-        { message: "Billboard is required" },
+        { message: "Billboard ID is required" },
         { status: 400 }
       );
     }
@@ -17,11 +17,23 @@ export async function GET(
       where: {
         id: params.billboardId,
       },
+      include: {
+        categories: {
+          select: { id: true, name: true },
+        },
+      },
     });
+
+    if (!billboard) {
+      return NextResponse.json(
+        { message: "Billboard not found" },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json(billboard);
   } catch (error) {
-    console.error("[Billboard_GET]", error);
+    console.error("[BILLBOARD_GET]", error);
     return NextResponse.json({ message: "Internal error" }, { status: 500 });
   }
 }
@@ -45,6 +57,11 @@ export async function PATCH(
     if (!imageUrl)
       return NextResponse.json(
         { message: "Image URL is required" },
+        { status: 400 }
+      );
+    if (!params.storeId)
+      return NextResponse.json(
+        { message: "Store ID is required" },
         { status: 400 }
       );
 
@@ -77,6 +94,13 @@ export async function DELETE(
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
+    if (!params.storeId || !params.billboardId) {
+      return NextResponse.json(
+        { message: "Store ID and Billboard ID are required" },
+        { status: 400 }
+      );
+    }
+
     const storeByUserId = await prisma.store.findFirst({
       where: {
         id: params.storeId,
@@ -87,6 +111,22 @@ export async function DELETE(
       return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
     }
 
+    const usedByCategories = await prisma.category.count({
+      where: {
+        billboardId: params.billboardId,
+      },
+    });
+
+    if (usedByCategories > 0) {
+      return NextResponse.json(
+        {
+          message: `Cannot delete billboard. It is currently linked to ${usedByCategories} categories.`,
+          error: "CONSTRAINT_VIOLATION",
+        },
+        { status: 400 }
+      );
+    }
+
     const billboard = await prisma.billboard.delete({
       where: {
         id: params.billboardId,
@@ -94,8 +134,19 @@ export async function DELETE(
     });
 
     return NextResponse.json(billboard);
-  } catch (error) {
-    console.error("[Billboard_DELETE]", error);
+  } catch (error: any) {
+    console.error("[BILLBOARD_DELETE]", error);
+
+    if (error.code === "P2014") {
+      return NextResponse.json(
+        {
+          message: "Deletion failed due to external data constraints.",
+          error: "CONSTRAINT_VIOLATION",
+        },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json({ message: "Internal error" }, { status: 500 });
   }
 }

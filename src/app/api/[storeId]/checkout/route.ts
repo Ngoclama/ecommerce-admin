@@ -3,23 +3,10 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import prisma from "@/lib/prisma";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
-
-export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders });
-}
-
 export async function POST(
   req: Request,
-  props: { params: Promise<{ storeId: string }> }
+  { params }: { params: { storeId: string } }
 ) {
-  const params = await props.params;
-  const { storeId } = params;
-
   try {
     const { productIds } = await req.json();
 
@@ -27,7 +14,6 @@ export async function POST(
       return new NextResponse("Product ids are required", { status: 400 });
     }
 
-    // 1. Lấy thông tin sản phẩm + Size + Color + Material để làm Snapshot
     const products = await prisma.product.findMany({
       where: {
         id: {
@@ -35,17 +21,25 @@ export async function POST(
         },
       },
       include: {
-        images: true,
-        category: true,
         size: true,
         color: true,
+        images: true,
       },
     });
 
-    // 2. Tạo Line Items cho Stripe
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+    let totalPrice = 0; // 1. Khởi tạo biến tổng tiền
 
-    products.forEach((product) => {
+    for (const product of products) {
+      if (product.inventory <= 0) {
+        return new NextResponse(`Sản phẩm '${product.name}' đã hết hàng.`, {
+          status: 400,
+        });
+      }
+
+      const unitAmount = Math.round(Number(product.price));
+      totalPrice += unitAmount; // 2. Cộng dồn tiền vào tổng (với số lượng mặc định là 1)
+
       line_items.push({
         quantity: 1,
         price_data: {
@@ -53,39 +47,33 @@ export async function POST(
           product_data: {
             name: product.name,
             description: `Size: ${product.size.name}, Color: ${product.color.name}`,
-            images: product.images.map((image) => image.url),
+            images: product.images?.[0]?.url ? [product.images[0].url] : [],
           },
-          unit_amount: Math.round(Number(product.price)),
+          unit_amount: unitAmount,
         },
       });
-    });
+    }
 
     const order = await prisma.order.create({
       data: {
         storeId: params.storeId,
         isPaid: false,
+        totalPrice: totalPrice, // 3. Thêm trường này vào để fix lỗi
         orderItems: {
           create: productIds.map((productId: string) => {
             const product = products.find((p) => p.id === productId);
-            if (!product) {
-              // This case should ideally not happen if your logic is sound
-              throw new Error("Product not found");
-            }
             return {
-              product: {
-                connect: {
-                  id: productId,
-                },
-              },
-              sizeName: product.size.name, // Snapshot size name
-              colorName: product.color.name, // Snapshot color name
+              product: { connect: { id: productId } },
+              sizeName: product?.size.name,
+              colorName: product?.color.name,
+              productPrice: Number(product?.price), // Đảm bảo kiểu số
+              productName: product?.name,
             };
           }),
         },
       },
     });
 
-    // 4. Tạo Stripe Session
     const session = await stripe.checkout.sessions.create({
       line_items,
       mode: "payment",
@@ -100,12 +88,7 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(
-      { url: session.url },
-      {
-        headers: corsHeaders,
-      }
-    );
+    return NextResponse.json({ url: session.url });
   } catch (error) {
     console.log("[CHECKOUT_POST_ERROR]", error);
     return new NextResponse("Internal Server Error", { status: 500 });

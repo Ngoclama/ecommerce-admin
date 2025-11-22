@@ -11,7 +11,6 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ModalProvider } from "@/providers/modal-provider";
 import { Toaster } from "@/components/ui/sonner";
-import ModeToggle from "@/components/ui/theme-mode";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -59,9 +58,7 @@ export default function RootLayout({
                 </header>
                 <main className="flex-1">
                   {children}
-                  <div className="fixed bottom-4 right-4">
-                    <ModeToggle />
-                  </div>
+                  <div className="fixed bottom-4 right-4"></div>
                 </main>
               </div>
               <Toaster richColors position="bottom-center" />

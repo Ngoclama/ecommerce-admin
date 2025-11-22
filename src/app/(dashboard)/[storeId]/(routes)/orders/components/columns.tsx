@@ -2,6 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { CellAction } from "./cell-action";
+import { Badge } from "@/components/ui/badge";
 
 export type OrderColumn = {
   id: string;
@@ -11,7 +12,10 @@ export type OrderColumn = {
   totalPrice: string;
   products: string;
   createdAt: string;
+  // Các trường mới cần thêm:
   status: string;
+  shippingProvider: string | null;
+  trackingNumber: string | null;
 };
 
 export const columns: ColumnDef<OrderColumn>[] = [
@@ -35,13 +39,9 @@ export const columns: ColumnDef<OrderColumn>[] = [
     accessorKey: "isPaid",
     header: "Paid",
     cell: ({ row }) => (
-      <span
-        className={`font-semibold ${
-          row.original.isPaid ? "text-green-600" : "text-red-500"
-        }`}
-      >
-        {row.original.isPaid ? "Paid" : "Unpaid"}
-      </span>
+      <Badge variant={row.original.isPaid ? "default" : "destructive"}>
+        {row.original.isPaid ? "Yes" : "No"}
+      </Badge>
     ),
   },
   {
@@ -49,15 +49,16 @@ export const columns: ColumnDef<OrderColumn>[] = [
     header: "Status",
     cell: ({ row }) => {
       const status = row.original.status;
-      let colorClass = "text-neutral-500";
+      let color = "secondary";
+      if (status === "SHIPPED") color = "default"; // Blue-ish by default
+      if (status === "DELIVERED") color = "success"; // Bạn có thể style thêm class nếu muốn màu xanh lá
+      if (status === "CANCELLED") color = "destructive";
 
-      if (status === "PENDING") colorClass = "text-yellow-600";
-      if (status === "PROCESSING") colorClass = "text-blue-600";
-      if (status === "SHIPPED") colorClass = "text-indigo-600";
-      if (status === "DELIVERED") colorClass = "text-green-600 font-bold";
-      if (status === "CANCELLED") colorClass = "text-red-600";
-
-      return <span className={colorClass}>{status}</span>;
+      return (
+        <Badge variant={color as any} className="uppercase text-[10px]">
+          {status}
+        </Badge>
+      );
     },
   },
   {
