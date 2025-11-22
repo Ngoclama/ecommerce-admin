@@ -14,8 +14,12 @@ const CouponsPage = async (props: { params: Promise<{ storeId: string }> }) => {
   const formattedCoupons: CouponColumn[] = coupons.map((item) => ({
     id: item.id,
     code: item.code,
-    type: item.type === "PERCENT" ? "Phần trăm" : "Tiền mặt",
-    value: item.type === "PERCENT" ? `${item.value}%` : `${item.value} VND`,
+    value: `${item.value}`,
+    type: item.type,
+    expirationDate: item.expiresAt
+      ? format(item.expiresAt, "MMMM do, yyyy")
+      : "No Expiration",
+    isActive: item.expiresAt ? new Date(item.expiresAt) > new Date() : true,
     createdAt: format(item.createdAt, "MMMM do, yyyy"),
   }));
 

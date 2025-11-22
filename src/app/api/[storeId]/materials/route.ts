@@ -4,13 +4,14 @@ import prisma from "@/lib/prisma";
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ storeId: string }> }
+  { params }: { params: { storeId: string } }
 ) {
   try {
     const { userId } = await auth();
     const body = await req.json();
 
     const { name, value } = body;
+
     const { storeId } = await params;
 
     if (!userId) return new NextResponse("Unauthenticated", { status: 401 });
@@ -43,7 +44,7 @@ export async function POST(
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ storeId: string }> }
+  { params }: { params: { storeId: string } }
 ) {
   try {
     const { storeId } = await params;
@@ -53,6 +54,12 @@ export async function GET(
 
     const materials = await prisma.material.findMany({
       where: { storeId },
+      include: {
+        _count: {
+          select: { products: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json(materials);

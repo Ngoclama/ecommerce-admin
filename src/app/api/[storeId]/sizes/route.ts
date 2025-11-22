@@ -56,9 +56,15 @@ export async function GET(
     if (!params.storeId) {
       return new NextResponse("Store id is required", { status: 400 });
     }
+
     const sizes = await prisma.size.findMany({
       where: {
         storeId: params.storeId,
+      },
+      include: {
+        _count: {
+          select: { products: true },
+        },
       },
     });
 
@@ -68,6 +74,7 @@ export async function GET(
     return new NextResponse("Internal error", { status: 500 });
   }
 }
+
 export async function DELETE(
   req: Request,
   { params }: { params: { storeId: string } }

@@ -6,10 +6,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Coupon } from "@prisma/client";
-import { Trash } from "lucide-react";
+import { Trash, CalendarIcon } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import { AlertModal } from "@/components/modals/alert-modal";
+import { format } from "date-fns";
 
 import { Heading } from "@/components/ui/heading";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
@@ -35,6 +37,7 @@ const formSchema = z.object({
   code: z.string().min(1),
   value: z.coerce.number().min(1),
   type: z.string().min(1),
+  expiresAt: z.string().optional(),
 });
 
 type CouponFormValues = z.infer<typeof formSchema>;
@@ -57,23 +60,37 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
 
   const form = useForm({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
-      code: "",
-      value: 0,
-      type: "PERCENT",
-    },
+    defaultValues: initialData
+      ? {
+          ...initialData,
+          value: parseFloat(String(initialData?.value)),
+          expiresAt: initialData.expiresAt
+            ? format(new Date(initialData.expiresAt), "yyyy-MM-dd")
+            : "",
+        }
+      : {
+          code: "",
+          value: 0,
+          type: "PERCENT",
+          expiresAt: "",
+        },
   });
 
   const onSubmit = async (data: CouponFormValues) => {
     try {
       setLoading(true);
+      const payload = {
+        ...data,
+        expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+      };
+
       if (initialData) {
         await axios.patch(
           `/api/${params.storeId}/coupons/${params.couponId}`,
-          data
+          payload
         );
       } else {
-        await axios.post(`/api/${params.storeId}/coupons`, data);
+        await axios.post(`/api/${params.storeId}/coupons`, payload);
       }
       router.refresh();
       router.push(`/${params.storeId}/coupons`);
@@ -190,6 +207,27 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
                       <SelectItem value="FIXED">Fixed Amount (VND)</SelectItem>
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="expiresAt"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Expires At (Optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="date" 
+                      disabled={loading}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Leave empty if the coupon never expires.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

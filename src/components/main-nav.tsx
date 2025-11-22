@@ -1,21 +1,20 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown, Box } from "lucide-react";
 
 export function MainNav({
   className,
   ...props
 }: React.HTMLAttributes<HTMLElement>) {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   const pathname = usePathname();
   const params = useParams();
 
@@ -23,84 +22,133 @@ export function MainNav({
     {
       href: `/${params.storeId}`,
       label: "Overview",
+      active: pathname === `/${params.storeId}`,
     },
     {
       href: `/${params.storeId}/billboards`,
       label: "Billboards",
+      active: pathname.includes("billboards"),
     },
     {
       href: `/${params.storeId}/categories`,
       label: "Categories",
+      active: pathname.includes("categories"),
+    },
+  ];
+
+  const productDropdownRoutes = [
+    {
+      href: `/${params.storeId}/products`,
+      label: "Products List", 
+      active: pathname === `/${params.storeId}/products`,
     },
     {
       href: `/${params.storeId}/sizes`,
       label: "Sizes",
+      active: pathname.includes("sizes"),
     },
     {
       href: `/${params.storeId}/colors`,
       label: "Colors",
+      active: pathname.includes("colors"),
     },
     {
       href: `/${params.storeId}/materials`,
       label: "Materials",
-    },
-    {
-      href: `/${params.storeId}/products`,
-      label: "Products",
-    },
-
-    {
-      href: `/${params.storeId}/orders`,
-      label: "Orders",
+      active: pathname.includes("materials"),
     },
     {
       href: `/${params.storeId}/coupons`,
       label: "Coupons",
+      active: pathname.includes("coupons"),
+    },
+  ];
+
+  const endRoutes = [
+    {
+      href: `/${params.storeId}/orders`,
+      label: "Orders",
+      active: pathname.includes("orders"),
+    },
+    {
+      href: `/${params.storeId}/reviews`,
+      label: "Reviews",
+      active: pathname.includes("reviews"),
     },
     {
       href: `/${params.storeId}/settings`,
       label: "Settings",
+      active: pathname.includes("settings"),
     },
   ];
 
-  if (!isMounted) {
-    return null;
-  }
+  const isDropdownActive = productDropdownRoutes.some((route) => route.active);
 
   return (
     <nav
-      className={cn(
-        "relative flex items-center gap-3 lg:gap-5 px-4 py-2 rounded-2xl",
-        "backdrop-blur-xl bg-white/10 dark:bg-white/5",
-        "border border-white/20 shadow-[0_4px_30px_rgba(0,0,0,0.1)]",
-        "ring-1 ring-white/20",
-        "transition-all duration-300",
-        className
-      )}
+      className={cn("flex items-center space-x-4 lg:space-x-6", className)}
+      {...props}
     >
-      {routes.map((route) => {
-        const active = pathname === route.href;
+      {routes.map((route) => (
+        <Link
+          key={route.href}
+          href={route.href}
+          className={cn(
+            "text-sm font-medium transition-colors hover:text-primary",
+            route.active
+              ? "text-black dark:text-white"
+              : "text-muted-foreground"
+          )}
+        >
+          {route.label}
+        </Link>
+      ))}
 
-        return (
-          <Link
-            key={route.href}
-            href={route.href}
-            className={cn(
-              "relative flex items-center justify-center px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-200",
-              active ? "text-black" : "text-black/70 hover:text-black"
-            )}
-          >
-            {active && (
-              <motion.div
-                layoutId="activeNav"
-                className="absolute inset-0 rounded-lg bg-white/20 backdrop-blur-sm shadow-inner"
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              />
-            )}
-            <span className="relative z-10">{route.label}</span>
-          </Link>
-        );
-      })}
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className={cn(
+            "flex items-center text-sm  transition-colors hover:text-primary outline-none",
+            isDropdownActive
+              ? "text-black dark:text-white"
+              : "text-muted-foreground"
+          )}
+        >
+          <Box className="mr-1 h-4 w-4" /> Products {" "}
+          <ChevronDown className="ml-1 h-4 w-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          {productDropdownRoutes.map((route) => (
+            <DropdownMenuItem key={route.href} asChild>
+              <Link
+                href={route.href}
+                className={cn(
+                  "w-full cursor-pointer",
+                  route.active
+                    ? "font-bold bg-neutral-100 dark:bg-neutral-800"
+                    : ""
+                )}
+              >
+                {route.label}
+              </Link>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {endRoutes.map((route) => (
+        <Link
+          key={route.href}
+          href={route.href}
+          className={cn(
+            "text-sm font-medium transition-colors hover:text-primary",
+            route.active
+              ? "text-black dark:text-white"
+              : "text-muted-foreground"
+          )}
+        >
+          {route.label}
+        </Link>
+      ))}
     </nav>
   );
 }

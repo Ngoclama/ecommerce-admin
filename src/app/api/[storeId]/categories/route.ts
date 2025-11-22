@@ -10,7 +10,7 @@ export async function POST(
   try {
     const { userId } = await auth();
     const body = await req.json();
-    const { name, billboardId } = body;
+    const { name, billboardId, slug } = body;
 
     if (!userId)
       return NextResponse.json(
@@ -41,11 +41,44 @@ export async function POST(
         { success: false, message: "Unauthorized" },
         { status: 403 }
       );
+const existingCategory = await prisma.category.findFirst({
+      where: {
+        storeId: params.storeId,
+        name: name, 
+      },
+    });
 
-    const slug = slugify(name, { lower: true, strict: true });
+    if (existingCategory) {
+      return NextResponse.json(
+        { message: "Category name already exists." },
+        { status: 409 } 
+      );
+    }
+    const finalSlug = slug
+      ? slug
+      : slugify(name, { lower: true, strict: true });
+
+    const existingCategoryBySlug = await prisma.category.findFirst({
+        where: {
+            storeId: params.storeId,
+            slug: finalSlug,
+        },
+    });
+
+    if (existingCategoryBySlug) {
+        return NextResponse.json(
+            { message: "Generated slug already exists. Please use a different name." },
+            { status: 409 }
+        );
+    }
 
     const category = await prisma.category.create({
-      data: { name, billboardId, storeId: params.storeId },
+      data: {
+        name,
+        slug: finalSlug,
+        billboardId,
+        storeId: params.storeId,
+      },
     });
 
     return NextResponse.json(
@@ -55,7 +88,7 @@ export async function POST(
   } catch (error) {
     console.error("[CATEGORY_POST]", error);
     return NextResponse.json(
-      { success: false, message: "Internal Server Error" },
+      { success: false, message: "Internal Server Error", error: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
@@ -74,7 +107,12 @@ export async function GET(
 
     const categories = await prisma.category.findMany({
       where: { storeId: params.storeId },
-      include: { billboard: true },
+      include: {
+        billboard: true,
+        _count: {
+          select: { products: true },
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
 
@@ -114,6 +152,7 @@ export async function DELETE(
         { success: false, message: "Unauthorized" },
         { status: 403 }
       );
+      
 
     console.log("[API] Deleting all products...");
     await prisma.product.deleteMany({

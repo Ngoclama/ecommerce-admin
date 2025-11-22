@@ -1,6 +1,5 @@
-import { auth } from "@clerk/nextjs/server";
-import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 
 export async function GET(
   req: Request,
@@ -8,8 +7,9 @@ export async function GET(
 ) {
   try {
     if (!params.storeId) {
-      return new NextResponse("Store id is required", { status: 400 });
+      return new NextResponse("Store Id is required", { status: 400 });
     }
+
     const orders = await prisma.order.findMany({
       where: {
         storeId: params.storeId,
@@ -27,8 +27,8 @@ export async function GET(
     });
 
     return NextResponse.json(orders);
-  } catch (error) {
-    console.error("[ORDERS_GET]", error);
-    return new NextResponse("Internal error", { status: 500 });
+  } catch (err) {
+    console.log(`[ORDERS_GET] ${err}`);
+    return new NextResponse(`Internal error`, { status: 500 });
   }
 }

@@ -9,7 +9,8 @@ export async function POST(
   try {
     const { userId } = await auth();
     const body = await req.json();
-    const { code, value, type } = body;
+
+    const { code, value, type, expiresAt } = body;
 
     if (!userId) return new NextResponse("Unauthenticated", { status: 403 });
     if (!code) return new NextResponse("Code is required", { status: 400 });
@@ -28,6 +29,7 @@ export async function POST(
         code,
         value,
         type,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
         storeId: params.storeId,
       },
     });

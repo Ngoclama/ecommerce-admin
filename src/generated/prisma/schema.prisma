@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -8,52 +7,55 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── USER ────────────────────────────────────────
+// ─── 1. USER & AUTH (Đồng bộ với Clerk) ────────────────────────
 model User {
-  id         String     @id @default(auto()) @map("_id") @db.ObjectId
-  email      String     @unique
-  name       String?
-  password   String
-  role       String     @default("CUSTOMER") // "ADMIN" | "VENDOR" | "CUSTOMER"
-  stores     Store[]
-  sessions   Session[]
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  orders     Order[]
-  addresses  Address[]
-  activities Activity[]
-  reviews    Review[]
-}
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  clerkId  String  @unique
+  email    String  @unique
+  name     String?
+  imageUrl String?
+  role     String  @default("CUSTOMER") // "ADMIN" | "VENDOR" | "CUSTOMER"
 
-model Session {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  token     String // refresh token or session token
-  expiresAt DateTime
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@unique([token])
-  @@index([userId])
+  // Quan hệ
+  stores    Store[]
+  orders    Order[]
+  reviews   Review[]
+  addresses Address[]
+  wishlist  Wishlist[]
 }
 
-// ─── STORE ────────────────────────────────────────
+// ─── 2. STORE MANAGEMENT ──────────────────────────────────────
 model Store {
-  id         String      @id @default(auto()) @map("_id") @db.ObjectId
-  name       String
-  userId     String
-  user       User        @relation(fields: [userId], references: [id])
+  id   String @id @default(auto()) @map("_id") @db.ObjectId
+  name String
+
+  address String? @default("")
+  phone   String? @default("")
+  email   String? @default("")
+
+  userId String // Đây là Clerk ID
+  user   User   @relation(fields: [userId], references: [clerkId])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Quan hệ Catalog
   billboards Billboard[]
   categories Category[]
   sizes      Size[]
   colors     Color[]
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  materials  Material[]
   products   Product[]
-  orders     Order[]
+
+  // Quan hệ Business
+  orders  Order[]
+  coupons Coupon[]
 }
 
-// ─── BILLBOARD ────────────────────────────────────
+// ─── 3. CATALOG & ATTRIBUTES ──────────────────────────────────
 model Billboard {
   id         String     @id @default(auto()) @map("_id") @db.ObjectId
   storeId    String     @db.ObjectId
@@ -67,230 +69,239 @@ model Billboard {
   @@index([storeId])
 }
 
-// ─── CATEGORY ─────────────────────────────────────
 model Category {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
   storeId     String    @db.ObjectId
   store       Store     @relation(fields: [storeId], references: [id])
   billboardId String    @db.ObjectId
   billboard   Billboard @relation(fields: [billboardId], references: [id])
-  name        String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  products    Product[]
+
+  name      String
+  slug      String?   @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@index([storeId])
   @@index([billboardId])
 }
 
-// ─── SIZE ─────────────────────────────────────────
 model Size {
-  id         String      @id @default(auto()) @map("_id") @db.ObjectId
-  storeId    String      @db.ObjectId
-  store      Store       @relation(fields: [storeId], references: [id])
-  name       String
-  value      String
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  products   Product[]
-  orderItems OrderItem[]
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  storeId   String    @db.ObjectId
+  store     Store     @relation(fields: [storeId], references: [id])
+  name      String
+  value     String
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@index([storeId])
 }
 
-// ─── COLOR ────────────────────────────────────────
 model Color {
-  id         String      @id @default(auto()) @map("_id") @db.ObjectId
-  storeId    String      @db.ObjectId
-  store      Store       @relation(fields: [storeId], references: [id])
-  name       String
-  value      String
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  products   Product[]
-  orderItems OrderItem[]
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  storeId   String    @db.ObjectId
+  store     Store     @relation(fields: [storeId], references: [id])
+  name      String
+  value     String
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@index([storeId])
 }
 
-// ─── PRODUCT ──────────────────────────────────────
+// MỚI: Model Chất liệu (Cotton, Silk, Denim...)
+model Material {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  storeId   String    @db.ObjectId
+  store     Store     @relation(fields: [storeId], references: [id])
+  name      String
+  value     String
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([storeId])
+}
+
+// ─── 4. PRODUCT (SẢN PHẨM) ────────────────────────────────────
 model Product {
-  id          String      @id @default(auto()) @map("_id") @db.ObjectId
-  storeId     String      @db.ObjectId
-  store       Store       @relation(fields: [storeId], references: [id])
-  categoryId  String      @db.ObjectId
-  category    Category    @relation(fields: [categoryId], references: [id])
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  storeId String @db.ObjectId
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  categoryId String   @db.ObjectId
+  category   Category @relation(fields: [categoryId], references: [id])
+
   name        String
-  slug        String?
-  sku         String?
+  description String?
   price       Float
-  priceCents  Int         @default(0)
-  currency    String?     @default("VND")
-  isFeatured  Boolean     @default(false)
-  isArchived  Boolean     @default(false)
-  isActive    Boolean     @default(true)
-  description String
-  sizeId      String      @db.ObjectId
-  size        Size        @relation(fields: [sizeId], references: [id])
-  colorId     String      @db.ObjectId
-  color       Color       @relation(fields: [colorId], references: [id])
-  images      Image[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  orderItems  OrderItem[]
-  reviews     Review[]
+
+  // Thuộc tính
+  isFeatured Boolean @default(false)
+  isArchived Boolean @default(false)
+  inventory  Int     @default(10) // MỚI: Quản lý tồn kho
+
+  // Phân loại chi tiết
+  sizeId String @db.ObjectId
+  size   Size   @relation(fields: [sizeId], references: [id])
+
+  colorId String @db.ObjectId
+  color   Color  @relation(fields: [colorId], references: [id])
+
+  materialId String?   @db.ObjectId // MỚI: Optional
+  material   Material? @relation(fields: [materialId], references: [id])
+
+  gender String? @default("UNISEX") // "MEN", "WOMEN", "KIDS", "UNISEX"
+
+  images     Image[]
+  orderItems OrderItem[]
+  reviews    Review[]
+  wishlists  Wishlist[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([storeId])
   @@index([categoryId])
   @@index([sizeId])
   @@index([colorId])
+  @@index([materialId])
 }
 
-// ─── IMAGE ────────────────────────────────────────
 model Image {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   productId String   @db.ObjectId
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   url       String
-  position  Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([productId])
 }
 
-// ─── ORDER ────────────────────────────────────────
-
 enum OrderStatus {
   PENDING
-  CONFIRMED
-  PAID
-  SHIPPING
-  COMPLETED
+  PROCESSING
+  SHIPPED
+  DELIVERED
   CANCELLED
-  REFUNDED
 }
 
+// ─── 5. ORDER & CHECKOUT (QUAN TRỌNG) ─────────────────────────
 model Order {
-  id         String      @id @default(auto()) @map("_id") @db.ObjectId
-  storeId    String      @db.ObjectId
-  store      Store       @relation(fields: [storeId], references: [id])
-  userId     String?
-  user       User?       @relation(fields: [userId], references: [id])
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  storeId String @db.ObjectId
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  // Thông tin khách hàng (nếu login)
+  userId String? @db.ObjectId
+  user   User?   @relation(fields: [userId], references: [id])
+
   orderItems OrderItem[]
   isPaid     Boolean     @default(false)
-  status     OrderStatus @default(PENDING)
-  paymentId  String?     @db.ObjectId
-  payment    Payment?    @relation(fields: [paymentId], references: [id])
-  shippingId String?     @db.ObjectId
-  shipping   Shipping?   @relation(fields: [shippingId], references: [id])
+
+  // Thông tin giao hàng
   phone      String      @default("")
-  addressId  String?     @db.ObjectId
-  address    Address?    @relation(fields: [addressId], references: [id])
-  totalCents Int         @default(0)
+  address    String      @default("")
+  status     OrderStatus @default(PENDING)
+  // Thanh toán
+  totalPrice Float       @default(0)
   currency   String      @default("VND")
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([storeId])
 }
 
-// ─── ORDER ITEM ───────────────────────────────────
 model OrderItem {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  orderId    String?  @db.ObjectId
-  order      Order?   @relation(fields: [orderId], references: [id])
-  productId  String   @db.ObjectId
-  product    Product  @relation(fields: [productId], references: [id])
-  quantity   Int      @default(1)
-  priceCents Int      @default(0)
-  sizeId     String   @db.ObjectId
-  size       Size     @relation(fields: [sizeId], references: [id])
-  colorId    String   @db.ObjectId
-  color      Color    @relation(fields: [colorId], references: [id])
-  createdAt  DateTime @default(now())
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  orderId String @db.ObjectId
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId String  @db.ObjectId
+  product   Product @relation(fields: [productId], references: [id])
+
+  quantity Int @default(1)
+
+  // SNAPSHOT FIELDS (Lưu cứng tên để hiển thị hóa đơn)
+  productName  String?
+  productPrice Float?
+  sizeName     String?
+  colorName    String?
+
+  sizeId  String? @db.ObjectId
+  colorId String? @db.ObjectId
 
   @@index([orderId])
   @@index([productId])
-  @@index([sizeId])
-  @@index([colorId])
 }
 
-// ─── PAYMENT ───────────────────────────────────
-model Payment {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  provider    String
-  providerId  String?
-  amountCents Int      @default(0)
-  currency    String   @default("VND")
-  status      String   @default("PENDING") // "PENDING", "PAID", "FAILED", "REFUNDED"
-  meta        Json?
-  createdAt   DateTime @default(now())
-  orders      Order[]
-}
-
-// ─── ADDRESS ───────────────────────────────────
-model Address {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
-  fullName  String
-  phone     String
-  line1     String
-  line2     String?
-  city      String
-  postal    String?
-  country   String
-  createdAt DateTime @default(now())
-  orders    Order[]
-}
-
-// ─── DISCOUNT ───────────────────────────────────
+// ─── 6. MARKETING & ENGAGEMENT ────────────────────────────────
 model Coupon {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  code        String    @unique
-  description String?
-  type        String // "PERCENT" | "AMOUNT"
-  value       Int
-  active      Boolean   @default(true)
-  usageLimit  Int?
-  usedCount   Int       @default(0)
-  validFrom   DateTime?
-  validTo     DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  storeId   String    @db.ObjectId
+  store     Store     @relation(fields: [storeId], references: [id])
+  code      String
+  value     Float // Giá trị giảm
+  type      String // "PERCENT" hoặc "FIXED"
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+
+  @@unique([storeId, code]) // Một store không trùng mã coupon
+  @@index([storeId])
 }
 
-// ─── SHIPPING ───────────────────────────────────
-model Shipping {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  carrier      String?
-  trackingCode String?
-  status       String   @default("PENDING") // "PENDING", "PAID", "FAILED", "REFUNDED"
-  costCents    Int?     @default(0)
-  meta         Json?
-  createdAt    DateTime @default(now())
-  orders       Order[]
-}
-
-// ───  REVIEW ───────────────────────────────────
 model Review {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  productId String   @db.ObjectId
-  product   Product  @relation(fields: [productId], references: [id])
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
-  rating    Int      @default(5) // 1..5
-  comment   String?
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  productId String  @db.ObjectId
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+
+  rating   Int // 1-5 sao
+  content  String?
+  imageUrl String? // Khách có thể up ảnh review
+
   createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([userId])
 }
 
-// ─── ACTIVITY ───────────────────────────────────
-model Activity {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
-  action    String
-  meta      Json?
+model Wishlist {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  productId String  @db.ObjectId
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
+
+  @@unique([userId, productId]) // Một user chỉ wishlist 1 sp một lần
+  @@index([userId])
+  @@index([productId])
+}
+
+// ─── 7. ADDRESS (Sổ địa chỉ khách hàng) ───────────────────────
+model Address {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  label     String // "Nhà riêng", "Công ty"
+  phone     String
+  address   String
+  city      String
+  isDefault Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }

@@ -1,6 +1,18 @@
 "use client";
 
+import * as z from "zod";
+import { Store } from "@prisma/client";
+import { Trash } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
+import { toast } from "sonner";
+import axios from "axios";
+import { useParams, useRouter } from "next/navigation";
+
+import { Heading } from "@/components/ui/heading";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import {
   Form,
   FormControl,
@@ -10,163 +22,183 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Heading } from "@/components/ui/heading";
-import { Separator } from "@/components/ui/separator";
-import { Store } from "@/generated/prisma";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Trash, Pencil } from "lucide-react";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { useRouter, useParams } from "next/navigation";
-import { toast } from "sonner";
 import { AlertModal } from "@/components/modals/alert-modal";
 import { ApiAlert } from "@/components/ui/api-alert";
 import { useOrigin } from "@/hooks/use-origin";
-import { motion } from "framer-motion";
 
 interface SettingsFormProps {
   initialData: Store;
 }
 
 const formSchema = z.object({
-  name: z.string().min(1, "Store name is required"),
+  name: z.string().min(1),
+  address: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email().optional().or(z.literal("")), 
 });
 
 type SettingsFormValues = z.infer<typeof formSchema>;
 
 export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
-  const router = useRouter();
   const params = useParams();
+  const router = useRouter();
   const origin = useOrigin();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData,
+    defaultValues: {
+      name: initialData.name,
+      address: initialData.address || "",
+      phone: initialData.phone || "",
+      email: initialData.email || "",
+    },
   });
 
   const onSubmit = async (data: SettingsFormValues) => {
     try {
-      setIsLoading(true);
-      await fetch(`/api/stores/${initialData.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      toast.success("Store updated successfully");
+      setLoading(true);
+      await axios.patch(`/api/stores/${params.storeId}`, data);
       router.refresh();
-      console.log(data);
+      toast.success("Store updated.");
     } catch (error) {
-      toast.error("Something went wrong!");
+      toast.error("Something went wrong.");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleDelete = async () => {
+  const onDelete = async () => {
     try {
-      setIsLoading(true);
-      await fetch(`/api/stores/${initialData.id}`, {
-        method: "DELETE",
-      });
-      toast.success("Store deleted successfully");
-      router.push("/");
+      setLoading(true);
+      await axios.delete(`/api/stores/${params.storeId}`);
       router.refresh();
+      router.push("/");
+      toast.success("Store deleted.");
     } catch (error) {
       toast.error("Make sure you removed all products and categories first.");
     } finally {
-      setIsLoading(false);
-      setIsOpen(false);
+      setLoading(false);
+      setOpen(false);
     }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="space-y-8"
-    >
+    <>
       <AlertModal
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        onConfirm={handleDelete}
-        loading={isLoading}
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        onConfirm={onDelete}
+        loading={loading}
       />
-
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur-xl shadow-sm">
-        <Heading
-          title="Store Settings"
-          description="Manage your store settings"
-        />
+      <div className="flex items-center justify-between">
+        <Heading title="Settings" description="Manage store preferences" />
         <Button
-          disabled={isLoading}
+          disabled={loading}
           variant="destructive"
-          size="icon"
-          onClick={() => setIsOpen(true)}
-          type="button"
-          className="cursor-pointer"
+          size="sm"
+          onClick={() => setOpen(true)}
         >
-          <Trash className="h-5 w-5 cursor-pointer" />
+          <Trash className="h-4 w-4" />
         </Button>
       </div>
+      <Separator />
 
-      {/* Form + Button */}
       <Form {...form}>
-        <motion.form
+        <form
           onSubmit={form.handleSubmit(onSubmit)}
-          whileHover={{ scale: 1 }}
-          transition={{ duration: 0.3 }}
-          className="bg-white/50 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-sm backdrop-blur-md p-6 space-y-8"
+          className="space-y-8 w-full"
         >
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }: any) => (
-              <FormItem>
-                <FormLabel className="text-sm font-semibold">
-                  Store Name
-                </FormLabel>
-                <FormControl>
-                  <div className="relative">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
                     <Input
-                      placeholder="My Store"
-                      disabled={isLoading}
+                      disabled={loading}
+                      placeholder="Store name"
                       {...field}
-                      className="pr-10 rounded-xl focus-visible:ring-2 focus-visible:ring-blue-500/70 transition-all"
                     />
-                    <Pencil className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <div className="flex justify-end">
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              transition={{ type: "spring", stiffness: 300 }}
-              disabled={isLoading}
-              type="submit"
-              className="px-6 py-2 rounded-xl shadow-md bg-gradient-to-r from-white-500 text-black  hover:opacity-90 transition-all cursor-pointer"
-            >
-              {isLoading ? "Saving..." : "Save Changes"}
-            </motion.button>
+            {/* 👇 INPUT: ADDRESS */}
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Address (For Invoice)</FormLabel>
+                  <FormControl>
+                    <Input
+                      disabled={loading}
+                      placeholder="123 Main St, Hanoi"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* 👇 INPUT: PHONE */}
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone (Hotline)</FormLabel>
+                  <FormControl>
+                    <Input
+                      disabled={loading}
+                      placeholder="0912..."
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* 👇 INPUT: EMAIL */}
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Support Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      disabled={loading}
+                      placeholder="support@store.com"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
-        </motion.form>
+          <Button disabled={loading} className="ml-auto" type="submit">
+            Save changes
+          </Button>
+        </form>
       </Form>
 
-      {/* API Section */}
+      <Separator />
       <ApiAlert
-        title="API Endpoint"
-        description={`${origin}/api/${initialData.id}`}
+        title="NEXT_PUBLIC_API_URL"
+        description={`${origin}/api/${params.storeId}`}
         variant="public"
       />
-    </motion.div>
+    </>
   );
 };

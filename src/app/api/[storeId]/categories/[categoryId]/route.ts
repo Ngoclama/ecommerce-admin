@@ -17,7 +17,7 @@ export async function GET(
         id: params.categoryId,
       },
       include: {
-        billboard: true, 
+        billboard: true,
       },
     });
 
@@ -35,42 +35,69 @@ export async function PATCH(
   try {
     const { userId } = await auth();
     const body = await req.json();
-    const { name, billboardId } = body;
+    const { name, billboardId, slug } = body;
 
-    if (!userId)
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    if (!name)
-      return NextResponse.json(
-        { message: "Name is required" },
-        { status: 400 }
-      );
+    if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+    if (!name) return new NextResponse("Name is required", { status: 400 });
     if (!billboardId)
-      return NextResponse.json(
-        { message: "Billboard ID is required" },
-        { status: 400 }
-      );
+      return new NextResponse("Billboard ID is required", { status: 400 });
 
     const storeByUserId = await prisma.store.findFirst({
       where: { id: params.storeId, userId },
     });
+
     if (!storeByUserId)
-      return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
+      return new NextResponse("Unauthorized", { status: 403 });
 
-    const slug = slugify(name, { lower: true, strict: true });
-
-    const updated = await prisma.category.update({
-      where: { id: params.categoryId },
-      data: { name, billboardId },
-      include: {
-        billboard: true,
+    // 👇 BƯỚC 2: KIỂM TRA TRÙNG TÊN (TRỪ CHÍNH NÓ)
+    const existingCategory = await prisma.category.findFirst({
+      where: {
+        storeId: params.storeId,
+        name: name,
+        id: {
+          not: params.categoryId, // Quan trọng: Không check chính nó
+        },
       },
     });
 
-    return NextResponse.json(updated);
+    if (existingCategory) {
+      return NextResponse.json(
+        { message: "Category name already exists." },
+        { status: 409 }
+      );
+    }
+
+    const finalSlug = slug
+      ? slug
+      : slugify(name, { lower: true, strict: true });
+
+    const existingCategoryBySlug = await prisma.category.findFirst({
+        where: {
+            storeId: params.storeId,
+            slug: finalSlug,
+            id: {
+                not: params.categoryId,
+            },
+        },
+    });
+
+    if (existingCategoryBySlug) {
+        return NextResponse.json(
+            { message: "Generated slug already exists. Please use a different name." },
+            { status: 409 }
+        );
+    }
+
+    const category = await prisma.category.update({
+      where: { id: params.categoryId },
+      data: { name, billboardId, slug: finalSlug },
+    });
+
+    return NextResponse.json(category);
   } catch (error) {
     console.error("[CATEGORY_PATCH]", error);
     return NextResponse.json(
-      { message: "Internal Server Error", error: String(error) },
+      { success: false, message: "Internal Server Error", error: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

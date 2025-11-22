@@ -8,6 +8,7 @@ export type MaterialColumn = {
   name: string;
   value: string;
   createdAt: string;
+  productsCount: string;
 };
 
 export const columns: ColumnDef<MaterialColumn>[] = [
@@ -18,6 +19,10 @@ export const columns: ColumnDef<MaterialColumn>[] = [
   {
     accessorKey: "value",
     header: "Value",
+  },
+  {
+    accessorKey: "productsCount",
+    header: "Products",
   },
   {
     accessorKey: "createdAt",

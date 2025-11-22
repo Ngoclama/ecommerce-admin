@@ -35,10 +35,18 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertModal } from "@/components/modals/alert-modal";
 import ImageUpload from "@/components/ui/image-upload";
 
-import { Category, Color, Image, Product, Size } from "@/generated/prisma";
+// Thêm Material vào import
+import {
+  Category,
+  Color,
+  Image,
+  Product,
+  Size,
+  Material,
+} from "@/generated/prisma";
 
 //
-// ─── ZOD SCHEMA ────────────────────────────────────────────────────────────────
+// ─── ZOD SCHEMA UPDATE ────────────────────────────────────────────────────────
 //
 const formSchema = z.object({
   name: z.string().min(1, "Product label is required"),
@@ -47,10 +55,19 @@ const formSchema = z.object({
     (val) => Number(val),
     z.number().min(0, "Price must be greater than or equal to 0")
   ),
+  // Mới: Inventory
+  inventory: z.preprocess(
+    (val) => Number(val),
+    z.number().min(0, "Inventory must be 0 or more")
+  ),
   description: z.string().min(1, "Description is required"),
   categoryId: z.string().min(1, "Category is required"),
   sizeId: z.string().min(1, "Size is required"),
   colorId: z.string().min(1, "Color is required"),
+  // Mới: Material (Optional vì trong DB là String?)
+  materialId: z.string().optional(),
+  // Mới: Gender
+  gender: z.enum(["MEN", "WOMEN", "KIDS", "UNISEX"]).default("UNISEX"),
   isFeatured: z.boolean().default(false).optional(),
   isArchived: z.boolean().default(false).optional(),
 });
@@ -130,6 +147,7 @@ interface ProductFormProps {
   categories: Category[];
   sizes: Size[];
   colors: Color[];
+  materials: Material[]; // Mới: Thêm materials vào props
 }
 
 export const ProductForm: React.FC<ProductFormProps> = ({
@@ -137,6 +155,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   categories,
   sizes,
   colors,
+  materials, // Destructure materials
 }) => {
   const router = useRouter();
   const params = useParams();
@@ -158,6 +177,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({
           categoryId: initialData.categoryId ?? "",
           sizeId: initialData.sizeId ?? "",
           colorId: initialData.colorId ?? "",
+          // Map các trường mới
+          inventory: initialData.inventory ?? 10,
+          materialId: initialData.materialId ?? "",
+          gender:
+            (initialData.gender as "MEN" | "WOMEN" | "KIDS" | "UNISEX") ??
+            "UNISEX",
           images: initialData.images?.map((i) => ({ url: i.url })) ?? [],
           isFeatured: initialData.isFeatured ?? false,
           isArchived: initialData.isArchived ?? false,
@@ -166,18 +191,18 @@ export const ProductForm: React.FC<ProductFormProps> = ({
           name: "",
           description: "",
           price: 0,
+          inventory: 10, // Default inventory
           categoryId: "",
           sizeId: "",
           colorId: "",
+          materialId: "",
+          gender: "UNISEX",
           images: [],
           isFeatured: false,
           isArchived: false,
         },
   });
 
-  //
-  // ─── SUBMIT HANDLER ────────────────────────────────────────────────
-  //
   const onSubmit = async (data: ProductFormValues) => {
     try {
       setIsLoading(true);
@@ -294,10 +319,37 @@ export const ProductForm: React.FC<ProductFormProps> = ({
               )}
             />
 
-            {/* Price */}
-            <PriceField form={form} isLoading={isLoading} currency="VND" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Price */}
+              <PriceField form={form} isLoading={isLoading} currency="VND" />
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* MỚI: Inventory */}
+              <FormField
+                control={form.control}
+                name="inventory"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-sm font-semibold">
+                      Inventory
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        disabled={isLoading}
+                        placeholder="10"
+                        {...field}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        className="bg-white/10 dark:bg-neutral-900/20 rounded-2xl"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Grid cho các thuộc tính */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Category */}
               <FormField
                 control={form.control}
@@ -328,6 +380,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                   </FormItem>
                 )}
               />
+
               {/* Size */}
               <FormField
                 control={form.control}
@@ -358,6 +411,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                   </FormItem>
                 )}
               />
+
               {/* Color */}
               <FormField
                 control={form.control}
@@ -388,7 +442,69 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                   </FormItem>
                 )}
               />
+
+              {/* MỚI: Material (Có thể trống) */}
+              <FormField
+                control={form.control}
+                name="materialId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Material (Optional)</FormLabel>
+                    <Select
+                      disabled={isLoading}
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select material" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {materials.map((mat) => (
+                          <SelectItem key={mat.id} value={mat.id}>
+                            {mat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* MỚI: Gender */}
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Gender</FormLabel>
+                    <Select
+                      disabled={isLoading}
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="UNISEX">Unisex</SelectItem>
+                        <SelectItem value="MEN">Men</SelectItem>
+                        <SelectItem value="WOMEN">Women</SelectItem>
+                        <SelectItem value="KIDS">Kids</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
+
             {/* Description */}
             <FormField
               control={form.control}
@@ -419,8 +535,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 </FormItem>
               )}
             />
+
+            {/* Featured & Archived Checkboxes */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-              {/* Featured */}
               <FormField
                 control={form.control}
                 name="isFeatured"
@@ -440,14 +557,13 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                         Featured
                       </FormLabel>
                       <FormDescription className="text-xs text-neutral-500 dark:text-neutral-400">
-                        Featured
+                        This product will appear on the home page
                       </FormDescription>
                     </div>
                   </FormItem>
                 )}
               />
 
-              {/* Archived */}
               <FormField
                 control={form.control}
                 name="isArchived"
@@ -467,13 +583,14 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                         Archived
                       </FormLabel>
                       <FormDescription className="text-xs text-neutral-500 dark:text-neutral-400">
-                        Archived
+                        This product will not appear anywhere in the store
                       </FormDescription>
                     </div>
                   </FormItem>
                 )}
               />
             </div>
+
             {/* Images */}
             <FormField
               control={form.control}

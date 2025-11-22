@@ -32,6 +32,10 @@ model Store {
   id   String @id @default(auto()) @map("_id") @db.ObjectId
   name String
 
+  address String? @default("")
+  phone   String? @default("")
+  email   String? @default("")
+
   userId String // Đây là Clerk ID
   user   User   @relation(fields: [userId], references: [clerkId])
 
@@ -72,13 +76,13 @@ model Category {
   billboardId String    @db.ObjectId
   billboard   Billboard @relation(fields: [billboardId], references: [id])
 
-  name String
-  slug String? // Cho SEO 
-
+  name      String
+  slug      String?
   products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  @@unique([storeId, slug])
   @@index([storeId])
   @@index([billboardId])
 }
@@ -239,13 +243,14 @@ model OrderItem {
 
 // ─── 6. MARKETING & ENGAGEMENT ────────────────────────────────
 model Coupon {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  storeId   String   @db.ObjectId
-  store     Store    @relation(fields: [storeId], references: [id])
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  storeId   String    @db.ObjectId
+  store     Store     @relation(fields: [storeId], references: [id])
   code      String
   value     Float // Giá trị giảm
   type      String // "PERCENT" hoặc "FIXED"
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
 
   @@unique([storeId, code]) // Một store không trùng mã coupon
   @@index([storeId])
@@ -259,11 +264,12 @@ model Review {
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id])
 
-  rating   Int // 1-5 sao
-  content  String?
-  imageUrl String? // Khách có thể up ảnh review
-
-  createdAt DateTime @default(now())
+  rating        Int // 1-5 sao
+  content       String?
+  imageUrl      String?
+  isArchived    Boolean  @default(false)
+  adminResponse String?
+  createdAt     DateTime @default(now())
 
   @@index([productId])
   @@index([userId])

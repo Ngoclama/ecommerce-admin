@@ -29,9 +29,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import slugify from "slugify";
 
 const formSchema = z.object({
   name: z.string().min(1, "Category name is required"),
+  slug: z.string().min(1, "Slug is required"), 
   billboardId: z.string().min(1, "Billboard is required"),
 });
 
@@ -57,10 +59,16 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
-      name: "",
-      billboardId: "",
-    },
+    defaultValues: initialData
+      ? {
+          ...initialData,
+          slug: initialData.slug || "", // Load slug cũ nếu có
+        }
+      : {
+          name: "",
+          slug: "",
+          billboardId: "",
+        },
   });
 
   const onSubmit = async (data: CategoryFormValues) => {
@@ -80,19 +88,34 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       });
 
       if (!res.ok) {
-        const errorBody = await res.json();
-        console.error("[onSubmit Category] API Error:", errorBody);
-        throw new Error(
-          initialData
-            ? "Failed to update category"
-            : "Failed to create category"
-        );
+        const errorText = await res.text();
+        let errorMessage = "An unknown error occurred.";
+        
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || `API Error: ${res.status}`;
+        } catch (e) {
+          errorMessage = errorText || `API Error: ${res.status}`;
+        }
+
+        if (res.status === 409) {
+          // This is an expected validation error, so just update the form.
+          form.setError("name", {
+            type: "server",
+            message: errorMessage,
+          });
+        } else {
+          // This is an unexpected error, so log it and show a toast.
+          console.error(`[onSubmit Category] API Error (Status: ${res.status}):`, errorText);
+          toast.error(errorMessage);
+        }
+        return;
       }
 
       toast.success(initialData ? "Category updated!" : "Category created!");
       router.refresh();
       router.push(`/${params.storeId}/categories`);
-    } catch (error) {
+    } catch (error: any) {
       toast.error("Something went wrong!");
       console.error("[onSubmit Category]", error);
     } finally {
@@ -163,29 +186,63 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                      dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 
                      shadow-md backdrop-blur-lg p-8 transition-all hover:shadow-xl"
           >
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
-                    Name
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Enter category name..."
-                      disabled={isLoading}
-                      {...field}
-                      className="rounded-xl border border-neutral-300 dark:border-neutral-700 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+                      Name
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter category name..."
+                        disabled={isLoading}
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          const generatedSlug = slugify(e.target.value, {
+                            lower: true,
+                            strict: true,
+                          });
+                          form.setValue("slug", generatedSlug);
+                        }}
+                        className="rounded-xl border border-neutral-300 dark:border-neutral-700 
                                focus-visible:ring-2 focus-visible:ring-blue-500/50 
                                focus-visible:border-blue-400 dark:focus-visible:ring-blue-400/50 
                                transition-all bg-white/80 dark:bg-neutral-800/80 backdrop-blur-md"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="slug"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+                      Slug (SEO URL)
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="category-slug-example"
+                        disabled={isLoading}
+                        {...field}
+                        className="rounded-xl border border-neutral-300 dark:border-neutral-700 
+                               focus-visible:ring-2 focus-visible:ring-blue-500/50 
+                               focus-visible:border-blue-400 dark:focus-visible:ring-blue-400/50 
+                               transition-all bg-white/80 dark:bg-neutral-800/80 backdrop-blur-md"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}

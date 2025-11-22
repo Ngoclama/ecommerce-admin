@@ -106,7 +106,7 @@ export const CouponClient: React.FC<CouponClientProps> = ({ data }) => {
 
       <Separator className="my-4" />
 
-      <DataTable searchKey="name" columns={columns} data={data} />
+      <DataTable searchKey="code" columns={columns} data={data} />
 
       <Heading title="API" description="API Calls for coupons" />
       <Separator className="my-4" />

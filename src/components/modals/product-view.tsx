@@ -78,7 +78,7 @@ export const ProductViewModal: React.FC<ProductViewModalProps> = ({
                 {product.images?.slice(1).map((img: any, index: number) => (
                   <div
                     key={index}
-                    className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/20"
+                    className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/20 flex-shrink-0"
                   >
                     <Image
                       src={img.url}
@@ -116,12 +116,23 @@ export const ProductViewModal: React.FC<ProductViewModalProps> = ({
                 <p>
                   <strong>Color:</strong> {product.color?.name || "—"}
                 </p>
+                {/* ─── CÁC TRƯỜNG MỚI THÊM ─── */}
+                <p>
+                  <strong>Material:</strong> {product.material?.name || "—"}
+                </p>
+                <p>
+                  <strong>Gender:</strong> {product.gender || "Unisex"}
+                </p>
+                <p>
+                  <strong>Inventory:</strong> {product.inventory ?? 0}
+                </p>
+                {/* ─────────────────────────── */}
                 <p>
                   <strong>Status:</strong>{" "}
                   {product.isArchived ? (
-                    <span className="text-red-500">Archived</span>
+                    <span className="text-red-500 font-medium">Archived</span>
                   ) : product.isFeatured ? (
-                    <span className="text-green-500">Featured</span>
+                    <span className="text-green-500 font-medium">Featured</span>
                   ) : (
                     <span className="text-neutral-500">Normal</span>
                   )}

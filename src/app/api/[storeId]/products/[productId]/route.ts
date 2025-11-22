@@ -1,8 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import slugify from "slugify";
 
+// ─────────────────────────────────────────────────────────────
+// GET: Lấy chi tiết 1 sản phẩm
+// ─────────────────────────────────────────────────────────────
 export async function GET(
   req: Request,
   { params }: { params: { storeId: string; productId: string } }
@@ -21,6 +23,7 @@ export async function GET(
         category: true,
         size: true,
         color: true,
+        material: true, // 👈 THÊM DÒNG NÀY: Để lấy thông tin chất liệu
       },
     });
 
@@ -40,6 +43,9 @@ export async function GET(
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// PATCH: Cập nhật sản phẩm
+// ─────────────────────────────────────────────────────────────
 export async function PATCH(
   req: Request,
   { params }: { params: { storeId: string; productId: string } }
@@ -58,6 +64,10 @@ export async function PATCH(
       images,
       isFeatured,
       isArchived,
+      // 👇 THÊM: Lấy dữ liệu mới từ form gửi lên
+      inventory,
+      materialId,
+      gender,
     } = body;
 
     // ─── Basic validation ─────────────────────────────
@@ -73,12 +83,6 @@ export async function PATCH(
     if (!name?.trim())
       return NextResponse.json(
         { message: "Name is required" },
-        { status: 400 }
-      );
-
-    if (!description?.trim())
-      return NextResponse.json(
-        { message: "Description is required" },
         { status: 400 }
       );
 
@@ -106,7 +110,7 @@ export async function PATCH(
       where: { productId: params.productId },
     });
 
-    // 2️⃣ Cập nhật sản phẩm + thêm ảnh mới
+    // 2️⃣ Cập nhật sản phẩm
     const product = await prisma.product.update({
       where: { id: params.productId },
       data: {
@@ -118,6 +122,11 @@ export async function PATCH(
         categoryId,
         colorId,
         sizeId,
+        // 👇 THÊM: Cập nhật các trường mới
+        inventory: Number(inventory) || 10, // Default là 10
+        gender: gender || "UNISEX", // Default là UNISEX
+        materialId: materialId || null, // Nếu không chọn thì set null
+
         images: {
           createMany: {
             data: finalImages.map((image: { url: string }) => ({
@@ -139,6 +148,9 @@ export async function PATCH(
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// DELETE: Xóa sản phẩm (Giữ nguyên không đổi)
+// ─────────────────────────────────────────────────────────────
 export async function DELETE(
   req: Request,
   { params }: { params: { storeId: string; productId: string } }
