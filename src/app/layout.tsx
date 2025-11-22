@@ -33,19 +33,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
-        <body
-          suppressHydrationWarning
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
+    <html lang="en" suppressHydrationWarning>
+      <body
+        suppressHydrationWarning
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <ClerkProvider>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
             enableSystem
             disableTransitionOnChange
           >
-            {" "}
             <ModalProvider>
               <div className="min-h-screen flex flex-col">
                 <header>
@@ -61,15 +60,15 @@ export default function RootLayout({
                 <main className="flex-1">
                   {children}
                   <div className="fixed bottom-4 right-4">
-                    <ModeToggle></ModeToggle>
+                    <ModeToggle />
                   </div>
                 </main>
               </div>
               <Toaster richColors position="bottom-center" />
             </ModalProvider>
           </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   );
 }

@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/navbar";
 import { StoreModal } from "@/components/modals/store-modal";
-import { Inter } from "next/font/google"; 
+import { Inter } from "next/font/google";
 export default async function DashboardLayout({
   children,
   params,

@@ -13,12 +13,32 @@ import { BulkMaterialModalProvider } from "@/hooks/use-bulk-material-modal"; // 
 
 // --- Modals Import ---
 import { AlertModal } from "@/components/modals/alert-modal";
+import { useAlertModal } from "@/hooks/use-alert-modal";
 import { BulkCreateBillboardModal } from "@/components/modals/bulk-billboard-modal";
 import { BulkCreateCategoryModal } from "@/components/modals/bulk-category-modal";
 import { BulkCreateSizeModal } from "@/components/modals/bulk-size-modal";
 import { BulkCreateColorModal } from "@/components/modals/bulk-color-modal";
 import { BulkCreateCouponModal } from "@/components/modals/bulk-coupon-modal";
 import { BulkCreateMaterialModal } from "@/components/modals/bulk-material-modal"; // MỚI
+
+const AlertModalWrapper: React.FC = () => {
+  const { isOpen, onClose, onConfirm, loading } = useAlertModal();
+
+  const handleConfirm = async () => {
+    if (onConfirm) {
+      await onConfirm();
+    }
+  };
+
+  return (
+    <AlertModal
+      isOpen={isOpen}
+      onClose={onClose}
+      onConfirm={handleConfirm}
+      loading={loading}
+    />
+  );
+};
 
 export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
   const [isMounted, setIsMounted] = useState(false);
@@ -27,10 +47,6 @@ export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
-  if (!isMounted) {
-    return null;
-  }
 
   return (
     <AlertModalProvider>
@@ -42,14 +58,18 @@ export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
                 <BulkMaterialModalProvider>
                   {children}
 
-                  {/* Global Modals */}
-                  <AlertModal />
-                  <BulkCreateBillboardModal />
-                  <BulkCreateCategoryModal />
-                  <BulkCreateSizeModal />
-                  <BulkCreateColorModal />
-                  <BulkCreateCouponModal />
-                  <BulkCreateMaterialModal />
+                  {/* Global Modals (render only after mount to keep hook order stable) */}
+                  {isMounted && (
+                    <>
+                      <AlertModalWrapper />
+                      <BulkCreateBillboardModal />
+                      <BulkCreateCategoryModal />
+                      <BulkCreateSizeModal />
+                      <BulkCreateColorModal />
+                      <BulkCreateCouponModal />
+                      <BulkCreateMaterialModal />
+                    </>
+                  )}
                 </BulkMaterialModalProvider>
               </BulkBillboardModalProvider>
             </BulkCouponModalProvider>
