@@ -56,13 +56,13 @@ export const ViewAllStoresModal = ({
             transition={{ duration: 0.25 }}
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              "relative bg-white/10 dark:bg-neutral-900/90 backdrop-blur-2xl border border-white/20 dark:border-neutral-700/50 rounded-3xl shadow-2xl w-[90%] max-w-3xl p-6 text-white dark:text-neutral-100 max-h-[80vh] overflow-y-auto"
+              "relative bg-white dark:bg-neutral-900 backdrop-blur-2xl border border-neutral-200 dark:border-neutral-700 rounded-3xl shadow-2xl w-[95%] max-w-7xl p-8 text-neutral-900 dark:text-neutral-100 max-h-[90vh] overflow-y-auto"
             )}
           >
             {/* Header */}
-            <div className="flex justify-between items-start mb-6 border-b border-white/10 dark:border-neutral-700 pb-4 sticky top-0 bg-white/0 dark:bg-neutral-900/0 z-10">
-              <h2 className="text-2xl font-bold flex items-center gap-2 text-neutral-900 dark:text-neutral-100">
-                <StoreIcon className="w-6 h-6 text-primary" /> All Stores
+            <div className="flex justify-between items-start mb-6 border-b border-neutral-200 dark:border-neutral-700 pb-4 sticky top-0 bg-white dark:bg-neutral-900 z-10 -mx-8 px-8 -mt-8 pt-8">
+              <h2 className="text-3xl font-bold flex items-center gap-2 text-neutral-900 dark:text-neutral-100">
+                <StoreIcon className="w-7 h-7 text-primary" /> All Stores
               </h2>
               <Button
                 variant="ghost"
@@ -80,7 +80,7 @@ export const ViewAllStoresModal = ({
                 You don’t have any stores yet. Create one now!
               </p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pt-2">
                 {stores.map((store) => {
                   const isActive = store.id === currentStoreId;
 
@@ -88,11 +88,11 @@ export const ViewAllStoresModal = ({
                     <motion.div
                       key={store.id}
                       className={cn(
-                        "relative border rounded-xl p-4 backdrop-blur-md shadow-md cursor-pointer transition-all duration-200",
+                        "relative border rounded-xl p-5 backdrop-blur-md shadow-md cursor-pointer transition-all duration-200 min-h-[180px] flex flex-col",
                         "text-neutral-900 dark:text-neutral-100", // Default text color
                         isActive
-                          ? "border-primary-light bg-primary/10 shadow-primary/20" // Active style
-                          : "border-neutral-300 dark:border-neutral-800 bg-white/50 dark:bg-black/20 hover:bg-white/70 dark:hover:bg-black/40" // Inactive style
+                          ? "border-primary bg-primary/10 shadow-primary/20 ring-2 ring-primary/20" // Active style
+                          : "border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 hover:shadow-lg" // Inactive style
                       )}
                       whileHover={{ scale: 1.02 }}
                       onClick={() => {
@@ -107,11 +107,11 @@ export const ViewAllStoresModal = ({
                         </div>
                       )}
 
-                      <h3 className="text-lg font-semibold truncate">
+                      <h3 className="text-lg font-semibold truncate mb-3">
                         {store.name}
                       </h3>
 
-                      <div className="mt-2 space-y-1">
+                      <div className="mt-auto space-y-1.5">
                         {store.address && (
                           <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
                             <MapPin className="h-3 w-3" />
@@ -144,7 +144,7 @@ export const ViewAllStoresModal = ({
                         size="sm"
                         variant={isActive ? "default" : "secondary"}
                         className={cn(
-                          "mt-3 text-sm font-semibold rounded-lg transition-colors w-full",
+                          "mt-4 text-sm font-semibold rounded-lg transition-colors w-full",
                           isActive
                             ? "bg-primary text-white hover:bg-primary/90"
                             : "bg-neutral-200 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-300 dark:hover:bg-neutral-600"
