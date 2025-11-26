@@ -5,17 +5,16 @@ import { ObjectId } from "bson";
 const BillboardPage = async ({
   params,
 }: {
-  params: { billboardId: string };
+  params: Promise<{ billboardId: string; storeId: string }>;
 }) => {
-  const isValidId = ObjectId.isValid(params.billboardId);
+  const { billboardId } = await params;
+  const isValidId = ObjectId.isValid(billboardId);
 
   const billboard = isValidId
     ? await prisma.billboard.findUnique({
-        where: { id: params.billboardId },
+        where: { id: billboardId },
       })
     : null;
-
-  console.log("Params:", params);
 
   return (
     <div className="flex flex-col">

@@ -5,31 +5,32 @@ import { ObjectId } from "bson";
 const OrderPage = async ({
   params,
 }: {
-  params: { orderId: string };
+  params: Promise<{ orderId: string; storeId: string }>;
 }) => {
-  const isValidId = ObjectId.isValid(params.orderId);
+  const { orderId } = await params;
+  const isValidId = ObjectId.isValid(orderId);
 
   if (!isValidId) {
     return (
-        <div className="flex-col">
-            <div className="flex-1 space-y-4 p-8 pt-6">
-                <p>Invalid order ID.</p>
-            </div>
+      <div className="flex-col">
+        <div className="flex-1 space-y-4 p-8 pt-6">
+          <p>Invalid order ID.</p>
         </div>
+      </div>
     );
   }
 
   const order = await prisma.order.findUnique({
-    where: { id: params.orderId },
+    where: { id: orderId },
   });
 
   if (!order) {
     return (
-        <div className="flex-col">
-            <div className="flex-1 space-y-4 p-8 pt-6">
-                <p>Order not found.</p>
-            </div>
+      <div className="flex-col">
+        <div className="flex-1 space-y-4 p-8 pt-6">
+          <p>Order not found.</p>
         </div>
+      </div>
     );
   }
 

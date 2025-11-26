@@ -68,6 +68,8 @@
     "zod": "^4.1.12",
     "zustand": "^5.0.8"
   },
+  "overrides": {
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
