@@ -103,7 +103,7 @@ export async function POST(
     }
 
     // Generate slug từ title
-    let baseSlug = slugify(title.trim(), {
+    const baseSlug = slugify(title.trim(), {
       lower: true,
       strict: true,
       replacement: "-",
@@ -229,6 +229,7 @@ export async function POST(
           },
         });
         createSuccess = true;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (createError: any) {
         // Nếu lỗi là unique constraint violation (P2002), tạo slug mới và retry
         if (
@@ -266,6 +267,7 @@ export async function POST(
     }
 
     return NextResponse.json(blogPost, { status: 201 });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     // Improved error handling with detailed messages
     if (process.env.NODE_ENV === "development") {
@@ -347,6 +349,7 @@ export async function DELETE(
     }
 
     // Check if request body has specific IDs to delete
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let body: any = {};
     const contentLength = req.headers.get("content-length");
     if (contentLength && parseInt(contentLength) > 0) {
@@ -359,36 +362,31 @@ export async function DELETE(
 
     const idsToDelete = body.ids;
 
-    let blogIds: string[];
+    const blogIds: string[] =
+      idsToDelete && Array.isArray(idsToDelete) && idsToDelete.length > 0
+        ? (
+            await prisma.blogPost.findMany({
+              where: {
+                id: { in: idsToDelete },
+                storeId: storeId,
+              },
+              select: { id: true },
+            })
+          ).map((b) => b.id)
+        : (
+            await prisma.blogPost.findMany({
+              where: { storeId: storeId },
+              select: { id: true },
+            })
+          ).map((b) => b.id);
 
-    if (idsToDelete && Array.isArray(idsToDelete) && idsToDelete.length > 0) {
-      // Delete specific blog posts by IDs
-      const blogPostsToDelete = await prisma.blogPost.findMany({
-        where: {
-          id: { in: idsToDelete },
-          storeId: storeId,
+    if (blogIds.length === 0) {
+      return NextResponse.json(
+        {
+          message: "No valid blog posts found to delete.",
         },
-        select: { id: true },
-      });
-
-      blogIds = blogPostsToDelete.map((b) => b.id);
-
-      if (blogIds.length === 0) {
-        return NextResponse.json(
-          {
-            message: "No valid blog posts found to delete.",
-          },
-          { status: 400 }
-        );
-      }
-    } else {
-      // Delete all blog posts (original behavior)
-      const blogPostsToDelete = await prisma.blogPost.findMany({
-        where: { storeId: storeId },
-        select: { id: true },
-      });
-
-      blogIds = blogPostsToDelete.map((b) => b.id);
+        { status: 400 }
+      );
     }
 
     const result = await prisma.blogPost.deleteMany({
@@ -402,6 +400,7 @@ export async function DELETE(
       message: `Successfully deleted ${result.count} blog posts.`,
       count: result.count,
     });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (process.env.NODE_ENV === "development") {
       console.error("[BLOG_DELETE_ALL_ERROR]", error);

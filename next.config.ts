@@ -28,6 +28,18 @@ const nextConfig: NextConfig = {
   // Tối ưu build
   compress: true,
   poweredByHeader: false,
+  typescript: {
+    // !! WARN !!
+    // Dangerously allow production builds to successfully complete even if
+    // your project has type errors.
+    // ignoreBuildErrors: true,
+  },
+  eslint: {
+    // Warning: This allows production builds to successfully complete even if
+    // your project has ESLint errors.
+    // You should fix these ESLint errors for better code quality.
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;

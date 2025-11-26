@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Store } from "@prisma/client";
 import { Header } from "./header";
 
 interface HeaderWrapperProps {
-  stores: any[];
+  stores: Store[];
 }
 
 export function HeaderWrapper({ stores }: HeaderWrapperProps) {

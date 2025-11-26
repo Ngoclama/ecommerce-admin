@@ -27,11 +27,12 @@ import {
 import { useTranslation } from "@/hooks/use-translation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Store } from "@prisma/client";
 import StoreSwitcher from "./store-switcher";
 
 interface SidebarProps {
   className?: string;
-  stores?: any[];
+  stores?: Store[];
   isOpen?: boolean;
   onClose?: () => void;
   collapsed?: boolean;

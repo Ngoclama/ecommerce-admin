@@ -13,7 +13,7 @@ const OrdersPage = async ({
   const { storeId } = await params;
 
   // Tối ưu: chỉ select các field cần thiết
-  let orders = await prisma.order
+  const orders = await prisma.order
     .findMany({
       where: {
         storeId: storeId,
@@ -48,6 +48,7 @@ const OrdersPage = async ({
       },
       take: 100, // Giới hạn số lượng
     })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .catch((error: any) => {
       // Xử lý lỗi khi dữ liệu cũ có updatedAt = null
       if (error?.code === "P2032" && error?.meta?.field === "updatedAt") {

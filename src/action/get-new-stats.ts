@@ -1,10 +1,8 @@
 import prisma from "@/lib/prisma";
-import { startOfMonth, subMonths } from "date-fns";
+import { startOfMonth } from "date-fns";
 
 export const getNewStats = async (storeId: string) => {
   const currentMonthStart = startOfMonth(new Date());
-
-  const lastMonthStart = subMonths(currentMonthStart, 1);
 
   const newUsersCount = await prisma.user.count({
     where: {

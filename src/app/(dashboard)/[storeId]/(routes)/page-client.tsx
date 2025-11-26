@@ -36,18 +36,48 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
+interface GraphData {
+  name: string;
+  total: number;
+}
+
+interface ProductDistribution {
+  name: string;
+  value: number;
+}
+
+interface RecentOrder {
+  id: string;
+  createdAt: Date;
+  status?: string | null;
+  orderItems: Array<{
+    productName: string | null;
+    product: {
+      name: string;
+      category?: {
+        name: string;
+      } | null;
+    } | null;
+  }>;
+  user: {
+    name: string | null;
+  } | null;
+  total: number | null;
+  isPaid: boolean;
+}
+
 interface DashboardClientProps {
   totalRevenue: number;
   salesCount: number;
   stockCount: number;
-  graphRevenue: any[];
+  graphRevenue: GraphData[];
   newStats: {
     newUsersCount: number;
     totalVIPUsers: number;
     newProductsCount: number;
-    productDistribution: any[];
+    productDistribution: ProductDistribution[];
   };
-  recentOrders: any[];
+  recentOrders: RecentOrder[];
 }
 
 export const DashboardClient: React.FC<DashboardClientProps> = ({
@@ -378,57 +408,56 @@ export const DashboardClient: React.FC<DashboardClientProps> = ({
                         </TableCell>
                       </TableRow>
                     ) : (
-                      recentOrders
-                        .slice(0, 5)
-                        .map((order: any, index: number) => {
-                          const firstItem = order.orderItems?.[0];
-                          const productName =
-                            firstItem?.productName ||
-                            firstItem?.product?.name ||
-                            "N/A";
-                          const category =
-                            firstItem?.product?.category?.name || "N/A";
-                          const statusColors: Record<string, string> = {
-                            PENDING:
-                              "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-                            PROCESSING:
-                              "bg-blue-500/10 text-blue-500 border-blue-500/20",
-                            SHIPPED:
-                              "bg-purple-500/10 text-purple-500 border-purple-500/20",
-                            DELIVERED:
-                              "bg-green-500/10 text-green-500 border-green-500/20",
-                            CANCELLED:
-                              "bg-red-500/10 text-red-500 border-red-500/20",
-                          };
-                          return (
-                            <motion.tr
-                              key={order.id}
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: index * 0.1 }}
-                              className="border-b border-gray-200/50 dark:border-gray-800/50 transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-900/50"
-                            >
-                              <TableCell className="font-medium py-4">
-                                {productName}
-                              </TableCell>
-                              <TableCell className="py-4">{category}</TableCell>
-                              <TableCell className="py-4 font-semibold">
-                                {formatter.format(Number(order.total || 0))}
-                              </TableCell>
-                              <TableCell className="py-4">
-                                <Badge
-                                  variant="outline"
-                                  className={
-                                    statusColors[order.status] ||
-                                    "bg-gray-500/10 text-gray-500 border-gray-500/20"
-                                  }
-                                >
-                                  {order.status || "PENDING"}
-                                </Badge>
-                              </TableCell>
-                            </motion.tr>
-                          );
-                        })
+                      recentOrders.slice(0, 5).map((order, index: number) => {
+                        const firstItem = order.orderItems?.[0];
+                        const productName =
+                          firstItem?.productName ||
+                          firstItem?.product?.name ||
+                          "N/A";
+                        const category =
+                          firstItem?.product?.category?.name || "N/A";
+                        const statusColors: Record<string, string> = {
+                          PENDING:
+                            "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+                          PROCESSING:
+                            "bg-blue-500/10 text-blue-500 border-blue-500/20",
+                          SHIPPED:
+                            "bg-purple-500/10 text-purple-500 border-purple-500/20",
+                          DELIVERED:
+                            "bg-green-500/10 text-green-500 border-green-500/20",
+                          CANCELLED:
+                            "bg-red-500/10 text-red-500 border-red-500/20",
+                        };
+                        return (
+                          <motion.tr
+                            key={order.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="border-b border-gray-200/50 dark:border-gray-800/50 transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-900/50"
+                          >
+                            <TableCell className="font-medium py-4">
+                              {productName}
+                            </TableCell>
+                            <TableCell className="py-4">{category}</TableCell>
+                            <TableCell className="py-4 font-semibold">
+                              {formatter.format(Number(order.total || 0))}
+                            </TableCell>
+                            <TableCell className="py-4">
+                              <Badge
+                                variant="outline"
+                                className={
+                                  (order.status &&
+                                    statusColors[order.status]) ||
+                                  "bg-gray-500/10 text-gray-500 border-gray-500/20"
+                                }
+                              >
+                                {order.status || "PENDING"}
+                              </Badge>
+                            </TableCell>
+                          </motion.tr>
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>

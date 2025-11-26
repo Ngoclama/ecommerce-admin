@@ -77,8 +77,8 @@ export const BlogForm: React.FC<BlogFormProps> = ({ initialData }) => {
   const { data: categories } = useQuery<Array<{ id: string; name: string }>>({
     queryKey: ["categories", params.storeId],
     queryFn: async () => {
-      const res = await axios.get(`/api/${params.storeId}/categories`);
-      return res.data?.data || res.data || [];
+      const res = await axios.get<Array<{ id: string; name: string }> | { data: Array<{ id: string; name: string }> }>(`/api/${params.storeId}/categories`);
+      return (res.data && 'data' in res.data ? res.data.data : res.data) || [];
     },
   });
 

@@ -144,6 +144,7 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
       router.refresh();
       router.push(`/${params.storeId}/coupons`);
       toast.success(toastMessage);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error("Coupon form error:", error);
 

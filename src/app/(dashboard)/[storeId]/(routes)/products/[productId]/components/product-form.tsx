@@ -166,6 +166,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     : t("forms.product.descriptionCreate");
   const action = initialData ? t("forms.saveChanges") : t("forms.create");
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const product = initialData as any;
 
   const defaultValues = product
@@ -193,7 +194,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({
           product.allowBackorder !== undefined ? product.allowBackorder : false,
         variants:
           product.variants && product.variants.length > 0
-            ? product.variants.map((v: any) => ({
+            ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              product.variants.map((v: any) => ({
                 sizeId: v.sizeId,
                 colorId: v.colorId,
                 materialId: v.materialId || null,

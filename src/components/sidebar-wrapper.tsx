@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Store } from "@prisma/client";
 import { Sidebar } from "./sidebar";
 
 interface SidebarWrapperProps {
-  stores: any[];
+  stores: Store[];
 }
 
 export function SidebarWrapper({ stores }: SidebarWrapperProps) {
