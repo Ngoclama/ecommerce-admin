@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useEffect } from "react";
+import { useOrder } from "@/hooks/use-api-cache";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/hooks/use-translation";
 import {
   Table,
   TableBody,
@@ -48,7 +49,9 @@ type OrderItem = {
   productName: string | null;
   sizeName: string | null;
   colorName: string | null;
+  materialName: string | null;
   quantity: number;
+  price: number;
   productPrice: number | null;
   product?: {
     name: string;
@@ -61,9 +64,24 @@ type OrderDetails = {
   status: string;
   isPaid: boolean;
   phone: string;
+  email: string | null;
   address: string;
-  totalPrice: number;
+  city: string | null;
+  postalCode: string | null;
+  country: string | null;
+  shippingMethod: string | null;
+  shippingCost: number | null;
+  trackingNumber: string | null;
+  paymentMethod: string | null;
+  subtotal: number;
+  tax: number;
+  discount: number;
+  total: number;
+  totalPrice: number; // Legacy field
+  customerNote: string | null;
+  adminNote: string | null;
   createdAt: string;
+  updatedAt: string;
   orderItems: OrderItem[];
 };
 
@@ -80,34 +98,18 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
   storeId,
   orderId,
 }) => {
-  const [order, setOrder] = useState<OrderDetails | null>(null);
-  const [store, setStore] = useState<StoreInfo | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
+  // Use React Query for caching
+  const { data, isLoading: loading, error } = useOrder(storeId, orderId);
+  const order = (data?.order as OrderDetails) || null;
+  const store = (data?.store as StoreInfo) || null;
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!isOpen || !orderId) return;
-
-      try {
-        setLoading(true);
-
-        const [orderRes, storeRes] = await Promise.all([
-          axios.get<OrderDetails>(`/api/${storeId}/orders/${orderId}`),
-          axios.get<StoreInfo>(`/api/stores/${storeId}`),
-        ]);
-
-        setOrder(orderRes.data);
-        setStore(storeRes.data);
-      } catch (error) {
-        toast.error("Failed to fetch details.");
-        onClose();
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [isOpen, orderId, storeId, onClose]);
+    if (error) {
+      toast.error("Failed to fetch details.");
+      onClose();
+    }
+  }, [error, onClose]);
 
   const formatter = new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -133,10 +135,10 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
           <div>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <ShoppingBag className="h-5 w-5" />
-              Order Details
+              {t("modals.orderDetails")}
             </DialogTitle>
             <DialogDescription>
-              Order{" "}
+              {t("nav.orders")}{" "}
               <span className="font-mono font-bold">
                 #{order?.id.slice(-6)}
               </span>
@@ -145,7 +147,7 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
           <div className="flex items-center gap-2 mr-8">
             <Button variant="outline" size="sm" onClick={onPrint}>
               <Printer className="h-4 w-4 mr-2" />
-              Print Invoice
+              {t("modals.printInvoice")}
             </Button>
           </div>
         </DialogHeader>
@@ -182,7 +184,9 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
                     </div>
                   </div>
                   <div className="text-right">
-                    <h2 className="text-xl font-bold text-gray-800">INVOICE</h2>
+                    <h2 className="text-xl font-bold text-gray-800">
+                      {t("modals.invoice")}
+                    </h2>
                     <p className="text-sm text-gray-500">
                       #{order.id.slice(-6)}
                     </p>
@@ -197,59 +201,162 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:gap-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm font-semibold text-neutral-500 uppercase tracking-wide">
-                    <User className="h-4 w-4" /> Customer Info
+                    <User className="h-4 w-4" /> {t("modals.customerInfo")}
                   </div>
                   <div className="p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl text-sm border border-neutral-100 dark:border-neutral-800 print:border-gray-300 print:bg-white print:p-2">
-                    <div className="font-semibold mb-1">Contact:</div>
-                    <div>{order.phone || "No phone"}</div>
-                    <div className="font-semibold mt-2 mb-1">Address:</div>
-                    <div>{order.address || "No address"}</div>
+                    <div className="font-semibold mb-1">
+                      {t("modals.contact")}
+                    </div>
+                    <div>{order.phone || t("modals.noPhone")}</div>
+                    {order.email && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {order.email}
+                      </div>
+                    )}
+                    <div className="font-semibold mt-2 mb-1">
+                      {t("columns.address")}:
+                    </div>
+                    <div>
+                      {order.address || t("modals.noAddress")}
+                      {order.city && `, ${order.city}`}
+                      {order.postalCode && ` ${order.postalCode}`}
+                      {order.country && `, ${order.country}`}
+                    </div>
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm font-semibold text-neutral-500 uppercase tracking-wide">
-                    <CreditCard className="h-4 w-4" /> Payment Info
+                    <CreditCard className="h-4 w-4" /> {t("modals.paymentInfo")}
                   </div>
                   <div className="p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl text-sm border border-neutral-100 dark:border-neutral-800 print:border-gray-300 print:bg-white print:p-2">
                     <div className="flex justify-between mb-2">
-                      <span>Status:</span>
-                      <span className="font-bold uppercase">
-                        {order.isPaid ? "PAID" : "UNPAID"}
-                      </span>
+                      <span>{t("modals.paymentStatus")}</span>
+                      <Badge variant={order.isPaid ? "default" : "destructive"}>
+                        {order.isPaid ? t("columns.paid") : t("modals.unpaid")}
+                      </Badge>
                     </div>
+                    <div className="flex justify-between mb-2">
+                      <span>{t("modals.orderStatus")}</span>
+                      <Badge variant="outline" className="uppercase">
+                        {order.status || "PENDING"}
+                      </Badge>
+                    </div>
+                    {order.trackingNumber && (
+                      <div className="flex justify-between mb-2 text-xs">
+                        <span>{t("columns.tracking")}:</span>
+                        <span className="font-mono">
+                          {order.trackingNumber}
+                        </span>
+                      </div>
+                    )}
+                    {order.shippingMethod && (
+                      <div className="flex justify-between mb-2 text-xs">
+                        <span>{t("nav.shipping")}:</span>
+                        <span>{order.shippingMethod}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-lg font-bold border-t pt-2">
-                      <span>Total:</span>
-                      <span>{formatter.format(order.totalPrice)}</span>
+                      <span>{t("columns.total")}:</span>
+                      <span>
+                        {formatter.format(order.total || order.totalPrice)}
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
 
+              {/* Order Summary */}
+              {(order.subtotal > 0 || order.tax > 0 || order.discount > 0) && (
+                <div className="bg-neutral-50 dark:bg-neutral-800/50 rounded-xl p-4 border print:bg-white print:border-gray-300">
+                  <h3 className="text-sm font-semibold mb-3">
+                    {t("modals.orderSummary")}
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>{t("modals.subtotal")}</span>
+                      <span>
+                        {formatter.format(order.subtotal || order.totalPrice)}
+                      </span>
+                    </div>
+                    {order.discount > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>{t("columns.discount")}:</span>
+                        <span>-{formatter.format(order.discount)}</span>
+                      </div>
+                    )}
+                    {order.tax > 0 && (
+                      <div className="flex justify-between">
+                        <span>{t("modals.tax")}</span>
+                        <span>{formatter.format(order.tax)}</span>
+                      </div>
+                    )}
+                    {order.shippingCost && order.shippingCost > 0 && (
+                      <div className="flex justify-between">
+                        <span>{t("nav.shipping")}:</span>
+                        <span>{formatter.format(order.shippingCost)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-bold text-lg border-t pt-2">
+                      <span>{t("columns.total")}:</span>
+                      <span>
+                        {formatter.format(order.total || order.totalPrice)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {(order.customerNote || order.adminNote) && (
+                <div className="space-y-2">
+                  {order.customerNote && (
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-1">
+                        {t("modals.customerNote")}
+                      </div>
+                      <div className="text-sm text-blue-900 dark:text-blue-100">
+                        {order.customerNote}
+                      </div>
+                    </div>
+                  )}
+                  {order.adminNote && (
+                    <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                      <div className="text-xs font-semibold text-orange-700 dark:text-orange-300 mb-1">
+                        {t("modals.adminNote")}
+                      </div>
+                      <div className="text-sm text-orange-900 dark:text-orange-100">
+                        {order.adminNote}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <Separator className="print:hidden" />
 
               <div>
                 <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mb-4 print:mb-2">
-                  Order Items
+                  {t("modals.orderItems")}
                 </h3>
                 <div className="border rounded-xl overflow-hidden print:border-gray-300">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-neutral-50 dark:bg-neutral-800/50 print:bg-gray-100">
                         <TableHead className="print:text-black">
-                          Product
+                          {t("columns.products")}
                         </TableHead>
                         <TableHead className="print:text-black">
-                          Variant
+                          {t("modals.variant")}
                         </TableHead>
                         <TableHead className="text-center print:text-black">
-                          Qty
+                          {t("modals.qty")}
                         </TableHead>
                         <TableHead className="text-right print:text-black">
-                          Price
+                          {t("columns.price")}
                         </TableHead>
                         <TableHead className="text-right print:text-black">
-                          Total
+                          {t("columns.total")}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -260,23 +367,48 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
                             {item.productName || item.product?.name}
                           </TableCell>
                           <TableCell>
-                            {item.sizeName && (
-                              <span className="mr-2">{item.sizeName}</span>
-                            )}
-                            {item.colorName && <span>{item.colorName}</span>}
+                            <div className="flex flex-wrap gap-1 text-xs">
+                              {item.sizeName && (
+                                <Badge variant="outline" className="text-xs">
+                                  {t("columns.size")}: {item.sizeName}
+                                </Badge>
+                              )}
+                              {item.colorName && (
+                                <Badge variant="outline" className="text-xs">
+                                  {t("columns.color")}: {item.colorName}
+                                </Badge>
+                              )}
+                              {item.materialName && (
+                                <Badge variant="outline" className="text-xs">
+                                  {t("columns.material")}: {item.materialName}
+                                </Badge>
+                              )}
+                              {!item.sizeName &&
+                                !item.colorName &&
+                                !item.materialName && (
+                                  <span className="text-muted-foreground">
+                                    {t("columns.na")}
+                                  </span>
+                                )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-center">
                             {item.quantity}
                           </TableCell>
                           <TableCell className="text-right">
                             {formatter.format(
-                              item.productPrice || item.product?.price || 0
+                              item.price ||
+                                item.productPrice ||
+                                item.product?.price ||
+                                0
                             )}
                           </TableCell>
                           <TableCell className="text-right font-semibold">
                             {formatter.format(
-                              (item.productPrice || item.product?.price || 0) *
-                                item.quantity
+                              (item.price ||
+                                item.productPrice ||
+                                item.product?.price ||
+                                0) * item.quantity
                             )}
                           </TableCell>
                         </TableRow>
@@ -288,7 +420,7 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
 
               {/* Footer in hóa đơn */}
               <div className="hidden print:block text-center text-sm text-gray-500 mt-10 pt-10 border-t">
-                <p>Thank you for your business!</p>
+                <p>{t("modals.thankYou")}</p>
                 <p>
                   {store?.name} - {store?.phone}
                 </p>
@@ -297,7 +429,7 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
           </ScrollArea>
         ) : (
           <div className="py-10 text-center text-neutral-500">
-            Order not found.
+            {t("modals.orderNotFound")}
           </div>
         )}
       </DialogContent>

@@ -67,9 +67,13 @@ export default function StoreSwitcher({
   return (
     <>
       <ViewAllStoresModal
-        stores={formattedItems.map((s: any) => ({
-          id: s.value,
-          name: s.label,
+        stores={items.map((store) => ({
+          id: store.id,
+          name: store.name,
+          address: store.address,
+          phone: store.phone,
+          email: store.email,
+          createdAt: store.createdAt,
         }))}
         isOpen={showStoresModal}
         onClose={() => setShowStoresModal(false)}
@@ -85,14 +89,18 @@ export default function StoreSwitcher({
             aria-label="Select a store"
             className={cn(
               "w-[200px] justify-between rounded-2xl h-10 transition-all duration-300",
-              glassEffect, 
+              glassEffect,
               "hover:bg-white/40 dark:hover:bg-white/10", // Hover effect nhẹ
               "text-neutral-900 dark:text-white font-medium",
               className
             )}
           >
             <div className="flex items-center gap-2 truncate">
-              <StoreIcon className="mr-2 h-4 w-4 opacity-70" />
+              <img 
+                src="/logo.png" 
+                alt="Logo" 
+                className="h-4 w-4 object-contain opacity-70"
+              />
               {currentStore?.label}
             </div>
             <ChevronDown

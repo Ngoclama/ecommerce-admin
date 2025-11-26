@@ -13,9 +13,6 @@ export const getGraphRevenue = async (
       storeId,
       isPaid: true,
     },
-    include: {
-      orderItems: true,
-    },
   });
 
   const monthlyRevenue: { [key: number]: number } = {};
@@ -26,11 +23,8 @@ export const getGraphRevenue = async (
 
   for (const order of paidOrders) {
     const month = order.createdAt.getMonth();
-    let revenueForOrder = 0;
-
-    for (const item of order.orderItems) {
-      revenueForOrder += (item.productPrice || 0) * item.quantity;
-    }
+    // Sử dụng total field
+    const revenueForOrder = order.total ? Number(order.total) : 0;
 
     monthlyRevenue[month] = (monthlyRevenue[month] || 0) + revenueForOrder;
   }

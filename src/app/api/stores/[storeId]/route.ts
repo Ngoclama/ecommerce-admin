@@ -4,16 +4,17 @@ import prisma from "@/lib/prisma";
 
 export async function GET(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
-    if (!params.storeId) {
+    const { storeId } = await params;
+    if (!storeId) {
       return new NextResponse("Store id is required", { status: 400 });
     }
 
     const store = await prisma.store.findUnique({
       where: {
-        id: params.storeId,
+        id: storeId,
       },
     });
 
@@ -23,17 +24,20 @@ export async function GET(
 
     return NextResponse.json(store);
   } catch (error) {
-    console.log("[STORE_GET]", error);
+    if (process.env.NODE_ENV === "development") {
+      console.log("[STORE_GET]", error);
+    }
     return new NextResponse("Internal error", { status: 500 });
   }
 }
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
     const { userId } = await auth();
+    const { storeId } = await params;
     const body = await req.json();
 
     const { name, address, phone, email } = body;
@@ -46,55 +50,77 @@ export async function PATCH(
       return new NextResponse("Name is required", { status: 400 });
     }
 
-    if (!params.storeId) {
+    if (!storeId) {
       return new NextResponse("Store id is required", { status: 400 });
     }
 
-    const store = await prisma.store.updateMany({
+    // Kiểm tra store thuộc về user
+    const storeByUserId = await prisma.store.findFirst({
       where: {
-        id: params.storeId,
+        id: storeId,
         userId,
+      },
+    });
+
+    if (!storeByUserId) {
+      return new NextResponse("Unauthorized", { status: 403 });
+    }
+
+    // Sử dụng update thay vì updateMany để trả về store object
+    const store = await prisma.store.update({
+      where: {
+        id: storeId,
       },
       data: {
         name,
-        address: address || "",
-        phone: phone || "",
-        email: email || "",
+        ...(address !== undefined && { address: address || null }),
+        ...(phone !== undefined && { phone: phone || null }),
+        ...(email !== undefined && { email: email || null }),
       },
     });
 
     return NextResponse.json(store);
-  } catch (error) {
-    console.log("[STORE_PATCH]", error);
+  } catch (error: any) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("[STORE_PATCH]", error);
+    }
+
+    if (error.code === "P2025") {
+      return new NextResponse("Store not found", { status: 404 });
+    }
+
     return new NextResponse("Internal error", { status: 500 });
   }
 }
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
     const { userId } = await auth();
+    const { storeId } = await params;
 
     if (!userId) {
       return new NextResponse("Unauthenticated", { status: 401 });
     }
 
-    if (!params.storeId) {
+    if (!storeId) {
       return new NextResponse("Store id is required", { status: 400 });
     }
 
     const store = await prisma.store.deleteMany({
       where: {
-        id: params.storeId,
+        id: storeId,
         userId,
       },
     });
 
     return NextResponse.json(store);
   } catch (error) {
-    console.log("[STORE_DELETE]", error);
+    if (process.env.NODE_ENV === "development") {
+      console.log("[STORE_DELETE]", error);
+    }
     return new NextResponse("Internal error", { status: 500 });
   }
 }

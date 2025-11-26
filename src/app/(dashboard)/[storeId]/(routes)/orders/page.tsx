@@ -5,40 +5,83 @@ import { formatter } from "@/lib/utils";
 import { OrderClient } from "./components/client";
 import { OrderColumn } from "./components/columns";
 
-const OrdersPage = async ({ params }: { params: { storeId: string } }) => {
+const OrdersPage = async ({
+  params,
+}: {
+  params: Promise<{ storeId: string }>;
+}) => {
   const { storeId } = await params;
 
-  const orders = await prisma.order.findMany({
-    where: {
-      storeId: storeId,
-    },
-    include: {
-      orderItems: {
-        include: {
-          product: true,
+  // Tối ưu: chỉ select các field cần thiết
+  let orders = await prisma.order
+    .findMany({
+      where: {
+        storeId: storeId,
+      },
+      select: {
+        id: true,
+        phone: true,
+        address: true,
+        email: true,
+        total: true,
+        isPaid: true,
+        status: true,
+        shippingMethod: true,
+        trackingNumber: true,
+        paymentMethod: true,
+        createdAt: true,
+        orderItems: {
+          select: {
+            id: true,
+            productName: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
         },
       },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 100, // Giới hạn số lượng
+    })
+    .catch((error: any) => {
+      // Xử lý lỗi khi dữ liệu cũ có updatedAt = null
+      if (error?.code === "P2032" && error?.meta?.field === "updatedAt") {
+        if (process.env.NODE_ENV === "development") {
+          console.error(
+            "Detected old data with null updatedAt. Please run: npx ts-node --esm scripts/fix-order-dates.ts"
+          );
+        }
+        return [];
+      }
+      throw error;
+    });
 
-  const formattedOrders: OrderColumn[] = orders.map((item) => ({
-    id: item.id,
-    phone: item.phone,
-    address: item.address,
-    products: item.orderItems
-      .map((orderItem) => orderItem.product.name)
-      .join(", "),
-    totalPrice: formatter.format(Number(item.totalPrice)),
-    isPaid: item.isPaid,
-    createdAt: format(item.createdAt, "MMMM do, yyyy"),
-    // Map các trường mới vào đây:
-    status: item.status || "PENDING",
-    shippingProvider: item.shippingProvider || null,
-    trackingNumber: item.trackingNumber || null,
-  }));
+  const formattedOrders: OrderColumn[] = orders
+    .filter((item) => item.createdAt)
+    .map((item) => ({
+      id: item.id,
+      phone: item.phone,
+      address: item.address,
+      email: item.email || null,
+      products: item.orderItems
+        .map(
+          (orderItem: (typeof item.orderItems)[0]) =>
+            orderItem.productName || orderItem.product.name
+        )
+        .join(", "),
+      totalPrice: formatter.format(Number(item.total || 0)),
+      isPaid: item.isPaid,
+      createdAt: format(item.createdAt!, "MMMM do, yyyy"),
+      status: item.status || "PENDING",
+      shippingMethod: item.shippingMethod || null,
+      trackingNumber: item.trackingNumber || null,
+      paymentMethod: item.paymentMethod || null,
+    }));
 
   return (
     <div className="flex-col">

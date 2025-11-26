@@ -15,8 +15,22 @@ import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
 import { useBulkCouponModal } from "@/hooks/use-bulk-coupon-modal";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, Loader2, CheckCircle2, Ticket, AlertCircle, CalendarIcon } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Plus,
+  Trash2,
+  Loader2,
+  CheckCircle2,
+  Ticket,
+  AlertCircle,
+  CalendarIcon,
+} from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 type Row = {
@@ -60,14 +74,61 @@ export const BulkCreateCouponModal = () => {
   };
 
   const validateForm = () => {
+    // Kiểm tra duplicate codes trong rows
+    const codes = rows.map((r) => r.code.trim().toUpperCase());
+    const duplicateCodes = codes.filter(
+      (code, index) => code && codes.indexOf(code) !== index
+    );
+    if (duplicateCodes.length > 0) {
+      toast.error(
+        `Duplicate codes found: ${[...new Set(duplicateCodes)].join(", ")}`
+      );
+      return false;
+    }
+
     for (let i = 0; i < rows.length; i++) {
       if (!rows[i].code.trim()) {
         toast.error(`Row ${i + 1}: Code is required.`);
         return false;
       }
+
+      // Kiểm tra code phải có ít nhất 1 chữ cái (không chỉ số)
+      const codeValue = rows[i].code.trim();
+      const hasLetter = /[a-zA-Z]/.test(codeValue);
+      const hasNumber = /[0-9]/.test(codeValue);
+
+      if (!hasLetter) {
+        toast.error(
+          `Row ${
+            i + 1
+          }: Code must contain at least one letter (not only numbers).`
+        );
+        return false;
+      }
+
+      // Code chỉ được chứa chữ cái, số, và có thể có dấu gạch ngang/underscore
+      if (!/^[a-zA-Z0-9_-]+$/.test(codeValue)) {
+        toast.error(
+          `Row ${
+            i + 1
+          }: Code can only contain letters, numbers, hyphens, and underscores.`
+        );
+        return false;
+      }
+
       if (!rows[i].value || isNaN(Number(rows[i].value))) {
         toast.error(`Row ${i + 1}: Valid value is required.`);
         return false;
+      }
+      // Kiểm tra ngày quá khứ
+      if (rows[i].expiresAt) {
+        const selectedDate = new Date(rows[i].expiresAt);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (selectedDate < today) {
+          toast.error(`Row ${i + 1}: Expiration date cannot be in the past.`);
+          return false;
+        }
       }
     }
     return true;
@@ -83,9 +144,83 @@ export const BulkCreateCouponModal = () => {
       router.refresh();
       onClose();
     } catch (error: any) {
-      console.error(error);
-      const errorMessage = error.response?.data || "Failed to create coupons. Check if codes already exist.";
-      toast.error(errorMessage);
+      console.error("Bulk coupon creation error:", error);
+
+      // Xử lý lỗi 409 (Conflict - trùng tên)
+      if (error.response?.status === 409 || error.code === "ERR_BAD_REQUEST") {
+        let errorMessage =
+          "Coupon code already exists. Please change the code name and try again.";
+
+        try {
+          const errorData = error.response?.data;
+
+          // Kiểm tra nếu errorData tồn tại và không rỗng
+          if (errorData) {
+            // Nếu là string, dùng trực tiếp
+            if (typeof errorData === "string" && errorData.trim()) {
+              errorMessage = errorData;
+            }
+            // Nếu là object có field error
+            else if (
+              typeof errorData === "object" &&
+              Object.keys(errorData).length > 0
+            ) {
+              if (errorData.error) {
+                errorMessage = errorData.error;
+              } else {
+                // Nếu không có field error, thử stringify
+                const stringified = JSON.stringify(errorData);
+                if (stringified !== "{}") {
+                  errorMessage = stringified;
+                }
+              }
+            }
+            // Nếu có data nhưng không phải string hoặc object
+            else if (errorData !== null && errorData !== undefined) {
+              errorMessage = String(errorData);
+            }
+          }
+        } catch (parseError) {
+          console.error("Error parsing error response:", parseError);
+        }
+
+        toast.error(errorMessage, {
+          duration: 6000,
+        });
+      } else {
+        let errorMessage =
+          "Failed to create coupons. Please check your input and try again.";
+
+        try {
+          const errorData = error.response?.data;
+
+          if (errorData) {
+            if (typeof errorData === "string" && errorData.trim()) {
+              errorMessage = errorData;
+            } else if (
+              typeof errorData === "object" &&
+              Object.keys(errorData).length > 0
+            ) {
+              if (errorData.error) {
+                errorMessage = errorData.error;
+              } else {
+                const stringified = JSON.stringify(errorData);
+                if (stringified !== "{}") {
+                  errorMessage = stringified;
+                }
+              }
+            } else if (errorData !== null && errorData !== undefined) {
+              errorMessage = String(errorData);
+            }
+          }
+        } catch (parseError) {
+          console.error("Error parsing error response:", parseError);
+        }
+
+        toast.error(errorMessage, {
+          duration: 5000,
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -102,7 +237,8 @@ export const BulkCreateCouponModal = () => {
               Bulk Create Coupons
             </DialogTitle>
             <DialogDescription>
-              Add multiple coupons at once. Define code, value, type, and optional expiration date.
+              Add multiple coupons at once. Define code, value, type, and
+              optional expiration date.
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -131,65 +267,109 @@ export const BulkCreateCouponModal = () => {
                     className="group relative bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-all"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start md:items-center">
-                      
                       {/* Code Input (3 cols) */}
                       <div className="col-span-1 md:col-span-3">
-                        <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">Code</label>
+                        <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
+                          Code
+                        </label>
                         <div className="relative">
-                            <Input
+                          <Input
                             disabled={isLoading}
                             placeholder="e.g., SALE50"
                             value={row.code}
-                            onChange={(e) => handleChange(index, "code", e.target.value)}
-                            className={`uppercase font-mono ${!row.code && rows.length > 1 ? "border-amber-500/50 bg-amber-50/10" : ""}`}
-                            />
-                            {!row.code && (
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-500 animate-pulse">
-                                    <AlertCircle className="w-4 h-4" />
-                                </div>
-                            )}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              // Chỉ cho phép chữ cái, số, dấu gạch ngang và underscore
+                              const sanitized = value.replace(
+                                /[^a-zA-Z0-9_-]/g,
+                                ""
+                              );
+                              handleChange(index, "code", sanitized);
+                            }}
+                            className={`uppercase font-mono ${
+                              !row.code && rows.length > 1
+                                ? "border-amber-500/50 bg-amber-50/10"
+                                : ""
+                            }`}
+                          />
+                          {!row.code && (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-500 animate-pulse">
+                              <AlertCircle className="w-4 h-4" />
+                            </div>
+                          )}
                         </div>
                       </div>
 
                       {/* Value Input (2 cols) */}
                       <div className="col-span-1 md:col-span-2">
-                        <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">Value</label>
+                        <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
+                          Value
+                        </label>
                         <Input
                           type="number"
                           disabled={isLoading}
                           placeholder="Amount"
                           value={row.value}
-                          onChange={(e) => handleChange(index, "value", e.target.value)}
+                          onChange={(e) =>
+                            handleChange(index, "value", e.target.value)
+                          }
                         />
                       </div>
 
                       {/* Type Select (3 cols - Increased from 2) */}
                       <div className="col-span-1 md:col-span-3">
-                        <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">Type</label>
+                        <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
+                          Type
+                        </label>
                         <Select
                           disabled={isLoading}
                           value={row.type}
-                          onValueChange={(value) => handleChange(index, "type", value)}
+                          onValueChange={(value) =>
+                            handleChange(index, "type", value)
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select type" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="PERCENT">Percentage (%)</SelectItem>
-                            <SelectItem value="FIXED">Fixed Amount ($)</SelectItem>
+                            <SelectItem value="PERCENT">
+                              Percentage (%)
+                            </SelectItem>
+                            <SelectItem value="FIXED">
+                              Fixed Amount ($)
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
 
                       {/* Expires At Input (3 cols) */}
                       <div className="col-span-1 md:col-span-3">
-                        <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">Expires At</label>
+                        <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
+                          Expires At
+                        </label>
                         <div className="relative">
                           <Input
                             type="date"
                             disabled={isLoading}
                             value={row.expiresAt}
-                            onChange={(e) => handleChange(index, "expiresAt", e.target.value)}
+                            min={new Date().toISOString().split("T")[0]} // Chặn chọn ngày quá khứ
+                            onChange={(e) => {
+                              const selectedDate = e.target.value;
+                              if (selectedDate) {
+                                const date = new Date(selectedDate);
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                if (date < today) {
+                                  toast.error(
+                                    `Row ${
+                                      index + 1
+                                    }: Expiration date cannot be in the past.`
+                                  );
+                                  return;
+                                }
+                              }
+                              handleChange(index, "expiresAt", selectedDate);
+                            }}
                             className="pl-9" // Padding left cho icon
                           />
                           <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />

@@ -3,12 +3,24 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useRouter, usePathname } from "next/navigation";
-import { CheckCircle2, Store as StoreIcon, X } from "lucide-react"; // Thêm icon X
+import {
+  CheckCircle2,
+  Store as StoreIcon,
+  X,
+  MapPin,
+  Phone,
+  Mail,
+  Calendar,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Store {
   id: string;
   name: string;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  createdAt?: string | Date;
 }
 
 interface ViewAllStoresModalProps {
@@ -98,9 +110,35 @@ export const ViewAllStoresModal = ({
                       <h3 className="text-lg font-semibold truncate">
                         {store.name}
                       </h3>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                        ID: {store.id.slice(0, 10)}...
-                      </p>
+
+                      <div className="mt-2 space-y-1">
+                        {store.address && (
+                          <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
+                            <MapPin className="h-3 w-3" />
+                            <span className="truncate">{store.address}</span>
+                          </div>
+                        )}
+                        {store.phone && (
+                          <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
+                            <Phone className="h-3 w-3" />
+                            <span>{store.phone}</span>
+                          </div>
+                        )}
+                        {store.email && (
+                          <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
+                            <Mail className="h-3 w-3" />
+                            <span className="truncate">{store.email}</span>
+                          </div>
+                        )}
+                        {store.createdAt && (
+                          <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-500">
+                            <Calendar className="h-3 w-3" />
+                            <span>
+                              {new Date(store.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
 
                       <Button
                         size="sm"

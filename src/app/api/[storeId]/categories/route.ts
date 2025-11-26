@@ -5,9 +5,10 @@ import slugify from "slugify";
 
 export async function POST(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
+    const { storeId } = await params;
     const { userId } = await auth();
     const body = await req.json();
     const { name, billboardId, slug } = body;
@@ -27,31 +28,31 @@ export async function POST(
         { success: false, message: "Billboard ID is required" },
         { status: 400 }
       );
-    if (!params.storeId)
+    if (!storeId)
       return NextResponse.json(
         { success: false, message: "Store ID is required" },
         { status: 400 }
       );
 
     const store = await prisma.store.findFirst({
-      where: { id: params.storeId, userId },
+      where: { id: storeId, userId },
     });
     if (!store)
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
         { status: 403 }
       );
-const existingCategory = await prisma.category.findFirst({
+    const existingCategory = await prisma.category.findFirst({
       where: {
-        storeId: params.storeId,
-        name: name, 
+        storeId: storeId,
+        name: name,
       },
     });
 
     if (existingCategory) {
       return NextResponse.json(
         { message: "Category name already exists." },
-        { status: 409 } 
+        { status: 409 }
       );
     }
     const finalSlug = slug
@@ -59,17 +60,20 @@ const existingCategory = await prisma.category.findFirst({
       : slugify(name, { lower: true, strict: true });
 
     const existingCategoryBySlug = await prisma.category.findFirst({
-        where: {
-            storeId: params.storeId,
-            slug: finalSlug,
-        },
+      where: {
+        storeId: storeId,
+        slug: finalSlug,
+      },
     });
 
     if (existingCategoryBySlug) {
-        return NextResponse.json(
-            { message: "Generated slug already exists. Please use a different name." },
-            { status: 409 }
-        );
+      return NextResponse.json(
+        {
+          message:
+            "Generated slug already exists. Please use a different name.",
+        },
+        { status: 409 }
+      );
     }
 
     const category = await prisma.category.create({
@@ -77,7 +81,7 @@ const existingCategory = await prisma.category.findFirst({
         name,
         slug: finalSlug,
         billboardId,
-        storeId: params.storeId,
+        storeId: storeId,
       },
     });
 
@@ -86,9 +90,15 @@ const existingCategory = await prisma.category.findFirst({
       { status: 201 }
     );
   } catch (error) {
-    console.error("[CATEGORY_POST]", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[CATEGORY_POST]", error);
+    }
     return NextResponse.json(
-      { success: false, message: "Internal Server Error", error: error instanceof Error ? error.message : String(error) },
+      {
+        success: false,
+        message: "Internal Server Error",
+        error: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }
@@ -96,19 +106,33 @@ const existingCategory = await prisma.category.findFirst({
 
 export async function GET(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
-    if (!params.storeId)
+    const { storeId } = await params;
+    if (!storeId)
       return NextResponse.json(
         { success: false, message: "Store ID is required" },
         { status: 400 }
       );
 
+    // Tối ưu: chỉ select các field cần thiết
     const categories = await prisma.category.findMany({
-      where: { storeId: params.storeId },
-      include: {
-        billboard: true,
+      where: { storeId: storeId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        billboardId: true,
+        createdAt: true,
+        updatedAt: true,
+        billboard: {
+          select: {
+            id: true,
+            label: true,
+            imageUrl: true,
+          },
+        },
         _count: {
           select: { products: true },
         },
@@ -118,7 +142,9 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: categories });
   } catch (error) {
-    console.error("[CATEGORY_GET]", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[CATEGORY_GET]", error);
+    }
     return NextResponse.json(
       { success: false, message: "Internal Server Error" },
       { status: 500 }
@@ -128,13 +154,11 @@ export async function GET(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
-  console.log("[API] DELETE ALL CATEGORIES for storeId:", params.storeId);
-
   try {
+    const { storeId } = await params;
     const { userId } = await auth();
-    console.log("[API] userId:", userId);
 
     if (!userId)
       return NextResponse.json(
@@ -143,28 +167,77 @@ export async function DELETE(
       );
 
     const store = await prisma.store.findFirst({
-      where: { id: params.storeId, userId },
+      where: { id: storeId, userId },
     });
-    console.log("[API] Store found:", !!store);
 
     if (!store)
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
         { status: 403 }
       );
-      
 
-    console.log("[API] Deleting all products...");
-    await prisma.product.deleteMany({
-      where: { storeId: params.storeId },
-    });
+    // Check if request body has specific IDs to delete
+    let body: any = {};
+    const contentLength = req.headers.get("content-length");
+    if (contentLength && parseInt(contentLength) > 0) {
+      try {
+        body = await req.json();
+      } catch {
+        body = {};
+      }
+    }
 
-    console.log("[API] Deleting all categories...");
+    const idsToDelete = body.ids;
+
+    let categoryIds: string[];
+
+    if (idsToDelete && Array.isArray(idsToDelete) && idsToDelete.length > 0) {
+      // Delete specific categories by IDs
+      // Verify all IDs belong to this store
+      const categoriesToDelete = await prisma.category.findMany({
+        where: {
+          id: { in: idsToDelete },
+          storeId: storeId,
+        },
+        select: { id: true },
+      });
+
+      categoryIds = categoriesToDelete.map((c) => c.id);
+
+      if (categoryIds.length === 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "No valid categories found to delete.",
+          },
+          { status: 400 }
+        );
+      }
+    } else {
+      // Delete all categories (original behavior)
+      const categoriesToDelete = await prisma.category.findMany({
+        where: { storeId: storeId },
+        select: { id: true },
+      });
+
+      categoryIds = categoriesToDelete.map((c) => c.id);
+    }
+
+    if (categoryIds.length > 0) {
+      // 1. Xóa tất cả products của các categories này (có cascade delete)
+      // Products sẽ tự động xóa variants, images, reviews, etc.
+      await prisma.product.deleteMany({
+        where: { categoryId: { in: categoryIds } },
+      });
+    }
+
+    // 2. Xóa các categories đã chọn
     const deleted = await prisma.category.deleteMany({
-      where: { storeId: params.storeId },
+      where: {
+        id: { in: categoryIds },
+        storeId: storeId,
+      },
     });
-
-    console.log("[API] Deleted categories count:", deleted.count);
 
     return NextResponse.json({
       success: true,
@@ -172,7 +245,9 @@ export async function DELETE(
       count: deleted.count,
     });
   } catch (error: any) {
-    console.error("[CATEGORY_DELETE_ALL_ERROR]", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[CATEGORY_DELETE_ALL_ERROR]", error);
+    }
 
     if (error.code === "P2003") {
       return NextResponse.json(

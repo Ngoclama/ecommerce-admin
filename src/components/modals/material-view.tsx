@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { useMaterial } from "@/hooks/use-api-cache";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Calendar, Layers, Hash } from "lucide-react";
 import { format } from "date-fns";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface MaterialViewModalProps {
   isOpen: boolean;
@@ -33,35 +34,28 @@ export const MaterialViewModal: React.FC<MaterialViewModalProps> = ({
   materialId,
   storeId,
 }) => {
+  const { t } = useTranslation();
   const [isMounted, setIsMounted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [data, setData] = useState<Material | null>(null);
+
+  // Chỉ fetch khi có materialId hợp lệ (không phải "new" hoặc null)
+  const isValidMaterialId = materialId && materialId !== "new";
+  const { data, isLoading, error } = useMaterial(
+    storeId,
+    isValidMaterialId ? materialId : null
+  );
+  const materialData = data as Material | null;
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!materialId || !isOpen) return;
-
-      try {
-        setIsLoading(true);
-        const response = await axios.get(
-          `/api/${storeId}/materials/${materialId}`
-        );
-        if (response.data) {
-          setData(response.data as Material);
-        }
-      } catch (error) {
+    if (error && isValidMaterialId) {
+      if (process.env.NODE_ENV === "development") {
         console.error("Failed to fetch material details:", error);
-      } finally {
-        setIsLoading(false);
       }
-    };
-
-    fetchData();
-  }, [materialId, storeId, isOpen]);
+    }
+  }, [error, isValidMaterialId]);
 
   if (!isMounted) return null;
 
@@ -69,9 +63,9 @@ export const MaterialViewModal: React.FC<MaterialViewModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md overflow-hidden bg-white dark:bg-neutral-900">
         <DialogHeader>
-          <DialogTitle>Material Details</DialogTitle>
+          <DialogTitle>{t("modals.materialDetails")}</DialogTitle>
           <DialogDescription>
-            Information about this material.
+            {t("modals.materialDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -81,7 +75,7 @@ export const MaterialViewModal: React.FC<MaterialViewModalProps> = ({
           <div className="flex h-40 w-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
           </div>
-        ) : data ? (
+        ) : materialData ? (
           <div className="space-y-6 pt-2">
             {/* Name Section */}
             <div className="p-4 rounded-lg border bg-neutral-50 dark:bg-neutral-800/50 flex items-start gap-3">
@@ -90,10 +84,10 @@ export const MaterialViewModal: React.FC<MaterialViewModalProps> = ({
               </div>
               <div>
                 <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-                  Name
+                  {t("columns.name")}
                 </h3>
                 <p className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
-                  {data.name}
+                  {materialData.name || ""}
                 </p>
               </div>
             </div>
@@ -102,10 +96,10 @@ export const MaterialViewModal: React.FC<MaterialViewModalProps> = ({
               {/* Value */}
               <div>
                 <h3 className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1 flex items-center gap-1">
-                  <Hash className="h-3 w-3" /> Value
+                  <Hash className="h-3 w-3" /> {t("columns.value")}
                 </h3>
                 <div className="text-sm text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 px-3 py-2 rounded-md border">
-                  {data.value}
+                  {materialData.value || ""}
                 </div>
               </div>
             </div>
@@ -115,18 +109,20 @@ export const MaterialViewModal: React.FC<MaterialViewModalProps> = ({
               <div className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
                 <span>
-                  Created:{" "}
-                  {data.createdAt
-                    ? format(new Date(data.createdAt), "MMM do, yyyy")
-                    : "Unknown"}
+                  {t("modals.created")}{" "}
+                  {materialData.createdAt
+                    ? format(new Date(materialData.createdAt), "MMM do, yyyy")
+                    : t("modals.unknown")}
                 </span>
               </div>
-              <div className="font-mono text-[10px]">ID: {data.id}</div>
+              <div className="font-mono text-[10px]">
+                ID: {materialData.id || ""}
+              </div>
             </div>
           </div>
         ) : (
           <div className="flex h-40 items-center justify-center text-neutral-500">
-            No data found.
+            {t("modals.noDataFound")}
           </div>
         )}
       </DialogContent>

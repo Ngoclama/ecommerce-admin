@@ -3,7 +3,11 @@ import prisma from "@/lib/prisma";
 import { MaterialClient } from "./components/client";
 import { MaterialColumn } from "./components/columns";
 
-const MaterialsPage = async ({ params }: { params: { storeId: string } }) => {
+const MaterialsPage = async ({
+  params,
+}: {
+  params: Promise<{ storeId: string }>;
+}) => {
   const { storeId } = await params;
 
   const materials = await prisma.material.findMany({
@@ -12,7 +16,7 @@ const MaterialsPage = async ({ params }: { params: { storeId: string } }) => {
     },
     include: {
       _count: {
-        select: { products: true },
+        select: { productVariants: true },
       },
     },
     orderBy: {
@@ -24,7 +28,7 @@ const MaterialsPage = async ({ params }: { params: { storeId: string } }) => {
     id: item.id,
     name: item.name,
     value: item.value,
-    productsCount: item._count.products.toString(),
+    productsCount: item._count.productVariants.toString(),
     createdAt: format(item.createdAt, "MMMM do, yyyy"),
   }));
 

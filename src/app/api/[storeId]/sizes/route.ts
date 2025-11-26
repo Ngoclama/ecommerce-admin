@@ -5,10 +5,10 @@ import { NextResponse } from "next/server";
 // 1. TẠO SIZE MỚI
 export async function POST(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
-    const { storeId } = await params; // [FIX] Await params
+    const { storeId } = await params;
 
     const { userId } = await auth();
     const body = await req.json();
@@ -34,7 +34,9 @@ export async function POST(
 
     return NextResponse.json(size);
   } catch (error) {
-    console.error("[SIZES_POST]", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[SIZES_POST]", error);
+    }
     return new NextResponse("Internal error", { status: 500 });
   }
 }
@@ -42,7 +44,7 @@ export async function POST(
 // 2. LẤY DANH SÁCH SIZE
 export async function GET(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
     const { storeId } = await params; // [FIX] Await params
@@ -54,21 +56,23 @@ export async function GET(
     const sizes = await prisma.size.findMany({
       where: { storeId: storeId },
       include: {
-        _count: { select: { products: true } },
+        _count: { select: { productVariants: true } },
       },
       orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json(sizes);
   } catch (error) {
-    console.error("[SIZES_GET]", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[SIZES_GET]", error);
+    }
     return new NextResponse("Internal error", { status: 500 });
   }
 }
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
     const { userId } = await auth();
@@ -85,39 +89,79 @@ export async function DELETE(
     if (!storeByUserId)
       return new NextResponse("Unauthorized", { status: 403 });
 
-    const productsToDelete = await prisma.product.findMany({
-      where: { storeId: storeId },
-      select: { id: true, name: true },
-    });
-
-    if (productsToDelete.length > 0) {
-      const productIds = productsToDelete.map((p) => p.id);
-
-      await prisma.image.deleteMany({
-        where: { productId: { in: productIds } },
-      });
-
-      await prisma.product.deleteMany({
-        where: { id: { in: productIds } },
-      });
-
-      console.warn(
-        `[SIZES_DELETE_ALL] Automatically deleted ${productsToDelete.length} products due to size constraint.`
-      );
+    // Check if request body has specific IDs to delete
+    let body: any = {};
+    const contentLength = req.headers.get("content-length");
+    if (contentLength && parseInt(contentLength) > 0) {
+      try {
+        body = await req.json();
+      } catch {
+        body = {};
+      }
     }
 
+    const idsToDelete = body.ids;
+
+    let sizeIds: string[];
+
+    if (idsToDelete && Array.isArray(idsToDelete) && idsToDelete.length > 0) {
+      // Delete specific sizes by IDs
+      const sizesToDelete = await prisma.size.findMany({
+        where: {
+          id: { in: idsToDelete },
+          storeId: storeId,
+        },
+        select: { id: true },
+      });
+
+      sizeIds = sizesToDelete.map((s) => s.id);
+
+      if (sizeIds.length === 0) {
+        return NextResponse.json(
+          {
+            message: "No valid sizes found to delete.",
+          },
+          { status: 400 }
+        );
+      }
+    } else {
+      // Delete all sizes (original behavior)
+      const sizesToDelete = await prisma.size.findMany({
+        where: { storeId: storeId },
+        select: { id: true },
+      });
+
+      sizeIds = sizesToDelete.map((s) => s.id);
+    }
+
+    if (sizeIds.length > 0) {
+      // 1. Xóa CartItem có sizeId
+      await prisma.cartItem.deleteMany({
+        where: { sizeId: { in: sizeIds } },
+      });
+
+      // 2. Xóa ProductVariant có sizeId
+      await prisma.productVariant.deleteMany({
+        where: { sizeId: { in: sizeIds } },
+      });
+    }
+
+    // 3. Xóa các sizes đã chọn
     const result = await prisma.size.deleteMany({
       where: {
+        id: { in: sizeIds },
         storeId: storeId,
       },
     });
 
     return NextResponse.json({
-      message: `Successfully deleted all sizes. (${productsToDelete.length} dependent products were also removed.)`,
+      message: `Successfully deleted all sizes.`,
       count: result.count,
     });
   } catch (error: any) {
-    console.error("[SIZES_DELETE_ALL_ERROR]", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[SIZES_DELETE_ALL_ERROR]", error);
+    }
 
     if (error.code === "P2014") {
       return new NextResponse(

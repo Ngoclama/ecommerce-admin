@@ -3,14 +3,19 @@ import prisma from "@/lib/prisma";
 import { ColorClient } from "./components/client";
 import { ColorColumn } from "./components/columns";
 
-const ColorsPage = async ({ params }: { params: { storeId: string } }) => {
+const ColorsPage = async ({
+  params,
+}: {
+  params: Promise<{ storeId: string }>;
+}) => {
+  const { storeId } = await params;
   const colors = await prisma.color.findMany({
     where: {
-      storeId: params.storeId,
+      storeId: storeId,
     },
     include: {
       _count: {
-        select: { products: true },
+        select: { productVariants: true },
       },
     },
     orderBy: {
@@ -22,7 +27,7 @@ const ColorsPage = async ({ params }: { params: { storeId: string } }) => {
     id: item.id,
     name: item.name,
     value: item.value,
-    productsCount: item._count.products.toString(),
+    productsCount: item._count.productVariants.toString(),
     createdAt: format(item.createdAt, "MMMM do, yyyy"),
   }));
 

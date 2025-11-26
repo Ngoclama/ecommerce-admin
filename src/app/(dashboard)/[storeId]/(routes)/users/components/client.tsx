@@ -6,8 +6,9 @@ import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
-import { DataTable } from "@/components/ui/data-table"; // Bạn đã có component này
-import { UserColumn, columns } from "./columns";
+import { DataTable } from "@/components/ui/data-table";
+import { UserColumn, useUserColumns } from "./columns";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface UserClientProps {
   data: UserColumn[];
@@ -16,15 +17,16 @@ interface UserClientProps {
 export const UserClient: React.FC<UserClientProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
+  const { t } = useTranslation();
+  const columns = useUserColumns();
 
   return (
     <>
       <div className="flex items-center justify-between">
         <Heading
-          title={`Users (${data.length})`}
-          description="Quản lý danh sách người dùng"
+          title={`${t("nav.users")} (${data.length})`}
+          description={t("nav.users")}
         />
-        {/* Nút thêm user nếu cần, thường user tự đăng ký nên ko cần nút này */}
       </div>
       <Separator />
       <DataTable searchKey="name" columns={columns} data={data} />

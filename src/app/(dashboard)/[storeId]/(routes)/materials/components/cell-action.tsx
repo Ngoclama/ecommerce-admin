@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AlertModal } from "@/components/modals/alert-modal";
 import { MaterialColumn } from "./columns";
-import { MaterialViewModal } from "@/components/modals/material-view"; // Import View Modal
+import { MaterialViewModal } from "@/components/modals/material-view";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface CellActionProps {
   data: MaterialColumn;
@@ -25,9 +26,10 @@ interface CellActionProps {
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [viewOpen, setViewOpen] = useState(false); // State View Modal
+  const [viewOpen, setViewOpen] = useState(false);
 
   const onConfirm = async () => {
     try {
@@ -75,17 +77,16 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("columns.actions")}</DropdownMenuLabel>
 
           <DropdownMenuItem onClick={() => onCopy(data.id)}>
             <Copy className="mr-2 h-4 w-4" />
-            Copy ID
+            {t("actions.copyId")}
           </DropdownMenuItem>
 
-          {/* Nút View Details */}
           <DropdownMenuItem onClick={() => setViewOpen(true)}>
             <Eye className="mr-2 h-4 w-4" />
-            View Details
+            {t("actions.viewDetails")}
           </DropdownMenuItem>
 
           <DropdownMenuItem
@@ -94,7 +95,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
             }
           >
             <Edit className="mr-2 h-4 w-4" />
-            Update
+            {t("actions.update")}
           </DropdownMenuItem>
 
           <DropdownMenuItem
@@ -102,7 +103,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
             className="text-red-600"
           >
             <Trash className="mr-2 h-4 w-4" />
-            Delete
+            {t("actions.delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

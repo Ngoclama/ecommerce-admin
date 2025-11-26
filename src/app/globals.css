@@ -169,3 +169,15 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Hide Clerk navigation tabs (Sign in / Sign Up) */
+@layer utilities {
+  [data-clerk-element="navbar"],
+  [data-clerk-element="navbarButtons"],
+  .cl-navbar,
+  .cl-navbarButtons,
+  button[data-localization-key*="signIn"],
+  button[data-localization-key*="signUp"] {
+    display: none !important;
+  }
+}

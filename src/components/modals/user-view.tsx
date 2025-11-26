@@ -2,10 +2,11 @@
 
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
-import { User } from "@prisma/client"; 
+import { User } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import Image from "next/image";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface UserViewModalProps {
   isOpen: boolean;
@@ -18,12 +19,13 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
   onClose,
   data,
 }) => {
+  const { t } = useTranslation();
   if (!data) return null;
 
   return (
     <Modal
-      title="Chi tiết người dùng"
-      description="Xem thông tin chi tiết của khách hàng"
+      title={t("modals.userDetails")}
+      description={t("modals.userDescription")}
       isOpen={isOpen}
       onClose={onClose}
     >
@@ -51,22 +53,24 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
             <span className="text-xs text-muted-foreground">{data.id}</span>
           </div>
           <div className="flex items-center justify-between border-b pb-2">
-            <span className="font-semibold">Vai trò:</span>
+            <span className="font-semibold">{t("modals.role")}</span>
             <Badge variant="outline">{data.role}</Badge>
           </div>
           <div className="flex items-center justify-between border-b pb-2">
-            <span className="font-semibold">Trạng thái:</span>
+            <span className="font-semibold">{t("columns.status")}:</span>
             <div className="flex gap-2">
-              {data.isVIP && <Badge className="bg-yellow-500">VIP</Badge>}
+              {data.isVIP && (
+                <Badge className="bg-yellow-500">{t("columns.vip")}</Badge>
+              )}
               {data.isBanned ? (
-                <Badge variant="destructive">Banned</Badge>
+                <Badge variant="destructive">{t("columns.banned")}</Badge>
               ) : (
-                <Badge variant="secondary">Active</Badge>
+                <Badge variant="secondary">{t("columns.active")}</Badge>
               )}
             </div>
           </div>
           <div className="flex items-center justify-between border-b pb-2">
-            <span className="font-semibold">Ngày tham gia:</span>
+            <span className="font-semibold">{t("modals.joinedDate")}</span>
             <span className="text-sm">
               {format(new Date(data.createdAt), "dd/MM/yyyy")}
             </span>
@@ -75,7 +79,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
       </div>
       <div className="pt-6 w-full flex items-center justify-end">
         <Button onClick={onClose} variant="outline">
-          Đóng
+          {t("modals.close")}
         </Button>
       </div>
     </Modal>

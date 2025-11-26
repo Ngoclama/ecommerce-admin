@@ -1,33 +1,51 @@
 import prisma from "@/lib/prisma";
-import { CategoryForm } from "./components/category-form";
 import { ObjectId } from "bson";
 
-const CategoryPage = async ({
+const ReviewPage = async ({
   params,
 }: {
-  params: { categoryId: string; storeId: string };
+  params: Promise<{ reviewId: string; storeId: string }>;
 }) => {
-  const isValidId = ObjectId.isValid(params.categoryId);
+  const { reviewId, storeId } = await params;
+  const isValidId = ObjectId.isValid(reviewId);
 
-  const category = isValidId
-    ? await prisma.category.findUnique({
-        where: { id: params.categoryId },
+  const review = isValidId
+    ? await prisma.review.findUnique({
+        where: { id: reviewId },
+        include: {
+          product: true,
+          user: true,
+        },
       })
     : null;
-
-  const billboards = await prisma.billboard.findMany({
-    where: {
-      storeId: params.storeId,
-    },
-  });
 
   return (
     <div className="flex flex-col">
       <div className="flex-1 space-y-4 p-8 pt-6">
-        <CategoryForm billboards={billboards} initialData={category} />
+        <div className="space-y-4">
+          <h1 className="text-2xl font-bold">Review Details</h1>
+          {review ? (
+            <div className="space-y-2">
+              <p>
+                <strong>Product:</strong> {review.product.name}
+              </p>
+              <p>
+                <strong>User:</strong> {review.user.name || review.user.email}
+              </p>
+              <p>
+                <strong>Rating:</strong> {review.rating}/5
+              </p>
+              <p>
+                <strong>Content:</strong> {review.content || "No content"}
+              </p>
+            </div>
+          ) : (
+            <p>Review not found</p>
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
-export default CategoryPage;
+export default ReviewPage;

@@ -4,17 +4,18 @@ import { MaterialForm } from "./components/material-form";
 const MaterialPage = async ({
   params,
 }: {
-  params: Promise<{ materialId: string }>;
+  params: Promise<{ storeId: string; materialId: string }>;
 }) => {
-  const { materialId } = await params;
+  const { storeId, materialId } = await params;
 
   const material = await prisma.material
-    .findUnique({
+    .findFirst({
       where: {
         id: materialId,
+        storeId: storeId,
       },
     })
-    .catch(() => null); 
+    .catch(() => null);
 
   return (
     <div className="flex-col">

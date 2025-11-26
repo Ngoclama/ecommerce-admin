@@ -2,16 +2,19 @@ import prisma from "@/lib/prisma";
 import { ObjectId } from "bson";
 import { ColorForm } from "./components/color-form";
 
-const ColorPage = async ({ params }: { params: { colorId: string } }) => {
-  const isValidId = ObjectId.isValid(params.colorId);
+const ColorPage = async ({
+  params,
+}: {
+  params: Promise<{ storeId: string; colorId: string }>;
+}) => {
+  const { storeId, colorId } = await params;
+  const isValidId = ObjectId.isValid(colorId);
 
   const color = isValidId
     ? await prisma.color.findUnique({
-        where: { id: params.colorId },
+        where: { id: colorId },
       })
     : null;
-
-  console.log("Params:", params);
 
   return (
     <div className="flex flex-col">

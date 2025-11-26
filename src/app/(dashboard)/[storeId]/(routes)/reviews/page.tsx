@@ -3,8 +3,12 @@ import prisma from "@/lib/prisma";
 import { ReviewsClient } from "./components/client";
 import { ReviewColumn } from "./components/columns";
 
-const ReviewsPage = async ({ params }: { params: { storeId: string } }) => {
-  const { storeId } = await params; 
+const ReviewsPage = async ({
+  params,
+}: {
+  params: Promise<{ storeId: string }>;
+}) => {
+  const { storeId } = await params;
 
   const reviews = await prisma.review.findMany({
     where: {
@@ -27,7 +31,7 @@ const ReviewsPage = async ({ params }: { params: { storeId: string } }) => {
     user: item.user.name || item.user.email || "Anonymous",
     rating: item.rating,
     content: item.content || "",
-    imageUrl: item.imageUrl || "",
+    imageUrl: item.imageUrls?.[0] || "",
     isArchived: item.isArchived,
     adminResponse: item.adminResponse,
     createdAt: format(item.createdAt, "MMMM do, yyyy"),

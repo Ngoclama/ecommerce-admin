@@ -6,16 +6,14 @@ export const getTotalRevenue = async (storeId: string) => {
       storeId,
       isPaid: true,
     },
-    include: {
-      orderItems: true,
-    },
   });
 
+  // Tính tổng doanh thu từ field total
   const totalRevenue = paidOrders.reduce((total, order) => {
-    const orderTotal = order.orderItems.reduce((orderSum, item) => {
-      return orderSum + (item.productPrice || 0) * item.quantity;
-    }, 0);
-    return total + orderTotal;
+    if (order.total) {
+      return total + Number(order.total);
+    }
+    return total;
   }, 0);
 
   return totalRevenue;

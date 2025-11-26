@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { useColor } from "@/hooks/use-api-cache";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Calendar, Palette, Hash } from "lucide-react";
 import { format } from "date-fns";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface ColorViewModalProps {
   isOpen: boolean;
@@ -33,33 +34,27 @@ export const ColorViewModal: React.FC<ColorViewModalProps> = ({
   colorId,
   storeId,
 }) => {
+  const { t } = useTranslation();
   const [isMounted, setIsMounted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [data, setData] = useState<Color | null>(null);
+  
+  // Chỉ fetch khi có colorId hợp lệ (không phải "new" hoặc null)
+  const isValidColorId = colorId && colorId !== "new";
+  const { data, isLoading, error } = useColor(
+    storeId,
+    isValidColorId ? colorId : null
+  );
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!colorId || !isOpen) return;
-
-      try {
-        setIsLoading(true);
-        const response = await axios.get(`/api/${storeId}/colors/${colorId}`);
-        if (response.data) {
-          setData(response.data as Color);
-        }
-      } catch (error) {
+    if (error && isValidColorId) {
+      if (process.env.NODE_ENV === "development") {
         console.error("Failed to fetch color details:", error);
-      } finally {
-        setIsLoading(false);
       }
-    };
-
-    fetchData();
-  }, [colorId, storeId, isOpen]);
+    }
+  }, [error, isValidColorId]);
 
   if (!isMounted) return null;
 
@@ -67,8 +62,8 @@ export const ColorViewModal: React.FC<ColorViewModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md overflow-hidden bg-white dark:bg-neutral-900">
         <DialogHeader>
-          <DialogTitle>Color Details</DialogTitle>
-          <DialogDescription>Information about this color.</DialogDescription>
+          <DialogTitle>{t("modals.colorDetails")}</DialogTitle>
+          <DialogDescription>{t("modals.colorDescription")}</DialogDescription>
         </DialogHeader>
 
         <Separator />
@@ -86,7 +81,7 @@ export const ColorViewModal: React.FC<ColorViewModalProps> = ({
               </div>
               <div>
                 <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-                  Name
+                  {t("columns.name")}
                 </h3>
                 <p className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
                   {data.name}
@@ -98,7 +93,7 @@ export const ColorViewModal: React.FC<ColorViewModalProps> = ({
               {/* Value & Preview */}
               <div>
                 <h3 className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1 flex items-center gap-1">
-                  <Hash className="h-3 w-3" /> Value & Preview
+                  <Hash className="h-3 w-3" /> {t("modals.valuePreview")}
                 </h3>
                 <div className="flex items-center gap-3 p-2 rounded-md border bg-white dark:bg-neutral-900">
                   <div
@@ -117,10 +112,10 @@ export const ColorViewModal: React.FC<ColorViewModalProps> = ({
               <div className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
                 <span>
-                  Created:{" "}
+                  {t("modals.created")}{" "}
                   {data.createdAt
                     ? format(new Date(data.createdAt), "MMM do, yyyy")
-                    : "Unknown"}
+                    : t("modals.unknown")}
                 </span>
               </div>
               <div className="font-mono text-[10px]">ID: {data.id}</div>
@@ -128,7 +123,7 @@ export const ColorViewModal: React.FC<ColorViewModalProps> = ({
           </div>
         ) : (
           <div className="flex h-40 items-center justify-center text-neutral-500">
-            No data found.
+            {t("modals.noDataFound")}
           </div>
         )}
       </DialogContent>

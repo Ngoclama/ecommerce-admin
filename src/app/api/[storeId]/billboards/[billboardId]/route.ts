@@ -4,10 +4,11 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   req: Request,
-  { params }: { params: { billboardId: string } }
+  { params }: { params: Promise<{ billboardId: string }> }
 ) {
   try {
-    if (!params.billboardId) {
+    const { billboardId } = await params;
+    if (!billboardId) {
       return NextResponse.json(
         { message: "Billboard ID is required" },
         { status: 400 }
@@ -15,7 +16,7 @@ export async function GET(
     }
     const billboard = await prisma.billboard.findUnique({
       where: {
-        id: params.billboardId,
+        id: billboardId,
       },
       include: {
         categories: {
@@ -40,9 +41,10 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { storeId: string; billboardId: string } }
+  { params }: { params: Promise<{ storeId: string; billboardId: string }> }
 ) {
   try {
+    const { storeId, billboardId } = await params;
     const { userId } = await auth();
     const body = await req.json();
     const { label, imageUrl } = body;
@@ -59,20 +61,20 @@ export async function PATCH(
         { message: "Image URL is required" },
         { status: 400 }
       );
-    if (!params.storeId)
+    if (!storeId)
       return NextResponse.json(
         { message: "Store ID is required" },
         { status: 400 }
       );
 
     const storeByUserId = await prisma.store.findFirst({
-      where: { id: params.storeId, userId },
+      where: { id: storeId, userId },
     });
     if (!storeByUserId)
       return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
 
     const billboard = await prisma.billboard.update({
-      where: { id: params.billboardId },
+      where: { id: billboardId },
       data: { label, imageUrl },
     });
 
@@ -85,16 +87,17 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { billboardId: string; storeId: string } }
+  { params }: { params: Promise<{ billboardId: string; storeId: string }> }
 ) {
   try {
+    const { billboardId, storeId } = await params;
     const { userId } = await auth();
 
     if (!userId) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    if (!params.storeId || !params.billboardId) {
+    if (!storeId || !billboardId) {
       return NextResponse.json(
         { message: "Store ID and Billboard ID are required" },
         { status: 400 }
@@ -103,7 +106,7 @@ export async function DELETE(
 
     const storeByUserId = await prisma.store.findFirst({
       where: {
-        id: params.storeId,
+        id: storeId,
         userId,
       },
     });
@@ -113,7 +116,7 @@ export async function DELETE(
 
     const usedByCategories = await prisma.category.count({
       where: {
-        billboardId: params.billboardId,
+        billboardId: billboardId,
       },
     });
 
@@ -129,7 +132,7 @@ export async function DELETE(
 
     const billboard = await prisma.billboard.delete({
       where: {
-        id: params.billboardId,
+        id: billboardId,
       },
     });
 

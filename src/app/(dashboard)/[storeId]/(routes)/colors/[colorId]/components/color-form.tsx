@@ -23,12 +23,17 @@ import { toast } from "sonner";
 import { AlertModal } from "@/components/modals/alert-modal";
 import { ColorViewModal } from "@/components/modals/color-view";
 import { motion } from "framer-motion";
+import { useTranslation } from "@/hooks/use-translation";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  value: z.string().min(4).regex(/^#/, {
-    message: "String must be a valid hex code (e.g., #FF0000)",
-  }),
+  value: z
+    .string()
+    .min(1, "Value is required")
+    .regex(/^#/, {
+      message: "String must be a valid hex code (e.g., #FF0000)",
+    })
+    .transform((val) => val?.trim() || "#000000"), // Nếu rỗng thì mặc định màu đen
 });
 
 type ColorFormValues = z.infer<typeof formSchema>;
@@ -38,22 +43,28 @@ interface ColorFormProps {
 }
 
 export const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useParams();
   const [isOpen, setIsOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const title = initialData ? "Edit Color" : "Create Color";
-  const description = initialData ? "Edit your color" : "Add a new color";
-  const action = initialData ? "Save changes" : "Create";
+  const title = initialData ? t("forms.color.title") : t("forms.color.titleCreate");
+  const description = initialData ? t("forms.color.description") : t("forms.color.descriptionCreate");
+  const action = initialData ? t("forms.saveChanges") : t("forms.create");
 
   const form = useForm<ColorFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
-      name: "",
-      value: "#000000", // Mặc định màu đen nếu tạo mới
-    },
+    defaultValues: initialData
+      ? {
+          name: initialData.name || "",
+          value: initialData.value || "#000000",
+        }
+      : {
+          name: "",
+          value: "#000000", // Mặc định màu đen nếu tạo mới
+        },
   });
 
   const onSubmit = async (data: ColorFormValues) => {
@@ -64,17 +75,23 @@ export const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
         : `/api/${params.storeId}/colors`;
       const method = initialData ? "PATCH" : "POST";
 
+      // Đảm bảo value luôn có giá trị, mặc định là #000000
+      const submitData = {
+        ...data,
+        value: data.value?.trim() || "#000000",
+      };
+
       await fetch(endpoint, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(submitData),
       });
 
-      toast.success(initialData ? "Color updated!" : "Color created!");
+      toast.success(initialData ? t("forms.color.updated") : t("forms.color.created"));
       router.refresh();
       router.push(`/${params.storeId}/colors`);
     } catch (error) {
-      toast.error("Something went wrong.");
+      toast.error(t("actions.somethingWentWrong"));
     } finally {
       setIsLoading(false);
     }
@@ -86,11 +103,11 @@ export const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
       await fetch(`/api/${params.storeId}/colors/${params.colorId}`, {
         method: "DELETE",
       });
-      toast.success("Color deleted.");
+      toast.success(t("forms.color.deleted"));
       router.refresh();
       router.push(`/${params.storeId}/colors`);
     } catch (error) {
-      toast.error("Make sure you removed all products using this color first.");
+      toast.error(t("forms.color.errorDelete"));
     } finally {
       setIsLoading(false);
       setIsOpen(false);
@@ -106,12 +123,15 @@ export const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
         loading={isLoading}
       />
 
-      <ColorViewModal
-        isOpen={isViewOpen}
-        onClose={() => setIsViewOpen(false)}
-        colorId={params.colorId as string}
-        storeId={params.storeId as string}
-      />
+      {/* View Modal - chỉ hiển thị khi có initialData và colorId hợp lệ */}
+      {initialData && params.colorId && params.colorId !== "new" && (
+        <ColorViewModal
+          isOpen={isViewOpen}
+          onClose={() => setIsViewOpen(false)}
+          colorId={params.colorId as string}
+          storeId={params.storeId as string}
+        />
+      )}
 
       <div className="flex items-center justify-between px-6 py-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur-xl shadow-md hover:shadow-lg transition-all duration-300">
         <Heading title={title} description={description} />
@@ -160,11 +180,11 @@ export const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name</FormLabel>
+                    <FormLabel>{t("forms.color.name")}</FormLabel>
                     <FormControl>
                       <Input
                         disabled={isLoading}
-                        placeholder="Color name (e.g. Red)"
+                        placeholder={t("forms.color.namePlaceholder")}
                         {...field}
                         className="rounded-xl border-neutral-300 dark:border-neutral-700 focus-visible:ring-blue-500/50"
                       />
@@ -179,7 +199,7 @@ export const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
                 name="value"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Value</FormLabel>
+                    <FormLabel>{t("forms.color.value")}</FormLabel>
                     <FormControl>
                       <div className="flex items-center gap-4">
                         <div className="relative h-10 w-10 rounded-full overflow-hidden shadow-sm border cursor-pointer hover:scale-110 transition-transform">
@@ -189,7 +209,7 @@ export const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
                             value={field.value}
                             onChange={(e) => field.onChange(e.target.value)}
                             className="absolute -top-2 -left-2 h-16 w-16 p-0 border-0 cursor-pointer opacity-0"
-                            title="Choose a color"
+                            title={t("forms.color.chooseColor")}
                           />
                           <div
                             className="w-full h-full pointer-events-none"
@@ -200,7 +220,7 @@ export const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
                         {/* Hex Code Input */}
                         <Input
                           disabled={isLoading}
-                          placeholder="Hex code (e.g. #FF0000)"
+                          placeholder={t("forms.color.valuePlaceholder")}
                           {...field}
                           className="rounded-xl border-neutral-300 dark:border-neutral-700 focus-visible:ring-blue-500/50 uppercase font-mono"
                           maxLength={7}
@@ -219,7 +239,7 @@ export const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
                 type="submit"
                 className="rounded-xl px-8"
               >
-                {isLoading ? "Processing..." : action}
+                {isLoading ? t("forms.processing") : action}
               </Button>
             </div>
           </motion.div>

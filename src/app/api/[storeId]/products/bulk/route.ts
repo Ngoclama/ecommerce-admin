@@ -5,17 +5,18 @@ import slugify from "slugify";
 
 export async function POST(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
+    const { storeId } = await params;
     const { userId } = await auth();
     if (!userId) return new NextResponse("Unauthenticated", { status: 401 });
 
-    if (!params.storeId)
+    if (!storeId)
       return new NextResponse("Store ID is required", { status: 400 });
 
     const storeByUserId = await prisma.store.findFirst({
-      where: { id: params.storeId, userId },
+      where: { id: storeId, userId },
     });
 
     if (!storeByUserId)
@@ -37,7 +38,7 @@ export async function POST(
         slug = `${slug}-${Math.random().toString(36).substring(2, 7)}`;
 
         return {
-          storeId: params.storeId,
+          storeId: storeId,
           name: r.name,
           slug: slug,
           price: Math.round(Number(r.price)),

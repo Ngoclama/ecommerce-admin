@@ -10,11 +10,14 @@ const handleAuth = async () => {
 };
 
 export const ourFileRouter = {
-  imageUploader: f({ image: { maxFileSize: "4MB", maxFileCount: 10 } }) // Cho phép max 10 ảnh/lần
+  imageUploader: f({ 
+    image: { 
+      maxFileSize: "8MB", // Tăng từ 4MB lên 8MB
+      maxFileCount: 10 
+    } 
+  })
     .middleware(() => handleAuth())
-    .onUploadComplete(async ({ metadata, file }) => {
-      // console.log("Upload complete for userId:", metadata.userId);
-      // console.log("file url", file.url);
+    .onUploadComplete(async ({ metadata }) => {
       return { uploadedBy: metadata.userId };
     }),
 } satisfies FileRouter;

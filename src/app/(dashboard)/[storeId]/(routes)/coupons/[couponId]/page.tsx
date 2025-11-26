@@ -4,14 +4,16 @@ import { CouponForm } from "./components/coupon-form";
 const CouponPage = async ({
   params,
 }: {
-  params: { couponId: string };
+  params: Promise<{ storeId: string; couponId: string }>;
 }) => {
+  const { storeId, couponId } = await params;
   const coupon =
-    params.couponId === "new"
+    couponId === "new"
       ? null
-      : await prisma.coupon.findUnique({
+      : await prisma.coupon.findFirst({
           where: {
-            id: params.couponId,
+            id: couponId,
+            storeId: storeId,
           },
         });
 

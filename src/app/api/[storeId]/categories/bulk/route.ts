@@ -5,21 +5,22 @@ import slugify from "slugify"; // Đảm bảo đã cài: npm install slugify
 
 export async function POST(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
+    const { storeId } = await params;
     const { userId } = await auth();
     if (!userId) {
       return new NextResponse("Unauthenticated", { status: 401 });
     }
 
-    if (!params.storeId) {
+    if (!storeId) {
       return new NextResponse("Store ID is required", { status: 400 });
     }
 
     const storeByUserId = await prisma.store.findFirst({
       where: {
-        id: params.storeId,
+        id: storeId,
         userId,
       },
     });
@@ -46,7 +47,7 @@ export async function POST(
           name: r.name,
           slug: slug,
           billboardId: r.billboardId,
-          storeId: params.storeId,
+          storeId: storeId,
         };
       });
 

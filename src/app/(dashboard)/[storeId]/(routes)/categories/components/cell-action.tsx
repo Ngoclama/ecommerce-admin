@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { AlertModal } from "@/components/modals/alert-modal";
 import { CategoryColumn } from "./columns";
 import { CategoryViewModal } from "@/components/modals/category-view";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface CellActionProps {
   data: CategoryColumn;
@@ -24,6 +25,7 @@ interface CellActionProps {
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
+  const { t } = useTranslation();
 
   const [isLoading, setIsLoading] = useState(false);
   const [openAlert, setOpenAlert] = useState(false); // Modal xóa
@@ -82,21 +84,21 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("columns.actions")}</DropdownMenuLabel>
 
           <DropdownMenuItem onClick={() => onCopy(data.id)}>
             <Copy className="mr-2 h-4 w-4" />
-            Copy ID
+            {t("actions.copyId")}
           </DropdownMenuItem>
 
           <DropdownMenuItem onClick={() => setOpenView(true)}>
             <Eye className="mr-2 h-4 w-4" />
-            View Details
+            {t("actions.viewDetails")}
           </DropdownMenuItem>
 
           <DropdownMenuItem onClick={handleEdit}>
             <Pencil className="mr-2 h-4 w-4" />
-            Edit
+            {t("actions.edit")}
           </DropdownMenuItem>
 
           <DropdownMenuItem
@@ -104,7 +106,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
             className="text-red-600 focus:text-red-600"
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Delete
+            {t("actions.delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

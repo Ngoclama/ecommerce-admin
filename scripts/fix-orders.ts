@@ -47,3 +47,6 @@ main()
   .finally(async () => {
     await db.$disconnect();
   });
+
+// Export để biến file thành module riêng biệt, tránh lỗi redeclare
+export {};

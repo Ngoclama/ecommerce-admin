@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import { MoreHorizontal, Plus, Trash } from "lucide-react";
-import { CategoryColumn, columns } from "./columns";
+import { CategoryColumn, useCategoryColumns } from "./columns";
+import { useTranslation } from "@/hooks/use-translation";
 import { DataTable } from "@/components/ui/data-table";
 import { ApiList } from "@/components/ui/api-list";
 import {
@@ -30,9 +31,13 @@ interface CategoryClientProps {
 export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
+  const { t } = useTranslation();
+  const columns = useCategoryColumns();
   const { onOpen: openBulkModal } = useBulkCategoryModal();
   const { onOpen: openAlert, onClose: closeAlert } = useAlertModal();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<CategoryColumn[]>([]);
+  const [deleteSelectedOpen, setDeleteSelectedOpen] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -65,6 +70,50 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
     }
   };
 
+  const handleDeleteSelected = async () => {
+    if (selectedRows.length === 0) {
+      toast.error(t("actions.noItemsSelected") || "No items selected");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const categoryIds = selectedRows.map((row) => row.id);
+      const response = await fetch(`/api/${params.storeId}/categories`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids: categoryIds }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to delete categories");
+      }
+
+      const result = await response.json();
+      toast.success(
+        `${selectedRows.length} ${
+          t("actions.deleteSelectedSuccess") ||
+          "categories deleted successfully!"
+        }`
+      );
+      setSelectedRows([]);
+      router.refresh();
+    } catch (error: any) {
+      console.error("[DELETE_SELECTED_ERROR]", error);
+      toast.error(
+        error.message ||
+          t("actions.deleteSelectedError") ||
+          "Unable to delete selected categories. Remove related products first."
+      );
+    } finally {
+      setIsLoading(false);
+      setDeleteSelectedOpen(false);
+    }
+  };
+
   return (
     <>
       <AlertModal
@@ -72,6 +121,20 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
         onClose={() => setConfirmOpen(false)}
         onConfirm={handleDeleteAll}
         loading={isLoading}
+      />
+      <AlertModal
+        isOpen={deleteSelectedOpen}
+        onClose={() => setDeleteSelectedOpen(false)}
+        onConfirm={handleDeleteSelected}
+        loading={isLoading}
+        title={
+          t("actions.deleteSelectedConfirm") ||
+          `Delete ${selectedRows.length} selected categories?`
+        }
+        description={
+          t("actions.deleteSelectedDescription") ||
+          "This action cannot be undone. Make sure you removed all related products first."
+        }
       />
       <div
         className="
@@ -86,8 +149,8 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <Heading
-            title={`Categories (${data.length})`}
-            description="Manage product categories for your store"
+            title={`${t("nav.categories")} (${data.length})`}
+            description={t("nav.categories")}
           />
 
           <DropdownMenu>
@@ -97,7 +160,7 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
                 className="flex items-center gap-2 rounded-xl bg-white/60 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 hover:bg-white/80 dark:hover:bg-neutral-700 transition-all cursor-pointer"
               >
                 <MoreHorizontal className="h-4 w-4" />
-                Actions
+                {t("columns.actions")}
               </Button>
             </DropdownMenuTrigger>
 
@@ -106,7 +169,7 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
               className="w-56 rounded-2xl bg-white/70 dark:bg-neutral-900/80 backdrop-blur-2xl border border-white/30 dark:border-neutral-800/60 p-1"
             >
               <DropdownMenuLabel className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                Category Actions
+                {t("nav.categories")} {t("columns.actions")}
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-neutral-200/40 dark:bg-neutral-700/40" />
 
@@ -115,7 +178,7 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
                 className="flex items-center gap-2 cursor-pointer"
               >
                 <Plus className="h-4 w-4" />
-                Add New
+                {t("actions.addNew")}
               </DropdownMenuItem>
 
               <DropdownMenuItem
@@ -123,16 +186,26 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
                 className="flex items-center gap-2 cursor-pointer"
               >
                 <Plus className="h-4 w-4" />
-                Add Bulk
+                {t("actions.addBulk")}
               </DropdownMenuItem>
 
               <DropdownMenuItem
-                disabled={data.length === 0 || isLoading}
-                onClick={() => setConfirmOpen(true)}
+                disabled={selectedRows.length === 0 || isLoading}
+                onClick={() => setDeleteSelectedOpen(true)}
                 className="flex items-center gap-2 cursor-pointer"
               >
                 <Trash className="h-4 w-4 text-red-500" />
-                Delete All
+                {t("actions.deleteSelected") ||
+                  `Delete Selected (${selectedRows.length})`}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-neutral-200/40 dark:bg-neutral-700/40" />
+              <DropdownMenuItem
+                disabled={data.length === 0 || isLoading}
+                onClick={() => setConfirmOpen(true)}
+                className="flex items-center gap-2 cursor-pointer text-red-500"
+              >
+                <Trash className="h-4 w-4 text-red-500" />
+                {t("actions.deleteAll")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -142,7 +215,13 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
         <Separator className="my-4" />
 
         {/* Table */}
-        <DataTable searchKey="name" columns={columns} data={data} />
+        <DataTable
+          searchKey="name"
+          columns={columns}
+          data={data}
+          enableRowSelection={true}
+          onRowSelectionChange={setSelectedRows}
+        />
 
         {/* API Section */}
         <Separator className="my-8" />

@@ -21,8 +21,9 @@ import * as z from "zod";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
 import { AlertModal } from "@/components/modals/alert-modal";
-import { MaterialViewModal } from "@/components/modals/material-view"; // Import Modal View
+import { MaterialViewModal } from "@/components/modals/material-view";
 import { motion } from "framer-motion";
+import { useTranslation } from "@/hooks/use-translation";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -36,15 +37,16 @@ interface MaterialFormProps {
 }
 
 export const MaterialForm: React.FC<MaterialFormProps> = ({ initialData }) => {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useParams();
   const [isOpen, setIsOpen] = useState(false);
-  const [isViewOpen, setIsViewOpen] = useState(false); // State View Modal
+  const [isViewOpen, setIsViewOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const title = initialData ? "Edit Material" : "Create Material";
-  const description = initialData ? "Edit your material" : "Add a new material";
-  const action = initialData ? "Save changes" : "Create";
+  const title = initialData ? t("forms.material.title") : t("forms.material.titleCreate");
+  const description = initialData ? t("forms.material.description") : t("forms.material.descriptionCreate");
+  const action = initialData ? t("forms.saveChanges") : t("forms.create");
 
   const form = useForm<MaterialFormValues>({
     resolver: zodResolver(formSchema),
@@ -68,11 +70,11 @@ export const MaterialForm: React.FC<MaterialFormProps> = ({ initialData }) => {
         body: JSON.stringify(data),
       });
 
-      toast.success(initialData ? "Material updated!" : "Material created!");
+      toast.success(initialData ? t("forms.material.updated") : t("forms.material.created"));
       router.refresh();
       router.push(`/${params.storeId}/materials`);
     } catch (error) {
-      toast.error("Something went wrong.");
+      toast.error(t("actions.somethingWentWrong"));
     } finally {
       setIsLoading(false);
     }
@@ -84,13 +86,11 @@ export const MaterialForm: React.FC<MaterialFormProps> = ({ initialData }) => {
       await fetch(`/api/${params.storeId}/materials/${params.materialId}`, {
         method: "DELETE",
       });
-      toast.success("Material deleted.");
+      toast.success(t("forms.material.deleted"));
       router.refresh();
       router.push(`/${params.storeId}/materials`);
     } catch (error) {
-      toast.error(
-        "Make sure you removed all products using this material first."
-      );
+      toast.error(t("forms.material.errorDelete"));
     } finally {
       setIsLoading(false);
       setIsOpen(false);
@@ -106,13 +106,15 @@ export const MaterialForm: React.FC<MaterialFormProps> = ({ initialData }) => {
         loading={isLoading}
       />
 
-      {/* View Modal */}
-      <MaterialViewModal
-        isOpen={isViewOpen}
-        onClose={() => setIsViewOpen(false)}
-        materialId={params.materialId as string}
-        storeId={params.storeId as string}
-      />
+      {/* View Modal - chỉ hiển thị khi có initialData và materialId hợp lệ */}
+      {initialData && params.materialId && params.materialId !== "new" && (
+        <MaterialViewModal
+          isOpen={isViewOpen}
+          onClose={() => setIsViewOpen(false)}
+          materialId={params.materialId as string}
+          storeId={params.storeId as string}
+        />
+      )}
 
       <div className="flex items-center justify-between px-6 py-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur-xl shadow-md hover:shadow-lg transition-all duration-300">
         <Heading title={title} description={description} />
@@ -162,11 +164,11 @@ export const MaterialForm: React.FC<MaterialFormProps> = ({ initialData }) => {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name</FormLabel>
+                    <FormLabel>{t("forms.material.name")}</FormLabel>
                     <FormControl>
                       <Input
                         disabled={isLoading}
-                        placeholder="Material name (e.g. Cotton)"
+                        placeholder={t("forms.material.namePlaceholder")}
                         {...field}
                         className="rounded-xl border-neutral-300 dark:border-neutral-700 focus-visible:ring-blue-500/50"
                       />
@@ -182,11 +184,11 @@ export const MaterialForm: React.FC<MaterialFormProps> = ({ initialData }) => {
                 name="value"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Value</FormLabel>
+                    <FormLabel>{t("forms.material.value")}</FormLabel>
                     <FormControl>
                       <Input
                         disabled={isLoading}
-                        placeholder="Material value (e.g. 100%)"
+                        placeholder={t("forms.material.valuePlaceholder")}
                         {...field}
                         className="rounded-xl border-neutral-300 dark:border-neutral-700 focus-visible:ring-blue-500/50"
                       />
@@ -203,7 +205,7 @@ export const MaterialForm: React.FC<MaterialFormProps> = ({ initialData }) => {
                 type="submit"
                 className="rounded-xl px-8"
               >
-                {isLoading ? "Processing..." : action}
+                {isLoading ? t("forms.processing") : action}
               </Button>
             </div>
           </motion.div>

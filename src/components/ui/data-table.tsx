@@ -10,6 +10,7 @@ import {
   getFilteredRowModel,
   SortingState,
   getSortedRowModel,
+  RowSelectionState,
 } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,15 +35,20 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   searchKey: string;
+  enableRowSelection?: boolean;
+  onRowSelectionChange?: (selectedRows: TData[]) => void;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
   searchKey,
+  enableRowSelection = false,
+  onRowSelectionChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const [pagination, setPagination] = useState({
     pageIndex: 0, // Trang đầu tiên (bắt đầu từ 0)
@@ -58,12 +64,30 @@ export function DataTable<TData, TValue>({
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
+    enableRowSelection: enableRowSelection,
+    onRowSelectionChange: (updater) => {
+      const newSelection =
+        typeof updater === "function" ? updater(rowSelection) : updater;
+      setRowSelection(newSelection);
+
+      // Gọi callback với dữ liệu các dòng đã chọn
+      if (onRowSelectionChange) {
+        const selectedRowIndices = Object.keys(newSelection).filter(
+          (key) => newSelection[key]
+        );
+        const selectedRows = selectedRowIndices.map(
+          (index) => data[parseInt(index)]
+        );
+        onRowSelectionChange(selectedRows);
+      }
+    },
     // 2. Kết nối state phân trang vào bảng
     onPaginationChange: setPagination,
     state: {
       sorting,
       columnFilters,
       pagination,
+      rowSelection,
     },
   });
 

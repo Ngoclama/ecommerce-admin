@@ -4,13 +4,15 @@ import prisma from "@/lib/prisma";
 
 export async function GET(
   req: Request,
-  { params }: { params: { reviewId: string } }
+  { params }: { params: Promise<{ reviewId: string }> }
 ) {
   try {
-    if (!params.reviewId) return new NextResponse("Review ID required", { status: 400 });
+    const { reviewId } = await params;
+    if (!reviewId)
+      return new NextResponse("Review ID required", { status: 400 });
 
     const review = await prisma.review.findUnique({
-      where: { id: params.reviewId },
+      where: { id: reviewId },
     });
 
     return NextResponse.json(review);
@@ -21,24 +23,26 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { storeId: string; reviewId: string } }
+  { params }: { params: Promise<{ storeId: string; reviewId: string }> }
 ) {
   try {
+    const { storeId, reviewId } = await params;
     const { userId } = await auth();
     const body = await req.json();
-    
+
     const { isArchived, adminResponse } = body;
 
     if (!userId) return new NextResponse("Unauthenticated", { status: 401 });
 
     const storeByUserId = await prisma.store.findFirst({
-      where: { id: params.storeId, userId },
+      where: { id: storeId, userId },
     });
 
-    if (!storeByUserId) return new NextResponse("Unauthorized", { status: 403 });
+    if (!storeByUserId)
+      return new NextResponse("Unauthorized", { status: 403 });
 
     const review = await prisma.review.update({
-      where: { id: params.reviewId },
+      where: { id: reviewId },
       data: {
         isArchived: isArchived !== undefined ? isArchived : undefined,
         adminResponse: adminResponse !== undefined ? adminResponse : undefined,
@@ -54,19 +58,21 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { storeId: string; reviewId: string } }
+  { params }: { params: Promise<{ storeId: string; reviewId: string }> }
 ) {
   try {
+    const { storeId, reviewId } = await params;
     const { userId } = await auth();
     if (!userId) return new NextResponse("Unauthenticated", { status: 401 });
 
     const storeByUserId = await prisma.store.findFirst({
-      where: { id: params.storeId, userId },
+      where: { id: storeId, userId },
     });
-    if (!storeByUserId) return new NextResponse("Unauthorized", { status: 403 });
+    if (!storeByUserId)
+      return new NextResponse("Unauthorized", { status: 403 });
 
     const review = await prisma.review.delete({
-      where: { id: params.reviewId },
+      where: { id: reviewId },
     });
 
     return NextResponse.json(review);

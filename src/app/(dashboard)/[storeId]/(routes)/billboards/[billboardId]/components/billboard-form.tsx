@@ -24,6 +24,7 @@ import { AlertModal } from "@/components/modals/alert-modal";
 import { BillboardViewModal } from "@/components/modals/billboard-view";
 import ImageUpload from "@/components/ui/image-upload";
 import { motion } from "framer-motion";
+import { useTranslation } from "@/hooks/use-translation";
 
 const formSchema = z.object({
   label: z.string().min(1, "Billboard label is required"),
@@ -39,17 +40,18 @@ interface BillboardFormProps {
 export const BillboardForm: React.FC<BillboardFormProps> = ({
   initialData,
 }) => {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useParams();
   const [isOpen, setIsOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const title = initialData ? "Edit Billboard" : "Create Billboard";
+  const title = initialData ? t("forms.billboard.title") : t("forms.billboard.titleCreate");
   const description = initialData
-    ? "Edit your billboard"
-    : "Add a new billboard";
-  const action = initialData ? "Save changes" : "Create";
+    ? t("forms.billboard.description")
+    : t("forms.billboard.descriptionCreate");
+  const action = initialData ? t("forms.saveChanges") : t("forms.create");
 
   const form = useForm<BillboardFormValues>({
     resolver: zodResolver(formSchema),
@@ -78,16 +80,15 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
       if (!res.ok)
         throw new Error(
           initialData
-            ? "Failed to update billboard"
-            : "Failed to create billboard"
+            ? t("forms.billboard.updated")
+            : t("forms.billboard.created")
         );
 
-      toast.success(initialData ? "Billboard updated!" : "Billboard created!");
+      toast.success(initialData ? t("forms.billboard.updated") : t("forms.billboard.created"));
       router.refresh();
       router.push(`/${params.storeId}/billboards`);
     } catch (error) {
-      toast.error("Something went wrong!");
-      console.error("[onSubmit Billboard]", error);
+      toast.error(t("actions.somethingWentWrong"));
     } finally {
       setIsLoading(false);
     }
@@ -99,11 +100,11 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
       await fetch(`/api/${params.storeId}/billboards/${params.billboardId}`, {
         method: "DELETE",
       });
-      toast.success("Billboard deleted successfully");
+      toast.success(t("forms.billboard.deleted"));
       router.push(`/${params.storeId}/billboards`);
       router.refresh();
     } catch (error) {
-      toast.error("Make sure you removed all products and categories first.");
+      toast.error(t("forms.billboard.errorDelete"));
     } finally {
       setIsLoading(false);
       setIsOpen(false);
@@ -183,13 +184,17 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
-                    Background Image
+                    {t("forms.billboard.backgroundImage")}
                   </FormLabel>
                   <FormControl>
                     <ImageUpload
                       disabled={isLoading}
                       value={field.value ? [field.value] : []}
-                      onChange={(urls) => field.onChange(urls[0])}
+                      onChange={(urls) => {
+                        if (Array.isArray(urls) && urls.length > 0 && urls[0]) {
+                          field.onChange(urls[0]);
+                        }
+                      }}
                       onRemove={() => field.onChange("")}
                     />
                   </FormControl>
@@ -205,11 +210,11 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
-                    Label
+                    {t("forms.billboard.label")}
                   </FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Enter billboard label..."
+                      placeholder={t("forms.billboard.labelPlaceholder")}
                       disabled={isLoading}
                       {...field}
                       className="rounded-xl border border-neutral-300 dark:border-neutral-700 
@@ -234,7 +239,7 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
                   type="submit"
                   className="rounded-xl px-8"
                 >
-                  {isLoading ? "Processing..." : action}
+                  {isLoading ? t("forms.processing") : action}
                 </Button>
               </motion.div>
             </div>

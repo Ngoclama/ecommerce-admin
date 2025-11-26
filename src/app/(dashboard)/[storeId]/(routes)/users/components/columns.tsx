@@ -3,6 +3,8 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Check, X } from "lucide-react";
 import CellAction from "./cell-action";
+import { useTranslation } from "@/hooks/use-translation";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export type UserColumn = {
   id: string;
@@ -14,45 +16,74 @@ export type UserColumn = {
   createdAt: string;
 };
 
-export const columns: ColumnDef<UserColumn>[] = [
-  {
-    accessorKey: "name",
-    header: "Tên User",
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-  },
-  {
-    accessorKey: "role",
-    header: "Quyền (Role)",
-  },
-  {
-    accessorKey: "isVIP",
-    header: "VIP",
-    cell: ({ row }) =>
-      row.original.isVIP ? (
-        <span className="text-green-600 font-bold">VIP</span>
-      ) : (
-        "Thường"
+export const useUserColumns = (): ColumnDef<UserColumn>[] => {
+  const { t } = useTranslation();
+
+  return [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
       ),
-  },
-  {
-    accessorKey: "isBanned",
-    header: "Trạng thái",
-    cell: ({ row }) =>
-      row.original.isBanned ? (
-        <span className="text-red-600 font-bold">Đã chặn</span>
-      ) : (
-        <span className="text-green-600">Hoạt động</span>
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
       ),
-  },
-  {
-    accessorKey: "createdAt",
-    header: "Ngày tham gia",
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => <CellAction data={row.original} />,
-  },
-];
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "name",
+      header: t("columns.name"),
+    },
+    {
+      accessorKey: "email",
+      header: t("columns.email"),
+    },
+    {
+      accessorKey: "role",
+      header: t("columns.role"),
+    },
+    {
+      accessorKey: "isVIP",
+      header: t("columns.vip"),
+      cell: ({ row }) =>
+        row.original.isVIP ? (
+          <span className="text-green-600 font-bold">VIP</span>
+        ) : (
+          t("columns.regular")
+        ),
+    },
+    {
+      accessorKey: "isBanned",
+      header: t("columns.status"),
+      cell: ({ row }) =>
+        row.original.isBanned ? (
+          <span className="text-red-600 font-bold">{t("columns.banned")}</span>
+        ) : (
+          <span className="text-green-600">{t("columns.active")}</span>
+        ),
+    },
+    {
+      accessorKey: "createdAt",
+      header: t("columns.joinedDate"),
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => <CellAction data={row.original} />,
+    },
+  ];
+};
+
+// Export default columns for backward compatibility
+export const columns: ColumnDef<UserColumn>[] = [];

@@ -4,20 +4,34 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ materialId: string }> }
+  { params }: { params: Promise<{ storeId: string; materialId: string }> }
 ) {
   try {
-    const { materialId } = await params; 
-    if (!materialId)
+    const { storeId, materialId } = await params;
+    if (!materialId) {
       return new NextResponse("Material id is required", { status: 400 });
+    }
+    if (!storeId) {
+      return new NextResponse("Store id is required", { status: 400 });
+    }
 
-    const material = await prisma.material.findUnique({
-      where: { id: materialId },
+    // Kiểm tra material thuộc về store này
+    const material = await prisma.material.findFirst({
+      where: {
+        id: materialId,
+        storeId: storeId,
+      },
     });
+
+    if (!material) {
+      return new NextResponse("Material not found", { status: 404 });
+    }
 
     return NextResponse.json(material);
   } catch (error) {
-    console.log("[MATERIAL_GET]", error);
+    if (process.env.NODE_ENV === "development") {
+      console.log("[MATERIAL_GET]", error);
+    }
     return new NextResponse("Internal error", { status: 500 });
   }
 }
@@ -47,13 +61,18 @@ export async function PATCH(
       return new NextResponse("Unauthorized", { status: 403 });
 
     const material = await prisma.material.updateMany({
-      where: { id: materialId },
+      where: { 
+        id: materialId,
+        storeId: storeId, // Đảm bảo chỉ update material của store này
+      },
       data: { name, value },
     });
 
     return NextResponse.json(material);
   } catch (err) {
-    console.log("[MATERIAL_PATCH]", err);
+    if (process.env.NODE_ENV === "development") {
+      console.log("[MATERIAL_PATCH]", err);
+    }
     return new NextResponse("Internal error", { status: 500 });
   }
 }
@@ -77,13 +96,26 @@ export async function DELETE(
     if (!storeByUserId)
       return new NextResponse("Unauthorized", { status: 403 });
 
-    const material = await prisma.material.deleteMany({
+    // 1. Xóa CartItem có materialId này
+    await prisma.cartItem.deleteMany({
+      where: { materialId: materialId },
+    });
+
+    // 2. Xóa ProductVariant có materialId này
+    await prisma.productVariant.deleteMany({
+      where: { materialId: materialId },
+    });
+
+    // 3. Xóa material
+    const material = await prisma.material.delete({
       where: { id: materialId },
     });
 
     return NextResponse.json(material);
   } catch (err) {
-    console.log("[MATERIAL_DELETE]", err);
+    if (process.env.NODE_ENV === "development") {
+      console.log("[MATERIAL_DELETE]", err);
+    }
     return new NextResponse("Internal error", { status: 500 });
   }
 }

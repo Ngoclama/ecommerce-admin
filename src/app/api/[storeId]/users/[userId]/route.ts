@@ -5,9 +5,10 @@ import prisma from "@/lib/prisma";
 // Cập nhật thông tin User (VIP, Ban, Role)
 export async function PATCH(
   req: Request,
-  { params }: { params: { storeId: string; userId: string } }
+  { params }: { params: Promise<{ storeId: string; userId: string }> }
 ) {
   try {
+    const { userId: targetUserId } = await params;
     const { userId: currentAdminId } = await auth();
     const body = await req.json();
     const { isVIP, isBanned, role } = body;
@@ -17,7 +18,7 @@ export async function PATCH(
 
     const user = await prisma.user.update({
       where: {
-        id: params.userId, // ID Mongo
+        id: targetUserId, // ID Mongo
       },
       data: {
         isVIP,
@@ -36,15 +37,16 @@ export async function PATCH(
 // Xóa User (Chỉ xóa trong DB, không xóa bên Clerk)
 export async function DELETE(
   req: Request,
-  { params }: { params: { storeId: string; userId: string } }
+  { params }: { params: Promise<{ storeId: string; userId: string }> }
 ) {
   try {
+    const { userId: targetUserId } = await params;
     const { userId } = await auth();
     if (!userId) return new NextResponse("Unauthenticated", { status: 401 });
 
     const user = await prisma.user.delete({
       where: {
-        id: params.userId,
+        id: targetUserId,
       },
     });
 

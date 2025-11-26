@@ -5,9 +5,10 @@ import prisma from "@/lib/prisma";
 // Lấy danh sách User
 export async function GET(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
+    const { storeId } = await params;
     const { userId } = await auth();
 
     if (!userId) {
@@ -24,7 +25,7 @@ export async function GET(
         createdAt: "desc",
       },
       include: {
-        orders: true, 
+        orders: true,
       },
     });
 

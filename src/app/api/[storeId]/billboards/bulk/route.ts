@@ -4,17 +4,18 @@ import prisma from "@/lib/prisma";
 
 export async function POST(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
+    const { storeId } = await params;
     const { userId } = await auth();
     if (!userId) return new NextResponse("Unauthenticated", { status: 401 });
 
-    if (!params.storeId)
+    if (!storeId)
       return new NextResponse("Store ID is required", { status: 400 });
 
     const storeByUserId = await prisma.store.findFirst({
-      where: { id: params.storeId, userId },
+      where: { id: storeId, userId },
     });
 
     if (!storeByUserId)
@@ -30,7 +31,7 @@ export async function POST(
     const data = rows
       .filter((r: any) => r.label && r.imageUrl)
       .map((r: any) => ({
-        storeId: params.storeId,
+        storeId: storeId,
         label: r.label,
         imageUrl: r.imageUrl,
       }));

@@ -21,8 +21,9 @@ import * as z from "zod";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
 import { AlertModal } from "@/components/modals/alert-modal";
-import { SizeViewModal } from "@/components/modals/size-view"; // Import Modal View (nhớ sửa tên file import nếu cần)
+import { SizeViewModal } from "@/components/modals/size-view";
 import { motion } from "framer-motion";
+import { useTranslation } from "@/hooks/use-translation";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -36,15 +37,20 @@ interface SizeFormProps {
 }
 
 export const SizeForm: React.FC<SizeFormProps> = ({ initialData }) => {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useParams();
   const [isOpen, setIsOpen] = useState(false);
-  const [isViewOpen, setIsViewOpen] = useState(false); // State View Modal
+  const [isViewOpen, setIsViewOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const title = initialData ? "Edit Size" : "Create Size";
-  const description = initialData ? "Edit your size" : "Add a new size";
-  const action = initialData ? "Save changes" : "Create";
+  const title = initialData
+    ? t("forms.size.title")
+    : t("forms.size.titleCreate");
+  const description = initialData
+    ? t("forms.size.description")
+    : t("forms.size.descriptionCreate");
+  const action = initialData ? t("forms.saveChanges") : t("forms.create");
 
   const form = useForm<SizeFormValues>({
     resolver: zodResolver(formSchema),
@@ -68,11 +74,13 @@ export const SizeForm: React.FC<SizeFormProps> = ({ initialData }) => {
         body: JSON.stringify(data),
       });
 
-      toast.success(initialData ? "Size updated!" : "Size created!");
+      toast.success(
+        initialData ? t("forms.size.updated") : t("forms.size.created")
+      );
       router.refresh();
       router.push(`/${params.storeId}/sizes`);
     } catch (error) {
-      toast.error("Something went wrong.");
+      toast.error(t("actions.somethingWentWrong"));
     } finally {
       setIsLoading(false);
     }
@@ -84,11 +92,11 @@ export const SizeForm: React.FC<SizeFormProps> = ({ initialData }) => {
       await fetch(`/api/${params.storeId}/sizes/${params.sizeId}`, {
         method: "DELETE",
       });
-      toast.success("Size deleted.");
+      toast.success(t("forms.size.deleted"));
       router.refresh();
       router.push(`/${params.storeId}/sizes`);
     } catch (error) {
-      toast.error("Make sure you removed all products using this size first.");
+      toast.error(t("forms.size.errorDelete"));
     } finally {
       setIsLoading(false);
       setIsOpen(false);
@@ -104,13 +112,15 @@ export const SizeForm: React.FC<SizeFormProps> = ({ initialData }) => {
         loading={isLoading}
       />
 
-      {/* View Modal */}
-      <SizeViewModal
-        isOpen={isViewOpen}
-        onClose={() => setIsViewOpen(false)}
-        sizeId={params.sizeId as string}
-        storeId={params.storeId as string}
-      />
+      {/* View Modal - chỉ hiển thị khi có initialData và sizeId hợp lệ */}
+      {initialData && params.sizeId && params.sizeId !== "new" && (
+        <SizeViewModal
+          isOpen={isViewOpen}
+          onClose={() => setIsViewOpen(false)}
+          sizeId={params.sizeId as string}
+          storeId={params.storeId as string}
+        />
+      )}
 
       <div className="flex items-center justify-between px-6 py-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur-xl shadow-md hover:shadow-lg transition-all duration-300">
         <Heading title={title} description={description} />
@@ -160,11 +170,11 @@ export const SizeForm: React.FC<SizeFormProps> = ({ initialData }) => {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name</FormLabel>
+                    <FormLabel>{t("forms.size.name")}</FormLabel>
                     <FormControl>
                       <Input
                         disabled={isLoading}
-                        placeholder="Size name (e.g. Small)"
+                        placeholder={t("forms.size.namePlaceholder")}
                         {...field}
                         className="rounded-xl border-neutral-300 dark:border-neutral-700 focus-visible:ring-blue-500/50"
                       />
@@ -180,11 +190,11 @@ export const SizeForm: React.FC<SizeFormProps> = ({ initialData }) => {
                 name="value"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Value</FormLabel>
+                    <FormLabel>{t("forms.size.value")}</FormLabel>
                     <FormControl>
                       <Input
                         disabled={isLoading}
-                        placeholder="Size value (e.g. S)"
+                        placeholder={t("forms.size.valuePlaceholder")}
                         {...field}
                         className="rounded-xl border-neutral-300 dark:border-neutral-700 focus-visible:ring-blue-500/50"
                       />
@@ -201,7 +211,7 @@ export const SizeForm: React.FC<SizeFormProps> = ({ initialData }) => {
                 type="submit"
                 className="rounded-xl px-8"
               >
-                {isLoading ? "Processing..." : action}
+                {isLoading ? t("forms.processing") : action}
               </Button>
             </div>
           </motion.div>

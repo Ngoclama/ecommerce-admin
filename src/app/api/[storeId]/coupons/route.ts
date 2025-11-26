@@ -4,9 +4,10 @@ import { auth } from "@clerk/nextjs/server";
 
 export async function POST(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
+    const { storeId } = await params;
     const { userId } = await auth();
     const body = await req.json();
 
@@ -14,89 +15,168 @@ export async function POST(
 
     if (!userId) return new NextResponse("Unauthenticated", { status: 403 });
     if (!code) return new NextResponse("Code is required", { status: 400 });
-    if (!value) return new NextResponse("Value is required", { status: 400 });
-    if (!type) return new NextResponse("Type is required", { status: 400 });
+    
+    // Nếu không có value hoặc value <= 0, mặc định là 1
+    const finalValue = value && value > 0 ? Number(value) : 1;
+    
+    // Nếu không có type, mặc định là PERCENT
+    const finalType = type || "PERCENT";
 
-    if (!params.storeId)
+    if (!storeId)
       return new NextResponse("Store id is required", { status: 400 });
 
     const storeByUserId = await prisma.store.findFirst({
-      where: { id: params.storeId, userId },
+      where: { id: storeId, userId },
     });
 
     if (!storeByUserId)
       return new NextResponse("Unauthorized", { status: 405 });
 
+    // Validate ngày quá khứ
+    if (expiresAt) {
+      const selectedDate = new Date(expiresAt);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        return NextResponse.json(
+          {
+            error:
+              "Expiration date cannot be in the past. Please select a future date.",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const existingCoupon = await prisma.coupon.findFirst({
       where: {
-        storeId: params.storeId,
-        code: code,
+        storeId: storeId,
+        code: code.trim().toUpperCase(),
       },
     });
 
     if (existingCoupon) {
-      return new NextResponse("Coupon code already exists", { status: 409 });
+      return NextResponse.json(
+        {
+          error: `Coupon code "${code
+            .trim()
+            .toUpperCase()}" already exists. Please change the code name and try again.`,
+        },
+        { status: 409 }
+      );
     }
 
     const coupon = await prisma.coupon.create({
       data: {
-        code,
-        value,
-        type,
+        code: code.trim().toUpperCase(),
+        value: finalValue,
+        type: finalType,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
-        storeId: params.storeId,
+        storeId: storeId,
       },
     });
 
     return NextResponse.json(coupon);
   } catch (error) {
-    console.log("[COUPONS_POST]", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[COUPONS_POST]", error);
+    }
     return new NextResponse("Internal error", { status: 500 });
   }
 }
 
 export async function GET(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
-    if (!params.storeId)
+    const { storeId } = await params;
+    if (!storeId)
       return new NextResponse("Store id is required", { status: 400 });
 
     const coupons = await prisma.coupon.findMany({
-      where: { storeId: params.storeId },
+      where: { storeId: storeId },
       orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json(coupons);
   } catch (error) {
-    console.log("[COUPONS_GET]", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[COUPONS_GET]", error);
+    }
     return new NextResponse("Internal error", { status: 500 });
   }
 }
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
+    const { storeId } = await params;
     const { userId } = await auth();
 
     if (!userId) return new NextResponse("Unauthenticated", { status: 403 });
 
-    if (!params.storeId)
+    if (!storeId)
       return new NextResponse("Store id is required", { status: 400 });
 
     const storeByUserId = await prisma.store.findFirst({
-      where: { id: params.storeId, userId },
+      where: { id: storeId, userId },
     });
 
     if (!storeByUserId)
       return new NextResponse("Unauthorized", { status: 405 });
 
+    // Check if request body has specific IDs to delete
+    let body: any = {};
+    const contentLength = req.headers.get("content-length");
+    if (contentLength && parseInt(contentLength) > 0) {
+      try {
+        body = await req.json();
+      } catch {
+        body = {};
+      }
+    }
+
+    const idsToDelete = body.ids;
+
+    let couponIds: string[];
+
+    if (idsToDelete && Array.isArray(idsToDelete) && idsToDelete.length > 0) {
+      // Delete specific coupons by IDs
+      const couponsToDelete = await prisma.coupon.findMany({
+        where: {
+          id: { in: idsToDelete },
+          storeId: storeId,
+        },
+        select: { id: true },
+      });
+
+      couponIds = couponsToDelete.map((c) => c.id);
+
+      if (couponIds.length === 0) {
+        return NextResponse.json(
+          {
+            message: "No valid coupons found to delete.",
+          },
+          { status: 400 }
+        );
+      }
+    } else {
+      // Delete all coupons (original behavior)
+      const couponsToDelete = await prisma.coupon.findMany({
+        where: { storeId: storeId },
+        select: { id: true },
+      });
+
+      couponIds = couponsToDelete.map((c) => c.id);
+    }
+
     const result = await prisma.coupon.deleteMany({
       where: {
-        storeId: params.storeId,
+        id: { in: couponIds },
+        storeId: storeId,
       },
     });
 
@@ -105,7 +185,9 @@ export async function DELETE(
       count: result.count,
     });
   } catch (error) {
-    console.log("[COUPONS_DELETE_ALL]", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[COUPONS_DELETE_ALL]", error);
+    }
     return new NextResponse("Internal error", { status: 500 });
   }
 }

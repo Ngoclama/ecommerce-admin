@@ -64,6 +64,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                 alt="Image"
                 src={url}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                loading="lazy"
+                quality={85}
               />
             </div>
           ))}
@@ -73,15 +75,29 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       <UploadButtonComponent
         endpoint="imageUploader"
         onClientUploadComplete={(res) => {
-          if (res && res.length > 0) {
-            // Lấy danh sách URL mới từ response
-            const newUrls = res.map((file) => file.ufsUrl || file.url);
-            onChange(newUrls);
+          try {
+            if (!res || !Array.isArray(res) || res.length === 0) {
+              console.warn("Upload response is empty or invalid");
+              return;
+            }
+
+            // Lấy danh sách URL mới từ response, lọc bỏ các giá trị null/undefined
+            const newUrls = res
+              .filter((file) => file && (file.ufsUrl || file.url))
+              .map((file) => file.ufsUrl || file.url || "")
+              .filter((url) => url && url.trim() !== "");
+
+            if (newUrls.length > 0) {
+              onChange(newUrls);
+            }
+          } catch (error) {
+            console.error("Error processing upload response:", error);
+            alert("Error processing uploaded images. Please try again.");
           }
         }}
         onUploadError={(error: Error) => {
-          console.log(error);
-          alert(`ERROR! ${error.message}`);
+          console.error("Upload error:", error);
+          alert(`Upload failed: ${error.message || "Unknown error"}`);
         }}
         appearance={{
           button:

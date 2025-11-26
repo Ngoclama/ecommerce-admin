@@ -8,9 +8,7 @@ const ProductPage = async ({
   params: Promise<{ productId: string; storeId: string }>;
 }) => {
   const { productId, storeId } = await params;
-  const { userId } = await auth();
 
-  
   const product =
     productId === "new"
       ? null
@@ -20,32 +18,20 @@ const ProductPage = async ({
           },
           include: {
             images: true,
+            // 👇 Include variants để truyền vào form
+            variants: {
+              include: {
+                size: true,
+                color: true,
+              },
+            },
           },
         });
 
-  const categories = await prisma.category.findMany({
-    where: {
-      storeId: storeId,
-    },
-  });
-
-  const sizes = await prisma.size.findMany({
-    where: {
-      storeId: storeId,
-    },
-  });
-
-  const colors = await prisma.color.findMany({
-    where: {
-      storeId: storeId,
-    },
-  });
-
-  const materials = await prisma.material.findMany({
-    where: {
-      storeId: storeId,
-    },
-  });
+  const categories = await prisma.category.findMany({ where: { storeId } });
+  const sizes = await prisma.size.findMany({ where: { storeId } });
+  const colors = await prisma.color.findMany({ where: { storeId } });
+  const materials = await prisma.material.findMany({ where: { storeId } });
 
   return (
     <div className="flex-col">
@@ -54,7 +40,8 @@ const ProductPage = async ({
           categories={categories}
           colors={colors}
           sizes={sizes}
-          materials={materials} 
+          materials={materials}
+          // @ts-ignore - Prisma types sometimes mismatch with exact form types, handled in component
           initialData={product}
         />
       </div>

@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
+import { useTranslation } from "@/hooks/use-translation";
 
 type Row = {
   label: string;
@@ -32,6 +33,7 @@ type Row = {
 
 export const BulkCreateBillboardModal: React.FC = () => {
   const { isOpen, onClose } = useBulkBillboardModal();
+  const { t } = useTranslation();
   const [rows, setRows] = useState<Row[]>([{ label: "", imageUrl: "" }]);
   const [isLoading, setIsLoading] = useState(false);
   const params = useParams();
@@ -71,9 +73,11 @@ export const BulkCreateBillboardModal: React.FC = () => {
   const validateForm = () => {
     const invalidRows = rows.filter((r) => !r.label.trim() || !r.imageUrl);
     if (invalidRows.length > 0) {
-      toast.error(
-        `Please fill in all fields. (${invalidRows.length} incomplete rows)`
+      const message = t("bulk.billboard.incompleteRows").replace(
+        "{count}",
+        invalidRows.length.toString()
       );
+      toast.error(message);
       return false;
     }
     return true;
@@ -85,13 +89,19 @@ export const BulkCreateBillboardModal: React.FC = () => {
     try {
       setIsLoading(true);
       await axios.post(`/api/${params.storeId}/billboards/bulk`, { rows });
-      toast.success(`Successfully created ${rows.length} billboards!`);
+      const successMessage = t("bulk.billboard.createSuccess").replace(
+        "{count}",
+        rows.length.toString()
+      );
+      toast.success(successMessage);
       router.refresh();
       onClose();
     } catch (error: any) {
-      console.error(error);
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
       const errorMessage =
-        error.response?.data || "An error occurred while creating billboards.";
+        error.response?.data || t("bulk.billboard.createError");
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -108,11 +118,10 @@ export const BulkCreateBillboardModal: React.FC = () => {
               <div className="p-2 bg-primary/10 rounded-lg">
                 <ImagePlus className="w-6 h-6 text-primary" />
               </div>
-              Bulk Create Billboards
+              {t("bulk.billboard.title")}
             </DialogTitle>
             <DialogDescription className="text-neutral-500">
-              Add multiple billboards manually. Each row represents one
-              billboard.
+              {t("bulk.billboard.description")}
             </DialogDescription>
           </DialogHeader>
 
@@ -121,15 +130,15 @@ export const BulkCreateBillboardModal: React.FC = () => {
               <span className="font-bold text-neutral-900 dark:text-neutral-100">
                 {rows.length}
               </span>
-              <span>Items</span>
+              <span>{t("actions.items") || "Items"}</span>
             </div>
           </div>
         </div>
 
         {/* 2. Table Header (Sticky) */}
         <div className="bg-neutral-50/80 dark:bg-neutral-900/80 backdrop-blur-sm border-b dark:border-neutral-800 z-10 px-6 py-3 grid grid-cols-12 gap-6 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
-          <div className="col-span-4">Image Preview</div>
-          <div className="col-span-7">Label</div>
+          <div className="col-span-4">{t("bulk.billboard.image")}</div>
+          <div className="col-span-7">{t("bulk.billboard.label")}</div>
           <div className="col-span-1 text-center"></div>
         </div>
 
@@ -160,10 +169,11 @@ export const BulkCreateBillboardModal: React.FC = () => {
                     <ImageUpload
                       value={row.imageUrl ? [row.imageUrl] : []}
                       disabled={isLoading}
-                      // [Logic] Lấy URL đầu tiên trả về từ ImageUpload
-                      onChange={(urls) =>
-                        handleChange(index, "imageUrl", urls[0])
-                      }
+                      onChange={(urls) => {
+                        if (Array.isArray(urls) && urls.length > 0 && urls[0]) {
+                          handleChange(index, "imageUrl", urls[0]);
+                        }
+                      }}
                       onRemove={() => handleChange(index, "imageUrl", "")}
                     />
                     {/* Cảnh báo thiếu ảnh */}
@@ -179,7 +189,7 @@ export const BulkCreateBillboardModal: React.FC = () => {
                 <div className="col-span-1 md:col-span-7 pt-2">
                   <div className="relative">
                     <label className="text-xs font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wider">
-                      Label
+                      {t("bulk.billboard.label")}
                     </label>
                     <Input
                       value={row.label}
@@ -187,7 +197,7 @@ export const BulkCreateBillboardModal: React.FC = () => {
                       onChange={(e) =>
                         handleChange(index, "label", e.target.value)
                       }
-                      placeholder="e.g. Summer Sale 2024"
+                      placeholder={t("bulk.billboard.labelPlaceholder")}
                       className={`h-12 text-lg px-4 bg-transparent border-neutral-200 dark:border-neutral-800 focus:ring-2 focus:ring-primary/20 transition-all ${
                         !row.label && rows.length > 1
                           ? "border-amber-500/50 bg-amber-50/10"
@@ -221,7 +231,7 @@ export const BulkCreateBillboardModal: React.FC = () => {
             className="w-full py-4 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl text-neutral-500 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2 font-medium text-sm"
           >
             <Plus className="w-5 h-5" />
-            Add Another Billboard
+            {t("bulk.billboard.addRow")}
           </motion.button>
         </div>
 
@@ -233,7 +243,7 @@ export const BulkCreateBillboardModal: React.FC = () => {
             disabled={isLoading}
             className="h-11 px-6 text-neutral-500 hover:text-neutral-900"
           >
-            Cancel
+            {t("actions.cancel")}
           </Button>
 
           <div className="flex gap-3">
@@ -245,12 +255,12 @@ export const BulkCreateBillboardModal: React.FC = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
+                  {t("actions.processing")}
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Save ({rows.length})
+                  {t("actions.save")} ({rows.length})
                 </>
               )}
             </Button>

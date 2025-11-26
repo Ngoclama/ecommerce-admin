@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import { MoreHorizontal, Plus, Trash } from "lucide-react";
-import { BillboardColumn, columns } from "./columns";
+import { BillboardColumn, useBillboardColumns } from "./columns";
+import { useTranslation } from "@/hooks/use-translation";
 import { DataTable } from "@/components/ui/data-table";
 import { ApiList } from "@/components/ui/api-list";
 import {
@@ -29,9 +30,13 @@ interface BillboardClientProps {
 export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
+  const { t } = useTranslation();
+  const columns = useBillboardColumns();
 
   const [isLoading, setIsLoading] = useState(false);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<BillboardColumn[]>([]);
+  const [deleteSelectedOpen, setDeleteSelectedOpen] = useState(false);
 
   const { onOpen: openBulkModal } = useBulkBillboardModal();
 
@@ -62,6 +67,47 @@ export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
     }
   };
 
+  const handleDeleteSelected = async () => {
+    if (selectedRows.length === 0) {
+      toast.error(t("actions.noItemsSelected") || "No items selected");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const billboardIds = selectedRows.map((row) => row.id);
+      const response = await fetch(`/api/${params.storeId}/billboards`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids: billboardIds }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to delete billboards");
+      }
+
+      const result = await response.json();
+      toast.success(
+        `${selectedRows.length} ${t("actions.deleteSelectedSuccess") || "billboards deleted successfully!"}`
+      );
+      setSelectedRows([]);
+      router.refresh();
+    } catch (error: any) {
+      console.error("[DELETE_SELECTED_ERROR]", error);
+      toast.error(
+        error.message ||
+          t("actions.deleteSelectedError") ||
+          "Unable to delete selected billboards. Check related items first."
+      );
+    } finally {
+      setIsLoading(false);
+      setDeleteSelectedOpen(false);
+    }
+  };
+
   return (
     <>
       <AlertModal
@@ -69,6 +115,20 @@ export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
         onClose={() => setDeleteAllOpen(false)}
         onConfirm={handleDeleteAll}
         loading={isLoading}
+      />
+      <AlertModal
+        isOpen={deleteSelectedOpen}
+        onClose={() => setDeleteSelectedOpen(false)}
+        onConfirm={handleDeleteSelected}
+        loading={isLoading}
+        title={
+          t("actions.deleteSelectedConfirm") ||
+          `Delete ${selectedRows.length} selected billboards?`
+        }
+        description={
+          t("actions.deleteSelectedDescription") ||
+          "This action cannot be undone. Make sure you removed all related categories first."
+        }
       />
 
       <BillboardViewModal
@@ -82,20 +142,20 @@ export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
       />
       <div className="flex items-center justify-between">
         <Heading
-          title={`Billboards (${data.length})`}
-          description="Manage billboards for your store"
+          title={`${t("nav.billboards")} (${data.length})`}
+          description={t("nav.billboards")}
         />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="flex items-center gap-2">
               <MoreHorizontal className="h-4 w-4" />
-              Actions
+              {t("columns.actions")}
             </Button>
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>Billboard Actions</DropdownMenuLabel>
+            <DropdownMenuLabel>{t("nav.billboards")} {t("columns.actions")}</DropdownMenuLabel>
             <DropdownMenuSeparator />
 
             <DropdownMenuItem
@@ -103,7 +163,7 @@ export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
               className="flex items-center gap-2 cursor-pointer"
             >
               <Plus className="h-4 w-4 " />
-              Add New
+              {t("actions.addNew")}
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -111,16 +171,25 @@ export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
               className="flex items-center gap-2 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
-              Add Bulk
+              {t("actions.addBulk")}
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              onClick={() => setDeleteAllOpen(true)}
-              disabled={data.length === 0}
+              disabled={selectedRows.length === 0 || isLoading}
+              onClick={() => setDeleteSelectedOpen(true)}
               className="flex items-center gap-2 cursor-pointer"
             >
               <Trash className="h-4 w-4 text-red-500" />
-              Delete All
+              {t("actions.deleteSelected") || `Delete Selected (${selectedRows.length})`}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => setDeleteAllOpen(true)}
+              disabled={data.length === 0 || isLoading}
+              className="flex items-center gap-2 cursor-pointer text-red-500"
+            >
+              <Trash className="h-4 w-4 text-red-500" />
+              {t("actions.deleteAll")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -128,7 +197,13 @@ export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
 
       <Separator className="my-4" />
 
-      <DataTable searchKey="label" columns={columns} data={data} />
+      <DataTable
+        searchKey="label"
+        columns={columns}
+        data={data}
+        enableRowSelection={true}
+        onRowSelectionChange={setSelectedRows}
+      />
 
       <Heading title="API" description="API Calls for billboards" />
       <Separator className="my-4" />

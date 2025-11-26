@@ -11,6 +11,7 @@ import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import { AlertModal } from "@/components/modals/alert-modal";
 import { format } from "date-fns";
+import { useTranslation } from "@/hooks/use-translation";
 
 import { Heading } from "@/components/ui/heading";
 import { Button } from "@/components/ui/button";
@@ -34,10 +35,34 @@ import {
 } from "@/components/ui/select";
 
 const formSchema = z.object({
-  code: z.string().min(1),
-  value: z.coerce.number().min(1),
-  type: z.string().min(1),
-  expiresAt: z.string().optional(),
+  code: z
+    .string()
+    .min(1, "Code is required")
+    .regex(
+      /^[a-zA-Z0-9_-]+$/,
+      "Code can only contain letters, numbers, hyphens, and underscores"
+    )
+    .refine(
+      (val) => /[a-zA-Z]/.test(val),
+      "Code must contain at least one letter (not only numbers)"
+    ),
+  value: z.coerce.number().min(1, "Value must be greater than 0"),
+  type: z.string().min(1, "Type is required"),
+  expiresAt: z
+    .string()
+    .optional()
+    .refine(
+      (val) => {
+        if (!val) return true; // Optional field
+        const selectedDate = new Date(val);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return selectedDate >= today;
+      },
+      {
+        message: "Expiration date cannot be in the past",
+      }
+    ),
 });
 
 type CouponFormValues = z.infer<typeof formSchema>;
@@ -47,16 +72,23 @@ interface CouponFormProps {
 }
 
 export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const title = initialData ? "Edit coupon" : "Create coupon";
-  const description = initialData ? "Edit a coupon." : "Add a new coupon";
-  const toastMessage = initialData ? "Coupon updated." : "Coupon created.";
-  const action = initialData ? "Save changes" : "Create";
+  const title = initialData
+    ? t("forms.coupon.title")
+    : t("forms.coupon.titleCreate");
+  const description = initialData
+    ? t("forms.coupon.description")
+    : t("forms.coupon.descriptionCreate");
+  const toastMessage = initialData
+    ? t("forms.coupon.updated")
+    : t("forms.coupon.created");
+  const action = initialData ? t("forms.saveChanges") : t("forms.create");
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -70,7 +102,7 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
         }
       : {
           code: "",
-          value: 0,
+          value: 1, // Mặc định là 1 thay vì 0 để tránh lỗi validation
           type: "PERCENT",
           expiresAt: "",
         },
@@ -79,8 +111,25 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
   const onSubmit = async (data: CouponFormValues) => {
     try {
       setLoading(true);
+
+      // Validate ngày quá khứ (double check)
+      if (data.expiresAt) {
+        const selectedDate = new Date(data.expiresAt);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (selectedDate < today) {
+          toast.error(t("forms.coupon.expirationPastError"));
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Đảm bảo value luôn có giá trị hợp lệ (ít nhất là 1)
+      const finalValue = data.value && data.value > 0 ? data.value : 1;
+
       const payload = {
         ...data,
+        value: finalValue,
         expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
       };
 
@@ -95,8 +144,82 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
       router.refresh();
       router.push(`/${params.storeId}/coupons`);
       toast.success(toastMessage);
-    } catch (error) {
-      toast.error("Something went wrong.");
+    } catch (error: any) {
+      console.error("Coupon form error:", error);
+
+      // Xử lý lỗi 409 (Conflict - trùng tên)
+      if (error.response?.status === 409 || error.code === "ERR_BAD_REQUEST") {
+        let errorMessage = t("forms.coupon.codeExists");
+
+        try {
+          const errorData = error.response?.data;
+
+          // Kiểm tra nếu errorData tồn tại và không rỗng
+          if (errorData) {
+            // Nếu là string, dùng trực tiếp
+            if (typeof errorData === "string" && errorData.trim()) {
+              errorMessage = errorData;
+            }
+            // Nếu là object có field error
+            else if (
+              typeof errorData === "object" &&
+              Object.keys(errorData).length > 0
+            ) {
+              if (errorData.error) {
+                errorMessage = errorData.error;
+              } else {
+                // Nếu không có field error, thử stringify
+                const stringified = JSON.stringify(errorData);
+                if (stringified !== "{}") {
+                  errorMessage = stringified;
+                }
+              }
+            }
+            // Nếu có data nhưng không phải string hoặc object
+            else if (errorData !== null && errorData !== undefined) {
+              errorMessage = String(errorData);
+            }
+          }
+        } catch (parseError) {
+          console.error("Error parsing error response:", parseError);
+        }
+
+        toast.error(errorMessage, {
+          duration: 6000,
+        });
+      } else {
+        let errorMessage = t("actions.somethingWentWrong");
+
+        try {
+          const errorData = error.response?.data;
+
+          if (errorData) {
+            if (typeof errorData === "string" && errorData.trim()) {
+              errorMessage = errorData;
+            } else if (
+              typeof errorData === "object" &&
+              Object.keys(errorData).length > 0
+            ) {
+              if (errorData.error) {
+                errorMessage = errorData.error;
+              } else {
+                const stringified = JSON.stringify(errorData);
+                if (stringified !== "{}") {
+                  errorMessage = stringified;
+                }
+              }
+            } else if (errorData !== null && errorData !== undefined) {
+              errorMessage = String(errorData);
+            }
+          }
+        } catch (parseError) {
+          console.error("Error parsing error response:", parseError);
+        }
+
+        toast.error(errorMessage, {
+          duration: 5000,
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -108,9 +231,9 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
       await axios.delete(`/api/${params.storeId}/coupons/${params.couponId}`);
       router.refresh();
       router.push(`/${params.storeId}/coupons`);
-      toast.success("Coupon deleted.");
+      toast.success(t("forms.coupon.deleted"));
     } catch (error) {
-      toast.error("Make sure you removed all orders using this coupon first.");
+      toast.error(t("forms.coupon.errorDelete"));
     } finally {
       setLoading(false);
       setOpen(false);
@@ -150,12 +273,20 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
               name="code"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Code</FormLabel>
+                  <FormLabel>{t("forms.coupon.code")}</FormLabel>
                   <FormControl>
                     <Input
                       disabled={loading}
-                      placeholder="Example: SALE50"
+                      placeholder={t("forms.coupon.codePlaceholder")}
                       {...field}
+                      onChange={(e) => {
+                        // Chỉ cho phép chữ cái, số, dấu gạch ngang và underscore
+                        const sanitized = e.target.value.replace(
+                          /[^a-zA-Z0-9_-]/g,
+                          ""
+                        );
+                        field.onChange(sanitized);
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -167,12 +298,12 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
               name="value"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Value</FormLabel>
+                  <FormLabel>{t("forms.coupon.value")}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
                       disabled={loading}
-                      placeholder="Value"
+                      placeholder={t("forms.coupon.valuePlaceholder")}
                       {...field}
                       value={field.value ? String(field.value) : ""}
                       onChange={(e) => field.onChange(Number(e.target.value))}
@@ -187,7 +318,7 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
               name="type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Type</FormLabel>
+                  <FormLabel>{t("forms.coupon.type")}</FormLabel>
                   <Select
                     disabled={loading}
                     onValueChange={field.onChange}
@@ -198,13 +329,17 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
                       <SelectTrigger>
                         <SelectValue
                           defaultValue={field.value as string}
-                          placeholder="Select a type"
+                          placeholder={t("forms.coupon.typePlaceholder")}
                         />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="PERCENT">Percent (%)</SelectItem>
-                      <SelectItem value="FIXED">Fixed Amount (VND)</SelectItem>
+                      <SelectItem value="PERCENT">
+                        {t("forms.coupon.percent")}
+                      </SelectItem>
+                      <SelectItem value="FIXED">
+                        {t("forms.coupon.fixed")}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -217,16 +352,35 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
               name="expiresAt"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Expires At (Optional)</FormLabel>
+                  <FormLabel>{t("forms.coupon.expiresAt")}</FormLabel>
                   <FormControl>
-                    <Input
-                      type="date" 
-                      disabled={loading}
-                      {...field}
-                    />
+                    <div className="relative">
+                      <Input
+                        type="date"
+                        disabled={loading}
+                        min={new Date().toISOString().split("T")[0]} // Chặn chọn ngày quá khứ
+                        {...field}
+                        onChange={(e) => {
+                          const selectedDate = e.target.value;
+                          if (selectedDate) {
+                            const date = new Date(selectedDate);
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            if (date < today) {
+                              toast.error(
+                                t("forms.coupon.expirationPastError")
+                              );
+                              return;
+                            }
+                          }
+                          field.onChange(e);
+                        }}
+                      />
+                      <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    </div>
                   </FormControl>
                   <FormDescription>
-                    Leave empty if the coupon never expires.
+                    {t("forms.coupon.expiresDescription")}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

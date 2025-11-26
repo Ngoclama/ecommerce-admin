@@ -3,7 +3,12 @@ import prisma from "@/lib/prisma";
 import { UserClient } from "./components/client";
 import { UserColumn } from "./components/columns";
 
-const UsersPage = async ({ params }: { params: { storeId: string } }) => {
+const UsersPage = async ({
+  params,
+}: {
+  params: Promise<{ storeId: string }>;
+}) => {
+  const { storeId } = await params;
   // Lấy danh sách users
   const users = await prisma.user.findMany({
     orderBy: {
@@ -14,7 +19,7 @@ const UsersPage = async ({ params }: { params: { storeId: string } }) => {
   // Format dữ liệu cho bảng
   const formattedUsers: UserColumn[] = users.map((item) => ({
     id: item.id,
-    name: item.name || "Không tên",
+    name: item.name || "No name",
     email: item.email,
     role: item.role,
     isVIP: item.isVIP,

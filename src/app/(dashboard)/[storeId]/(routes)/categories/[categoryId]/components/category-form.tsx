@@ -21,7 +21,7 @@ import * as z from "zod";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
 import { AlertModal } from "@/components/modals/alert-modal";
-import { CategoryViewModal } from "@/components/modals/category-view"; // Import Modal View
+import { CategoryViewModal } from "@/components/modals/category-view";
 import {
   Select,
   SelectContent,
@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { motion } from "framer-motion";
+import { useTranslation } from "@/hooks/use-translation";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -47,22 +48,32 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   initialData,
   billboards,
 }) => {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useParams();
   const [isOpen, setIsOpen] = useState(false);
-  const [isViewOpen, setIsViewOpen] = useState(false); // State View Modal
+  const [isViewOpen, setIsViewOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const title = initialData ? "Edit Category" : "Create Category";
-  const description = initialData ? "Edit your category" : "Add a new category";
-  const action = initialData ? "Save changes" : "Create";
+  const title = initialData
+    ? t("forms.category.title")
+    : t("forms.category.titleCreate");
+  const description = initialData
+    ? t("forms.category.description")
+    : t("forms.category.descriptionCreate");
+  const action = initialData ? t("forms.saveChanges") : t("forms.create");
 
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
-      name: "",
-      billboardId: "",
-    },
+    defaultValues: initialData
+      ? {
+          name: initialData.name || "",
+          billboardId: initialData.billboardId || "",
+        }
+      : {
+          name: "",
+          billboardId: "",
+        },
   });
 
   const onSubmit = async (data: CategoryFormValues) => {
@@ -79,11 +90,13 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
         body: JSON.stringify(data),
       });
 
-      toast.success(initialData ? "Category updated!" : "Category created!");
+      toast.success(
+        initialData ? t("forms.category.updated") : t("forms.category.created")
+      );
       router.refresh();
       router.push(`/${params.storeId}/categories`);
     } catch (error) {
-      toast.error("Something went wrong.");
+      toast.error(t("actions.somethingWentWrong"));
     } finally {
       setIsLoading(false);
     }
@@ -95,13 +108,11 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       await fetch(`/api/${params.storeId}/categories/${params.categoryId}`, {
         method: "DELETE",
       });
-      toast.success("Category deleted.");
+      toast.success(t("forms.category.deleted"));
       router.refresh();
       router.push(`/${params.storeId}/categories`);
     } catch (error) {
-      toast.error(
-        "Make sure you removed all products using this category first."
-      );
+      toast.error(t("forms.category.errorDelete"));
     } finally {
       setIsLoading(false);
       setIsOpen(false);
@@ -117,13 +128,15 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
         loading={isLoading}
       />
 
-      {/* View Modal */}
-      <CategoryViewModal
-        isOpen={isViewOpen}
-        onClose={() => setIsViewOpen(false)}
-        categoryId={params.categoryId as string}
-        storeId={params.storeId as string}
-      />
+      {/* View Modal - chỉ hiển thị khi có initialData và categoryId hợp lệ */}
+      {initialData && params.categoryId && params.categoryId !== "new" && (
+        <CategoryViewModal
+          isOpen={isViewOpen}
+          onClose={() => setIsViewOpen(false)}
+          categoryId={params.categoryId as string}
+          storeId={params.storeId as string}
+        />
+      )}
 
       <div className="flex items-center justify-between px-6 py-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 backdrop-blur-xl shadow-md hover:shadow-lg transition-all duration-300">
         <Heading title={title} description={description} />
@@ -173,11 +186,11 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name</FormLabel>
+                    <FormLabel>{t("forms.category.name")}</FormLabel>
                     <FormControl>
                       <Input
                         disabled={isLoading}
-                        placeholder="Category name"
+                        placeholder={t("forms.category.namePlaceholder")}
                         {...field}
                         className="rounded-xl border-neutral-300 dark:border-neutral-700 focus-visible:ring-blue-500/50"
                       />
@@ -193,7 +206,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                 name="billboardId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Billboard</FormLabel>
+                    <FormLabel>{t("forms.category.billboard")}</FormLabel>
                     <Select
                       disabled={isLoading}
                       onValueChange={field.onChange}
@@ -204,7 +217,9 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                         <SelectTrigger className="rounded-xl border-neutral-300 dark:border-neutral-700">
                           <SelectValue
                             defaultValue={field.value}
-                            placeholder="Select a billboard"
+                            placeholder={t(
+                              "forms.category.billboardPlaceholder"
+                            )}
                           />
                         </SelectTrigger>
                       </FormControl>
@@ -228,7 +243,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                 type="submit"
                 className="rounded-xl px-8"
               >
-                {isLoading ? "Processing..." : action}
+                {isLoading ? t("forms.processing") : action}
               </Button>
             </div>
           </motion.div>

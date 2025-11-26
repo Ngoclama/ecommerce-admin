@@ -10,10 +10,18 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Calendar, Ticket, Percent, DollarSign, Clock } from "lucide-react";
+import {
+  Loader2,
+  Calendar,
+  Ticket,
+  Percent,
+  DollarSign,
+  Clock,
+} from "lucide-react";
 import { format } from "date-fns";
 import { formatter } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface CouponViewModalProps {
   isOpen: boolean;
@@ -37,6 +45,7 @@ export const CouponViewModal: React.FC<CouponViewModalProps> = ({
   couponId,
   storeId,
 }) => {
+  const { t } = useTranslation();
   const [isMounted, setIsMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<Coupon | null>(null);
@@ -51,9 +60,7 @@ export const CouponViewModal: React.FC<CouponViewModalProps> = ({
 
       try {
         setIsLoading(true);
-        const response = await axios.get(
-          `/api/${storeId}/coupons/${couponId}`
-        );
+        const response = await axios.get(`/api/${storeId}/coupons/${couponId}`);
         if (response.data) {
           setData(response.data as Coupon);
         }
@@ -76,10 +83,8 @@ export const CouponViewModal: React.FC<CouponViewModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md overflow-hidden bg-white dark:bg-neutral-900">
         <DialogHeader>
-          <DialogTitle>Coupon Details</DialogTitle>
-          <DialogDescription>
-            Information about this discount code.
-          </DialogDescription>
+          <DialogTitle>{t("modals.couponDetails")}</DialogTitle>
+          <DialogDescription>{t("modals.couponDescription")}</DialogDescription>
         </DialogHeader>
 
         <Separator />
@@ -92,68 +97,89 @@ export const CouponViewModal: React.FC<CouponViewModalProps> = ({
           <div className="space-y-6 pt-2">
             {/* Code Section */}
             <div className="p-4 rounded-lg border bg-neutral-50 dark:bg-neutral-800/50 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white dark:bg-neutral-900 rounded-md border shadow-sm">
-                        <Ticket className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                        <h3 className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Discount Code
-                        </h3>
-                        <p className="text-xl font-mono font-bold text-neutral-900 dark:text-neutral-100 tracking-wider">
-                            {data.code}
-                        </p>
-                    </div>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white dark:bg-neutral-900 rounded-md border shadow-sm">
+                  <Ticket className="h-5 w-5 text-primary" />
                 </div>
-                {isExpired ? <Badge variant="destructive">Expired</Badge> : <Badge variant="default">Active</Badge>}
+                <div>
+                  <h3 className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+                    {t("modals.discountCode")}
+                  </h3>
+                  <p className="text-xl font-mono font-bold text-neutral-900 dark:text-neutral-100 tracking-wider">
+                    {data.code}
+                  </p>
+                </div>
+              </div>
+              {isExpired ? (
+                <Badge variant="destructive">{t("columns.expired")}</Badge>
+              ) : (
+                <Badge variant="default">{t("columns.active")}</Badge>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-                {/* Value */}
-                <div className="p-3 border rounded-md">
-                    <h3 className="text-xs font-medium text-neutral-500 mb-1 flex items-center gap-1">
-                        {data.type === "PERCENT" ? <Percent className="h-3 w-3"/> : <DollarSign className="h-3 w-3"/>} 
-                        Value
-                    </h3>
-                    <div className="text-lg font-bold">
-                        {data.type === "PERCENT" ? `${data.value}%` : formatter.format(data.value)}
-                    </div>
+              {/* Value */}
+              <div className="p-3 border rounded-md">
+                <h3 className="text-xs font-medium text-neutral-500 mb-1 flex items-center gap-1">
+                  {data.type === "PERCENT" ? (
+                    <Percent className="h-3 w-3" />
+                  ) : (
+                    <DollarSign className="h-3 w-3" />
+                  )}
+                  {t("columns.value")}
+                </h3>
+                <div className="text-lg font-bold">
+                  {data.type === "PERCENT"
+                    ? `${data.value}%`
+                    : formatter.format(data.value)}
                 </div>
+              </div>
 
-                {/* Type */}
-                <div className="p-3 border rounded-md">
-                    <h3 className="text-xs font-medium text-neutral-500 mb-1">Type</h3>
-                    <div className="text-sm font-medium">
-                        {data.type === "PERCENT" ? "Percentage" : "Fixed Amount"}
-                    </div>
+              {/* Type */}
+              <div className="p-3 border rounded-md">
+                <h3 className="text-xs font-medium text-neutral-500 mb-1">
+                  Type
+                </h3>
+                <div className="text-sm font-medium">
+                  {data.type === "PERCENT"
+                    ? t("modals.percentage")
+                    : t("modals.fixedAmount")}
                 </div>
+              </div>
             </div>
 
             {/* Expiration */}
             <div className="flex items-center gap-3 p-3 rounded-md border bg-neutral-50/50 dark:bg-neutral-800/30">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <div>
-                     <h3 className="text-xs font-medium text-neutral-500">Expiration Date</h3>
-                     <p className="text-sm font-medium">
-                        {data.expiresAt 
-                            ? format(new Date(data.expiresAt), "PPP") 
-                            : "No expiration date"}
-                     </p>
-                </div>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <h3 className="text-xs font-medium text-neutral-500">
+                  {t("modals.expirationDate")}
+                </h3>
+                <p className="text-sm font-medium">
+                  {data.expiresAt
+                    ? format(new Date(data.expiresAt), "PPP")
+                    : t("modals.noExpirationDate")}
+                </p>
+              </div>
             </div>
 
             {/* Footer Info */}
             <div className="flex items-center justify-between text-xs text-neutral-500 border-t pt-4">
-                <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>Created: {data.createdAt ? format(new Date(data.createdAt), "MMM do, yyyy") : "Unknown"}</span>
-                </div>
-                <div className="font-mono text-[10px]">ID: {data.id}</div>
+              <div className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                <span>
+                  {t("modals.created")}{" "}
+                  {data.createdAt
+                    ? format(new Date(data.createdAt), "MMM do, yyyy")
+                    : t("modals.unknown")}
+                </span>
+              </div>
+              <div className="font-mono text-[10px]">ID: {data.id}</div>
             </div>
           </div>
         ) : (
           <div className="flex h-40 items-center justify-center text-neutral-500">
-            No data found.
+            {t("modals.noDataFound")}
           </div>
         )}
       </DialogContent>

@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { AlertModal } from "@/components/modals/alert-modal";
 import { ApiAlert } from "@/components/ui/api-alert";
 import { useOrigin } from "@/hooks/use-origin";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface SettingsFormProps {
   initialData: Store;
@@ -32,9 +33,6 @@ interface SettingsFormProps {
 
 const formSchema = z.object({
   name: z.string().min(1),
-  address: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().email().optional().or(z.literal("")),
 });
 
 type SettingsFormValues = z.infer<typeof formSchema>;
@@ -43,6 +41,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
   const params = useParams();
   const router = useRouter();
   const origin = useOrigin();
+  const { t } = useTranslation();
 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -51,9 +50,6 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: initialData.name,
-      address: initialData.address || "",
-      phone: initialData.phone || "",
-      email: initialData.email || "",
     },
   });
 
@@ -63,8 +59,14 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
       await axios.patch(`/api/stores/${params.storeId}`, data);
       router.refresh();
       toast.success("Store updated.");
-    } catch (error) {
-      toast.error("Something went wrong.");
+    } catch (error: any) {
+      console.error("Settings update error:", error);
+
+      const errorMessage =
+        error.response?.data ||
+        error.message ||
+        "Something went wrong. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -94,7 +96,10 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
         loading={loading}
       />
       <div className="flex items-center justify-between">
-        <Heading title="Settings" description="Manage store preferences" />
+        <Heading
+          title={t("settings.title")}
+          description={t("settings.description")}
+        />
         <Button
           disabled={loading}
           variant="destructive"
@@ -117,68 +122,11 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>{t("settings.name")}</FormLabel>
                   <FormControl>
                     <Input
                       disabled={loading}
-                      placeholder="Store name"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* 👇 INPUT: ADDRESS */}
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Address (For Invoice)</FormLabel>
-                  <FormControl>
-                    <Input
-                      disabled={loading}
-                      placeholder="123 Main St, Hanoi"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* 👇 INPUT: PHONE */}
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone (Hotline)</FormLabel>
-                  <FormControl>
-                    <Input
-                      disabled={loading}
-                      placeholder="0912..."
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* 👇 INPUT: EMAIL */}
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Support Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      disabled={loading}
-                      placeholder="support@store.com"
+                      placeholder={t("settings.name")}
                       {...field}
                     />
                   </FormControl>
@@ -188,7 +136,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
             />
           </div>
           <Button disabled={loading} className="ml-auto" type="submit">
-            Save changes
+            {t("common.save")}
           </Button>
         </form>
       </Form>

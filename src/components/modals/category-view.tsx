@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { useCategory } from "@/hooks/use-api-cache";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import {
   Store as StoreIcon,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface CategoryViewModalProps {
   isOpen: boolean;
@@ -31,7 +32,7 @@ interface CategoryViewModalProps {
 type CategoryDetails = {
   id: string;
   name: string;
-  slug: string; 
+  slug: string;
   billboardId: string;
   billboard?: {
     label: string;
@@ -46,32 +47,22 @@ export const CategoryViewModal: React.FC<CategoryViewModalProps> = ({
   storeId,
   categoryId,
 }) => {
-  const [data, setData] = useState<CategoryDetails | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
+  // Chỉ fetch khi có categoryId hợp lệ (không phải "new" hoặc null)
+  const isValidCategoryId = categoryId && categoryId !== "new";
+  const {
+    data,
+    isLoading: loading,
+    error,
+  } = useCategory(storeId, isValidCategoryId ? categoryId : null);
+  const categoryData = data as CategoryDetails | null;
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (isOpen && categoryId && storeId) {
-        try {
-          setLoading(true);
-          // Đảm bảo API backend trả về cả billboard object (nếu cần)
-          const response = await axios.get(
-            `/api/${storeId}/categories/${categoryId}`
-          );
-          if (response.data) {
-            setData(response.data as CategoryDetails);
-          }
-        } catch (error) {
-          toast.error("Failed to load category details.");
-          onClose();
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchData();
-  }, [isOpen, categoryId, storeId]);
+    if (error && isValidCategoryId) {
+      toast.error("Failed to load category details.");
+      onClose();
+    }
+  }, [error, onClose, isValidCategoryId]);
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "";
@@ -88,9 +79,9 @@ export const CategoryViewModal: React.FC<CategoryViewModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
         <DialogHeader>
-          <DialogTitle>Category Details</DialogTitle>
+          <DialogTitle>{t("modals.categoryDetails")}</DialogTitle>
           <DialogDescription>
-            View detailed information about this category.
+            {t("modals.categoryDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -98,16 +89,16 @@ export const CategoryViewModal: React.FC<CategoryViewModalProps> = ({
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
           </div>
-        ) : data ? (
+        ) : categoryData ? (
           <div className="space-y-6">
             {/* Name & Basic Info */}
             <div className="grid grid-cols-1 gap-2">
               <Label className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 flex items-center gap-1">
-                <Tag className="h-4 w-4 opacity-70" /> Name
+                <Tag className="h-4 w-4 opacity-70" /> {t("columns.name")}
               </Label>
               <Input
                 disabled
-                value={data.name}
+                value={categoryData.name || ""}
                 className="bg-neutral-100 dark:bg-neutral-800 border-none font-bold text-base"
               />
             </div>
@@ -115,20 +106,22 @@ export const CategoryViewModal: React.FC<CategoryViewModalProps> = ({
             {/* SLUG */}
             <div className="grid grid-cols-1 gap-2">
               <Label className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 flex items-center gap-1">
-                <LinkIcon className="h-4 w-4 opacity-70" /> Slug
+                <LinkIcon className="h-4 w-4 opacity-70" /> {t("columns.slug")}
               </Label>
               <code className="relative rounded bg-neutral-100 px-3 py-2 font-mono text-sm dark:bg-neutral-800 w-full border">
-                {data.slug || "N/A"}
+                {categoryData.slug || t("columns.na")}
               </code>
             </div>
 
             {/* Billboard */}
             <div className="grid grid-cols-1 gap-2">
               <Label className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 flex items-center gap-1">
-                <StoreIcon className="h-4 w-4 opacity-70" /> Linked Billboard
+                <StoreIcon className="h-4 w-4 opacity-70" />{" "}
+                {t("modals.linkedBillboard")}
               </Label>
               <div className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-800 text-sm font-medium border">
-                {data.billboard?.label || "No Billboard Assigned"}
+                {categoryData.billboard?.label ||
+                  t("modals.noBillboardAssigned")}
               </div>
             </div>
 
@@ -138,22 +131,22 @@ export const CategoryViewModal: React.FC<CategoryViewModalProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div className="grid grid-cols-1 gap-2">
                 <Label className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
-                  <Calendar className="h-3 w-3" /> Created At
+                  <Calendar className="h-3 w-3" /> {t("modals.createdAt")}
                 </Label>
                 <Input
                   disabled
-                  value={formatDate(data.createdAt)}
+                  value={formatDate(categoryData.createdAt)}
                   className="bg-neutral-100 dark:bg-neutral-800 border-none text-xs"
                 />
               </div>
 
               <div className="grid grid-cols-1 gap-2">
                 <Label className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
-                  <Calendar className="h-3 w-3" /> Last Updated
+                  <Calendar className="h-3 w-3" /> {t("modals.lastUpdated")}
                 </Label>
                 <Input
                   disabled
-                  value={formatDate(data.updatedAt)}
+                  value={formatDate(categoryData.updatedAt)}
                   className="bg-neutral-100 dark:bg-neutral-800 border-none text-xs"
                 />
               </div>
@@ -163,15 +156,17 @@ export const CategoryViewModal: React.FC<CategoryViewModalProps> = ({
 
             {/* ID (Readonly) */}
             <div className="grid grid-cols-1 gap-2">
-              <Label className="text-xs text-neutral-400">System ID</Label>
+              <Label className="text-xs text-neutral-400">
+                {t("modals.systemId")}
+              </Label>
               <code className="relative rounded bg-neutral-100 px-[0.3rem] py-[0.2rem] font-mono text-xs dark:bg-neutral-800 w-full border">
-                {data.id}
+                {categoryData.id}
               </code>
             </div>
           </div>
         ) : (
           <div className="py-4 text-center text-neutral-500">
-            No data found.
+            {t("modals.noDataFound")}
           </div>
         )}
       </DialogContent>

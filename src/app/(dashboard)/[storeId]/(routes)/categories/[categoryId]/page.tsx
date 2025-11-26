@@ -5,19 +5,20 @@ import { ObjectId } from "bson";
 const CategoryPage = async ({
   params,
 }: {
-  params: { categoryId: string; storeId: string };
+  params: Promise<{ categoryId: string; storeId: string }>;
 }) => {
-  const isValidId = ObjectId.isValid(params.categoryId);
+  const { categoryId, storeId } = await params;
+  const isValidId = ObjectId.isValid(categoryId);
 
   const category = isValidId
     ? await prisma.category.findUnique({
-        where: { id: params.categoryId },
+        where: { id: categoryId },
       })
     : null;
 
   const billboards = await prisma.billboard.findMany({
     where: {
-      storeId: params.storeId,
+      storeId: storeId,
     },
   });
 

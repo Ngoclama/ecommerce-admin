@@ -5,16 +5,17 @@ import slugify from "slugify";
 
 export async function GET(
   req: Request,
-  { params }: { params: { categoryId: string } }
+  { params }: { params: Promise<{ categoryId: string }> }
 ) {
   try {
-    if (!params.categoryId) {
+    const { categoryId } = await params;
+    if (!categoryId) {
       return new NextResponse("Category id is required", { status: 400 });
     }
 
     const category = await prisma.category.findUnique({
       where: {
-        id: params.categoryId,
+        id: categoryId,
       },
       include: {
         billboard: true,
@@ -30,9 +31,10 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { storeId: string; categoryId: string } }
+  { params }: { params: Promise<{ storeId: string; categoryId: string }> }
 ) {
   try {
+    const { storeId, categoryId } = await params;
     const { userId } = await auth();
     const body = await req.json();
     const { name, billboardId, slug } = body;
@@ -43,7 +45,7 @@ export async function PATCH(
       return new NextResponse("Billboard ID is required", { status: 400 });
 
     const storeByUserId = await prisma.store.findFirst({
-      where: { id: params.storeId, userId },
+      where: { id: storeId, userId },
     });
 
     if (!storeByUserId)
@@ -52,10 +54,10 @@ export async function PATCH(
     // 👇 BƯỚC 2: KIỂM TRA TRÙNG TÊN (TRỪ CHÍNH NÓ)
     const existingCategory = await prisma.category.findFirst({
       where: {
-        storeId: params.storeId,
+        storeId: storeId,
         name: name,
         id: {
-          not: params.categoryId, // Quan trọng: Không check chính nó
+          not: categoryId, // Quan trọng: Không check chính nó
         },
       },
     });
@@ -72,24 +74,27 @@ export async function PATCH(
       : slugify(name, { lower: true, strict: true });
 
     const existingCategoryBySlug = await prisma.category.findFirst({
-        where: {
-            storeId: params.storeId,
-            slug: finalSlug,
-            id: {
-                not: params.categoryId,
-            },
+      where: {
+        storeId: storeId,
+        slug: finalSlug,
+        id: {
+          not: categoryId,
         },
+      },
     });
 
     if (existingCategoryBySlug) {
-        return NextResponse.json(
-            { message: "Generated slug already exists. Please use a different name." },
-            { status: 409 }
-        );
+      return NextResponse.json(
+        {
+          message:
+            "Generated slug already exists. Please use a different name.",
+        },
+        { status: 409 }
+      );
     }
 
     const category = await prisma.category.update({
-      where: { id: params.categoryId },
+      where: { id: categoryId },
       data: { name, billboardId, slug: finalSlug },
     });
 
@@ -97,7 +102,11 @@ export async function PATCH(
   } catch (error) {
     console.error("[CATEGORY_PATCH]", error);
     return NextResponse.json(
-      { success: false, message: "Internal Server Error", error: error instanceof Error ? error.message : String(error) },
+      {
+        success: false,
+        message: "Internal Server Error",
+        error: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }
@@ -105,22 +114,23 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { storeId: string; categoryId: string } }
+  { params }: { params: Promise<{ storeId: string; categoryId: string }> }
 ) {
   try {
+    const { storeId, categoryId } = await params;
     const { userId } = await auth();
 
     if (!userId)
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const storeByUserId = await prisma.store.findFirst({
-      where: { id: params.storeId, userId },
+      where: { id: storeId, userId },
     });
     if (!storeByUserId)
       return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
 
     const category = await prisma.category.delete({
-      where: { id: params.categoryId },
+      where: { id: categoryId },
     });
 
     return NextResponse.json(category);

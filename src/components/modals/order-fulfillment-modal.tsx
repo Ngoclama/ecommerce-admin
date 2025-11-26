@@ -43,8 +43,8 @@ const formSchema = z.object({
     "DELIVERED",
     "CANCELLED",
   ]),
-  shippingProvider: z.string().optional(),
-  trackingNumber: z.string().optional(),
+  shippingMethod: z.string().optional().nullable(),
+  trackingNumber: z.string().optional().nullable(),
 });
 
 interface OrderFulfillmentModalProps {
@@ -53,7 +53,7 @@ interface OrderFulfillmentModalProps {
   orderId: string;
   currentStatus: string;
   initialData?: {
-    shippingProvider: string | null;
+    shippingMethod: string | null;
     trackingNumber: string | null;
   };
 }
@@ -73,8 +73,8 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
     resolver: zodResolver(formSchema),
     defaultValues: {
       status: currentStatus as any,
-      shippingProvider: initialData?.shippingProvider || "",
-      trackingNumber: initialData?.trackingNumber || "",
+      shippingMethod: initialData?.shippingMethod || null,
+      trackingNumber: initialData?.trackingNumber || null,
     },
   });
 
@@ -138,18 +138,19 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
               )}
             />
 
-            {/* Shipping Provider */}
+            {/* Shipping Method */}
             <FormField
               control={form.control}
-              name="shippingProvider"
+              name="shippingMethod"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Shipping Provider</FormLabel>
+                  <FormLabel>Shipping Method</FormLabel>
                   <FormControl>
                     <Input
                       disabled={isLoading}
-                      placeholder="e.g. GHN, ViettelPost, DHL"
+                      placeholder="e.g. Standard, Express, GHN, ViettelPost"
                       {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -169,6 +170,7 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
                       disabled={isLoading}
                       placeholder="e.g. VTP12345678"
                       {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />

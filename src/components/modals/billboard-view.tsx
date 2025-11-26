@@ -11,8 +11,9 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Calendar } from "lucide-react"; // Thêm icon Calendar
-import { format } from "date-fns"; // Để format ngày tháng
+import { Loader2, Calendar } from "lucide-react";
+import { format } from "date-fns";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface BillboardViewModalProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ export const BillboardViewModal: React.FC<BillboardViewModalProps> = ({
   billboardId,
   storeId,
 }) => {
+  const { t } = useTranslation();
   const [isMounted, setIsMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<Billboard | null>(null);
@@ -70,9 +72,9 @@ export const BillboardViewModal: React.FC<BillboardViewModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl overflow-hidden bg-white dark:bg-neutral-900">
         <DialogHeader>
-          <DialogTitle>Billboard Details</DialogTitle>
+          <DialogTitle>{t("modals.billboardDetails")}</DialogTitle>
           <DialogDescription>
-            View the details of your billboard.
+            {t("modals.billboardDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -88,7 +90,7 @@ export const BillboardViewModal: React.FC<BillboardViewModalProps> = ({
               {/* Label Section */}
               <div className="p-4 rounded-lg border bg-neutral-50 dark:bg-neutral-800/50">
                 <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-1">
-                  Label
+                  {t("columns.label")}
                 </h3>
                 <p className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
                   {data.label}
@@ -98,7 +100,7 @@ export const BillboardViewModal: React.FC<BillboardViewModalProps> = ({
               {/* ID Section */}
               <div>
                 <h3 className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1 uppercase tracking-wider">
-                  Billboard ID
+                  {t("modals.billboardDetails")} ID
                 </h3>
                 <code className="text-xs font-mono text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded block w-fit">
                   {data.id}
@@ -109,10 +111,10 @@ export const BillboardViewModal: React.FC<BillboardViewModalProps> = ({
               <div className="flex items-center gap-2 text-sm text-neutral-500">
                 <Calendar className="h-4 w-4" />
                 <span>
-                  Created on:{" "}
+                  {t("modals.createdOn")}{" "}
                   {data.createdAt
                     ? format(new Date(data.createdAt), "MMMM do, yyyy")
-                    : "Unknown"}
+                    : t("modals.unknown")}
                 </span>
               </div>
             </div>
@@ -129,9 +131,9 @@ export const BillboardViewModal: React.FC<BillboardViewModalProps> = ({
           </div>
         ) : (
           <div className="flex h-40 items-center justify-center text-neutral-500 flex-col gap-2">
-            <p>No data found.</p>
+            <p>{t("modals.noDataFound")}</p>
             <p className="text-xs text-muted-foreground">
-              This billboard might have been deleted.
+              {t("modals.billboardDeleted")}
             </p>
           </div>
         )}

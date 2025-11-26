@@ -21,8 +21,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AlertModal } from "@/components/modals/alert-modal";
-import { ReviewReplyModal } from "@/components/modals/review-reply-modal"; // Import Modal vừa tạo
+import { ReviewReplyModal } from "@/components/modals/review-reply-modal";
 import { ReviewColumn } from "./columns";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface CellActionProps {
   data: ReviewColumn; // Sửa lại type để lấy được isArchived và adminResponse
@@ -31,9 +32,10 @@ interface CellActionProps {
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [openAlert, setOpenAlert] = useState(false);
-  const [openReply, setOpenReply] = useState(false); // State mở modal reply
+  const [openReply, setOpenReply] = useState(false);
 
   // Hàm Xóa
   const onDelete = async () => {
@@ -92,23 +94,21 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("columns.actions")}</DropdownMenuLabel>
 
-          {/* Nút Trả lời */}
           <DropdownMenuItem onClick={() => setOpenReply(true)}>
             <MessageCircle className="mr-2 h-4 w-4" />
-            {data.adminResponse ? "Edit Reply" : "Reply"}
+            {data.adminResponse ? t("actions.editReply") : t("actions.reply")}
           </DropdownMenuItem>
 
-          {/* Nút Ẩn/Hiện */}
           <DropdownMenuItem onClick={onToggleArchive}>
             {data.isArchived ? (
               <>
-                <Eye className="mr-2 h-4 w-4" /> Show Review
+                <Eye className="mr-2 h-4 w-4" /> {t("actions.showReview")}
               </>
             ) : (
               <>
-                <EyeOff className="mr-2 h-4 w-4" /> Hide Review
+                <EyeOff className="mr-2 h-4 w-4" /> {t("actions.hideReview")}
               </>
             )}
           </DropdownMenuItem>
@@ -117,7 +117,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
             onClick={() => setOpenAlert(true)}
             className="text-red-600"
           >
-            <Trash className="mr-2 h-4 w-4" /> Delete
+            <Trash className="mr-2 h-4 w-4" /> {t("actions.delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -17,6 +17,7 @@ import {
 import { AlertModal } from "@/components/modals/alert-modal";
 import { BillboardColumn } from "./columns";
 import { BillboardViewModal } from "@/components/modals/billboard-view";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface CellActionProps {
   data: BillboardColumn;
@@ -25,6 +26,7 @@ interface CellActionProps {
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false); 
   const [viewOpen, setViewOpen] = useState(false); 
@@ -77,18 +79,18 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("columns.actions")}</DropdownMenuLabel>
 
           {/* Copy ID */}
           <DropdownMenuItem onClick={() => onCopy(data.id)}>
             <Copy className="mr-2 h-4 w-4" />
-            Copy ID
+            {t("actions.copyId")}
           </DropdownMenuItem>
 
           {/* Xem Chi Tiết  */}
           <DropdownMenuItem onClick={() => setViewOpen(true)}>
             <Eye className="mr-2 h-4 w-4" />
-            View Details
+            {t("actions.viewDetails")}
           </DropdownMenuItem>
 
           {/* Sửa */}
@@ -98,7 +100,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
             }
           >
             <Edit className="mr-2 h-4 w-4" />
-            Update
+            {t("actions.update")}
           </DropdownMenuItem>
 
           {/* Xóa */}
@@ -107,7 +109,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
             className="text-red-600 focus:text-red-600"
           >
             <Trash className="mr-2 h-4 w-4" />
-            Delete
+            {t("actions.delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

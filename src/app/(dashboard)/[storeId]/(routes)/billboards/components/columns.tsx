@@ -3,7 +3,9 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { CellAction } from "./cell-action";
 import Image from "next/image";
-import { ImageOff } from "lucide-react"; // Import icon để hiển thị khi lỗi ảnh
+import { ImageOff } from "lucide-react";
+import { useTranslation } from "@/hooks/use-translation";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export type BillboardColumn = {
   id: string;
@@ -12,10 +14,35 @@ export type BillboardColumn = {
   createdAt: string;
 };
 
-export const columns: ColumnDef<BillboardColumn>[] = [
-  {
-    accessorKey: "imageUrl",
-    header: "Image",
+export const useBillboardColumns = (): ColumnDef<BillboardColumn>[] => {
+  const { t } = useTranslation();
+
+  return [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "imageUrl",
+      header: t("columns.image"),
     cell: ({ row }) => {
       // Lấy giá trị imageUrl từ dữ liệu hàng
       const imageSrc = row.original.imageUrl;
@@ -38,16 +65,19 @@ export const columns: ColumnDef<BillboardColumn>[] = [
       );
     },
   },
-  {
-    accessorKey: "label",
-    header: "Label",
-  },
-  {
-    accessorKey: "createdAt",
-    header: "Date",
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => <CellAction data={row.original} />,
-  },
-];
+    {
+      accessorKey: "label",
+      header: t("columns.label"),
+    },
+    {
+      accessorKey: "createdAt",
+      header: t("columns.date"),
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => <CellAction data={row.original} />,
+    },
+  ];
+};
+
+export const columns: ColumnDef<BillboardColumn>[] = [];

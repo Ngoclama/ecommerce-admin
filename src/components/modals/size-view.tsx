@@ -12,6 +12,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Calendar, Hash, Ruler } from "lucide-react";
 import { format } from "date-fns";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface SizeViewModalProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export const SizeViewModal: React.FC<SizeViewModalProps> = ({
   sizeId,
   storeId,
 }) => {
+  const { t } = useTranslation();
   const [isMounted, setIsMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<Size | null>(null);
@@ -43,7 +45,8 @@ export const SizeViewModal: React.FC<SizeViewModalProps> = ({
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!sizeId || !isOpen) return;
+      // Chỉ fetch khi có sizeId hợp lệ (không phải "new" hoặc null)
+      if (!sizeId || sizeId === "new" || !isOpen) return;
 
       try {
         setIsLoading(true);
@@ -54,7 +57,9 @@ export const SizeViewModal: React.FC<SizeViewModalProps> = ({
           setData(response.data as Size);
         }
       } catch (error) {
-        console.error("Failed to fetch size details:", error);
+        if (process.env.NODE_ENV === "development") {
+          console.error("Failed to fetch size details:", error);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -69,9 +74,9 @@ export const SizeViewModal: React.FC<SizeViewModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md overflow-hidden bg-white dark:bg-neutral-900">
         <DialogHeader>
-          <DialogTitle>Size Details</DialogTitle>
+          <DialogTitle>{t("modals.sizeDetails")}</DialogTitle>
           <DialogDescription>
-            Information about this size.
+            {t("modals.sizeDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -90,7 +95,7 @@ export const SizeViewModal: React.FC<SizeViewModalProps> = ({
                 </div>
                 <div>
                     <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-                        Name
+                        {t("columns.name")}
                     </h3>
                     <p className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
                         {data.name}
@@ -102,7 +107,7 @@ export const SizeViewModal: React.FC<SizeViewModalProps> = ({
                 {/* Value */}
                 <div>
                     <h3 className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1 flex items-center gap-1">
-                        <Hash className="h-3 w-3" /> Value
+                        <Hash className="h-3 w-3" /> {t("columns.value")}
                     </h3>
                     <div className="text-sm text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 px-3 py-2 rounded-md border">
                         {data.value}
@@ -114,14 +119,14 @@ export const SizeViewModal: React.FC<SizeViewModalProps> = ({
             <div className="flex items-center justify-between text-xs text-neutral-500 border-t pt-4">
                 <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    <span>Created: {data.createdAt ? format(new Date(data.createdAt), "MMM do, yyyy") : "Unknown"}</span>
+                    <span>{t("modals.created")} {data.createdAt ? format(new Date(data.createdAt), "MMM do, yyyy") : t("modals.unknown")}</span>
                 </div>
                 <div className="font-mono text-[10px]">ID: {data.id}</div>
             </div>
           </div>
         ) : (
           <div className="flex h-40 items-center justify-center text-neutral-500">
-            No data found.
+            {t("modals.noDataFound")}
           </div>
         )}
       </DialogContent>

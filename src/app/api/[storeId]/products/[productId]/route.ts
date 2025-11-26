@@ -2,55 +2,98 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-// ─────────────────────────────────────────────────────────────
-// GET: Lấy chi tiết 1 sản phẩm
-// ─────────────────────────────────────────────────────────────
 export async function GET(
   req: Request,
-  { params }: { params: { storeId: string; productId: string } }
+  { params }: { params: Promise<{ storeId: string; productId: string }> }
 ) {
   try {
-    if (!params.productId)
-      return NextResponse.json(
-        { message: "Product ID is required" },
-        { status: 400 }
-      );
+    const { productId } = await params;
+    if (!productId) return new NextResponse("ID required", { status: 400 });
 
+    // Tối ưu: chỉ select các field cần thiết
     const product = await prisma.product.findUnique({
-      where: { id: params.productId },
-      include: {
-        images: true,
-        category: true,
-        size: true,
-        color: true,
-        material: true, // 👈 THÊM DÒNG NÀY: Để lấy thông tin chất liệu
+      where: { id: productId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        price: true,
+        compareAtPrice: true,
+        description: true,
+        isFeatured: true,
+        isArchived: true,
+        isPublished: true,
+        gender: true,
+        metaTitle: true,
+        metaDescription: true,
+        tags: true,
+        trackQuantity: true,
+        allowBackorder: true,
+        createdAt: true,
+        updatedAt: true,
+        images: {
+          select: {
+            id: true,
+            url: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        material: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        variants: {
+          select: {
+            id: true,
+            sku: true,
+            inventory: true,
+            price: true,
+            lowStockThreshold: true,
+            size: {
+              select: {
+                id: true,
+                name: true,
+                value: true,
+              },
+            },
+            color: {
+              select: {
+                id: true,
+                name: true,
+                value: true,
+              },
+            },
+            material: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    if (!product)
-      return NextResponse.json(
-        { message: "Product not found" },
-        { status: 404 }
-      );
-
     return NextResponse.json(product);
   } catch (error) {
-    console.error("[PRODUCT_GET]", error);
-    return NextResponse.json(
-      { message: "Internal Server Error", error: String(error) },
-      { status: 500 }
-    );
+    return new NextResponse("Internal Error", { status: 500 });
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// PATCH: Cập nhật sản phẩm
-// ─────────────────────────────────────────────────────────────
 export async function PATCH(
   req: Request,
-  { params }: { params: { storeId: string; productId: string } }
+  { params }: { params: Promise<{ storeId: string; productId: string }> }
 ) {
   try {
+    const { productId, storeId } = await params;
     const { userId } = await auth();
     const body = await req.json();
 
@@ -59,124 +102,108 @@ export async function PATCH(
       price,
       description,
       categoryId,
-      colorId,
-      sizeId,
       images,
       isFeatured,
       isArchived,
-      // 👇 THÊM: Lấy dữ liệu mới từ form gửi lên
-      inventory,
+      isPublished,
       materialId,
       gender,
+      compareAtPrice,
+      metaTitle,
+      metaDescription,
+      tags,
+      trackQuantity,
+      allowBackorder,
+      variants,
     } = body;
 
-    // ─── Basic validation ─────────────────────────────
-    if (!userId)
-      return NextResponse.json({ message: "Unauthenticated" }, { status: 401 });
+    if (!userId) return new NextResponse("Unauthenticated", { status: 401 });
+    if (!name || !price || !categoryId || !variants?.length) {
+      return new NextResponse("Missing data", { status: 400 });
+    }
 
-    if (!params.storeId || !params.productId)
-      return NextResponse.json(
-        { message: "Store ID and Product ID are required" },
-        { status: 400 }
-      );
-
-    if (!name?.trim())
-      return NextResponse.json(
-        { message: "Name is required" },
-        { status: 400 }
-      );
-
-    if (!price || isNaN(Number(price)))
-      return NextResponse.json(
-        { message: "Price is required and must be a number" },
-        { status: 400 }
-      );
-
+    // Check authorization
     const storeByUserId = await prisma.store.findFirst({
-      where: { id: params.storeId, userId },
+      where: { id: storeId, userId },
     });
-
     if (!storeByUserId)
-      return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
+      return new NextResponse("Unauthorized", { status: 403 });
 
-    // ─── Xử lý ảnh ─────────────────────────────────────
-    const finalImages =
-      images && images.length > 0
-        ? images
-        : [{ url: "https://placehold.co/600x600?text=No+Image" }];
-
-    // 1️⃣ Xoá toàn bộ ảnh cũ
-    await prisma.image.deleteMany({
-      where: { productId: params.productId },
+    // Update transaction
+    await prisma.product.update({
+      where: { id: productId },
+      data: {
+        name,
+        price: Number(price),
+        compareAtPrice: compareAtPrice ? Number(compareAtPrice) : null,
+        categoryId,
+        description,
+        isFeatured,
+        isArchived,
+        isPublished: isPublished !== undefined ? isPublished : true,
+        materialId: materialId || null,
+        gender,
+        metaTitle: metaTitle || null,
+        metaDescription: metaDescription || null,
+        tags: tags || [],
+        trackQuantity: trackQuantity !== undefined ? trackQuantity : true,
+        allowBackorder: allowBackorder !== undefined ? allowBackorder : false,
+        images: { deleteMany: {} }, // Xóa ảnh cũ
+        variants: { deleteMany: {} }, // Xóa variant cũ
+      },
     });
 
-    // 2️⃣ Cập nhật sản phẩm
     const product = await prisma.product.update({
-      where: { id: params.productId },
+      where: { id: productId },
       data: {
-        name: name.trim(),
-        description: description.trim(),
-        price: Number(price),
-        isFeatured: !!isFeatured,
-        isArchived: !!isArchived,
-        categoryId,
-        colorId,
-        sizeId,
-        // 👇 THÊM: Cập nhật các trường mới
-        inventory: Number(inventory) || 10, // Default là 10
-        gender: gender || "UNISEX", // Default là UNISEX
-        materialId: materialId || null, // Nếu không chọn thì set null
-
         images: {
+          createMany: { data: [...images.map((img: { url: string }) => img)] },
+        },
+        variants: {
           createMany: {
-            data: finalImages.map((image: { url: string }) => ({
-              url: image.url,
+            data: variants.map((v: any) => ({
+              sizeId: v.sizeId,
+              colorId: v.colorId,
+              materialId: v.materialId || null,
+              sku: v.sku || null,
+              inventory: Number(v.inventory),
+              lowStockThreshold: Number(v.lowStockThreshold) || 10,
+              price: v.price ? Number(v.price) : null,
             })),
           },
         },
       },
-      include: { images: true },
+      include: { variants: true },
     });
 
     return NextResponse.json(product);
   } catch (error) {
-    console.error("[PRODUCT_PATCH]", error);
-    return NextResponse.json(
-      { message: "Internal Server Error", error: String(error) },
-      { status: 500 }
-    );
+    if (process.env.NODE_ENV === "development") {
+      console.log("[PRODUCT_PATCH]", error);
+    }
+    return new NextResponse("Internal Error", { status: 500 });
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// DELETE: Xóa sản phẩm (Giữ nguyên không đổi)
-// ─────────────────────────────────────────────────────────────
 export async function DELETE(
   req: Request,
-  { params }: { params: { storeId: string; productId: string } }
+  { params }: { params: Promise<{ storeId: string; productId: string }> }
 ) {
   try {
+    const { productId, storeId } = await params;
     const { userId } = await auth();
+    if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-    if (!userId)
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-
+    // Check authorization
     const storeByUserId = await prisma.store.findFirst({
-      where: { id: params.storeId, userId },
+      where: { id: storeId, userId },
     });
     if (!storeByUserId)
-      return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
+      return new NextResponse("Unauthorized", { status: 403 });
 
-    const product = await prisma.product.delete({
-      where: { id: params.productId },
-    });
-
-    return NextResponse.json(product);
+    await prisma.product.delete({ where: { id: productId } });
+    return NextResponse.json({ message: "Deleted" });
   } catch (error) {
-    console.error("[PRODUCT_DELETE]", error);
-    return NextResponse.json(
-      { message: "Internal Server Error", error: String(error) },
-      { status: 500 }
-    );
+    return new NextResponse("Internal Error", { status: 500 });
   }
 }

@@ -18,6 +18,8 @@ import { OrderColumn } from "./columns";
 import { OrderViewModal } from "@/components/modals/order-view";
 import { AlertModal } from "@/components/modals/alert-modal";
 import { OrderFulfillmentModal } from "@/components/modals/order-fulfillment-modal";
+import { useCreateShippingModal } from "@/hooks/use-create-shipping-modal";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface CellActionProps {
   data: OrderColumn;
@@ -26,6 +28,8 @@ interface CellActionProps {
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
+  const { t } = useTranslation();
+  const { onOpen: onCreateShipping } = useCreateShippingModal();
   const [loading, setLoading] = useState(false);
   const [openView, setOpenView] = useState(false);
   const [openUpdate, setOpenUpdate] = useState(false);
@@ -59,25 +63,21 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
         loading={loading}
       />
 
-      {/* Modal Xem Chi Tiết */}
       {openView && (
         <OrderViewModal
           isOpen={openView}
           onClose={() => setOpenView(false)}
           storeId={params.storeId as string}
           orderId={data.id}
-          // [FIX] Đã xóa props 'data' gây lỗi ở đây
         />
       )}
-
-      {/* Modal Cập nhật Trạng thái */}
       <OrderFulfillmentModal
         isOpen={openUpdate}
         onClose={() => setOpenUpdate(false)}
         orderId={data.id}
         currentStatus={data.status}
         initialData={{
-          shippingProvider: data.shippingProvider,
+          shippingMethod: data.shippingMethod,
           trackingNumber: data.trackingNumber,
         }}
       />
@@ -90,25 +90,42 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("columns.actions")}</DropdownMenuLabel>
 
           <DropdownMenuItem onClick={() => onCopy(data.id)}>
-            <Copy className="mr-2 h-4 w-4" /> Copy ID
+            <Copy className="mr-2 h-4 w-4" /> {t("actions.copyId")}
           </DropdownMenuItem>
 
           <DropdownMenuItem onClick={() => setOpenView(true)}>
-            <Eye className="mr-2 h-4 w-4" /> View Details
+            <Eye className="mr-2 h-4 w-4" /> {t("actions.viewDetails")}
           </DropdownMenuItem>
 
           <DropdownMenuItem onClick={() => setOpenUpdate(true)}>
-            <Truck className="mr-2 h-4 w-4" /> Update Status
+            <Truck className="mr-2 h-4 w-4" /> {t("actions.update")}{" "}
+            {t("columns.status")}
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={async () => {
+              try {
+                const res = await axios.get(
+                  `/api/${params.storeId}/orders/${data.id}`
+                );
+                onCreateShipping(data.id, res.data);
+              } catch (error) {
+                toast.error("Failed to load order details");
+              }
+            }}
+            className="flex items-center gap-2 cursor-pointer"
+          >
+            <Truck className="mr-2 h-4 w-4" /> {t("nav.shipping")}
           </DropdownMenuItem>
 
           <DropdownMenuItem
             onClick={() => setOpenDelete(true)}
             className="text-red-600"
           >
-            <Trash className="mr-2 h-4 w-4" /> Delete
+            <Trash className="mr-2 h-4 w-4" /> {t("actions.delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

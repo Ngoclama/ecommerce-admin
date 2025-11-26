@@ -4,9 +4,10 @@ import { NextResponse } from "next/server";
 
 export async function POST(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
+    const { storeId } = await params;
     const { userId } = await auth();
     const body = await req.json();
     const { label, imageUrl } = body;
@@ -21,12 +22,12 @@ export async function POST(
     if (!imageUrl) {
       return new NextResponse("Image URL is required", { status: 400 });
     }
-    if (!params.storeId) {
+    if (!storeId) {
       return new NextResponse("Store id is required", { status: 400 });
     }
 
     const storeByUserId = await prisma.store.findFirst({
-      where: { id: params.storeId, userId },
+      where: { id: storeId, userId },
     });
 
     if (!storeByUserId) {
@@ -37,7 +38,7 @@ export async function POST(
       data: {
         label,
         imageUrl,
-        storeId: params.storeId,
+        storeId: storeId,
       },
     });
 
@@ -50,15 +51,16 @@ export async function POST(
 
 export async function GET(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
-    if (!params.storeId) {
+    const { storeId } = await params;
+    if (!storeId) {
       return new NextResponse("Store id is required", { status: 400 });
     }
     const billboards = await prisma.billboard.findMany({
       where: {
-        storeId: params.storeId,
+        storeId: storeId,
       },
     });
 
@@ -71,38 +73,75 @@ export async function GET(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { storeId: string } }
+  { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
+    const { storeId } = await params;
     const { userId } = await auth();
     if (!userId) {
       return new NextResponse("Unauthenticated", { status: 401 });
     }
 
-    if (!params.storeId) {
+    if (!storeId) {
       return new NextResponse("Store id is required", { status: 400 });
     }
 
     const storeByUserId = await prisma.store.findFirst({
-      where: { id: params.storeId, userId },
+      where: { id: storeId, userId },
     });
 
     if (!storeByUserId) {
       return new NextResponse("Unauthorized", { status: 403 });
     }
 
-    const allBillboards = await prisma.billboard.findMany({
-      where: { storeId: params.storeId },
-      include: {
-        _count: {
-          select: { categories: true },
-        },
-      },
-    });
+    // Check if request body has specific IDs to delete
+    let body: any = {};
+    const contentLength = req.headers.get("content-length");
+    if (contentLength && parseInt(contentLength) > 0) {
+      try {
+        body = await req.json();
+      } catch {
+        body = {};
+      }
+    }
 
-    const safeToDeleteIds = allBillboards
-      .filter((bb) => bb._count.categories === 0)
-      .map((bb) => bb.id);
+    const idsToDelete = body.ids;
+
+    let allBillboards;
+    let safeToDeleteIds: string[];
+
+    if (idsToDelete && Array.isArray(idsToDelete) && idsToDelete.length > 0) {
+      // Delete specific billboards by IDs
+      allBillboards = await prisma.billboard.findMany({
+        where: {
+          id: { in: idsToDelete },
+          storeId: storeId,
+        },
+        include: {
+          _count: {
+            select: { categories: true },
+          },
+        },
+      });
+
+      safeToDeleteIds = allBillboards
+        .filter((bb) => bb._count.categories === 0)
+        .map((bb) => bb.id);
+    } else {
+      // Delete all billboards (original behavior)
+      allBillboards = await prisma.billboard.findMany({
+        where: { storeId: storeId },
+        include: {
+          _count: {
+            select: { categories: true },
+          },
+        },
+      });
+
+      safeToDeleteIds = allBillboards
+        .filter((bb) => bb._count.categories === 0)
+        .map((bb) => bb.id);
+    }
 
     const skippedCount = allBillboards.length - safeToDeleteIds.length;
 
@@ -112,6 +151,7 @@ export async function DELETE(
       const result = await prisma.billboard.deleteMany({
         where: {
           id: { in: safeToDeleteIds },
+          storeId: storeId,
         },
       });
       deletedCount = result.count;
