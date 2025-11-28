@@ -1,11 +1,37 @@
 "use client";
 
-import { SignIn } from "@clerk/nextjs";
+import dynamic from "next/dynamic";
 import { dark } from "@clerk/themes";
 import { useTheme } from "next-themes";
+import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
+// Dynamic import với ssr: false để tránh hydration mismatch
+const SignIn = dynamic(
+  () => import("@clerk/nextjs").then((mod) => mod.SignIn),
+  {
+    ssr: false,
+    loading: () => <div className="w-full">Loading...</div>,
+  }
+);
 
 export default function Page() {
   const { resolvedTheme } = useTheme();
+  const { isSignedIn, isLoaded } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Chỉ redirect khi đã load xong và đã đăng nhập
+    if (isLoaded && isSignedIn) {
+      router.replace("/");
+    }
+  }, [isSignedIn, isLoaded]); // Loại bỏ router khỏi dependency
+
+  // Không render SignIn nếu đã đăng nhập (tránh warning)
+  if (isLoaded && isSignedIn) {
+    return <div className="w-full">Redirecting...</div>;
+  }
 
   return (
     <SignIn
@@ -37,6 +63,7 @@ export default function Page() {
           colorInputText: "#0F172A",
         },
       }}
+      fallbackRedirectUrl="/"
     />
   );
 }

@@ -220,7 +220,7 @@ const NavbarUser: React.FC<NavbarUserProps> = ({ items }) => {
 
           {/* Sign Out */}
           <DropdownMenuItem
-            onClick={() => signOut()}
+            onClick={() => signOut({ redirectUrl: window.location.origin + "/sign-in" })}
             className="rounded-lg cursor-pointer text-red-600 dark:text-red-400"
           >
             <LogOut className="mr-2 h-4 w-4" />

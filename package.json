@@ -7,9 +7,10 @@
     "build": "next build --turbopack",
     "start": "next start",
     "reset-db": "ts-node scripts/reset-db.ts",
-    "postinstall":"prisma generate"
+    "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@clerk/backend": "^2.24.0",
     "@clerk/nextjs": "^6.33.7",
     "@clerk/themes": "^2.4.33",
     "@hookform/resolvers": "^5.2.2",
@@ -68,8 +69,7 @@
     "zod": "^4.1.12",
     "zustand": "^5.0.8"
   },
-  "overrides": {
-  },
+  "overrides": {},
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

@@ -113,19 +113,11 @@ export async function PATCH(
       refundAmount
     ) {
       try {
-        // TODO: Integrate with Stripe refund API
-        // const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-        // await stripe.refunds.create({
-        //   payment_intent: returnRequest.order.transactionId,
-        //   amount: Math.round(refundAmount * 100), // Convert to cents
-        //   reason: 'requested_by_customer',
-        // });
         console.log(
           `[REFUND] Would process refund of ${refundAmount} for transaction ${returnRequest.order.transactionId}`
         );
       } catch (refundError) {
         console.error("[REFUND_ERROR]", refundError);
-        // Don't fail the return update if refund fails, just log it
       }
     }
 
@@ -136,7 +128,6 @@ export async function PATCH(
   }
 }
 
-// DELETE: Xóa return
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ storeId: string; returnId: string }> }

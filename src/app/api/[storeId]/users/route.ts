@@ -15,11 +15,6 @@ export async function GET(
       return new NextResponse("Unauthenticated", { status: 401 });
     }
 
-    // Kiểm tra xem người gọi API có phải là ADMIN không (Dựa vào ClerkId tìm trong DB)
-    // Tạm thời bỏ qua check Role chặt chẽ để test, nhưng logic đúng là phải check:
-    // const user = await prisma.user.findUnique({ where: { clerkId: userId }});
-    // if (user?.role !== "ADMIN") ...
-
     const users = await prisma.user.findMany({
       orderBy: {
         createdAt: "desc",

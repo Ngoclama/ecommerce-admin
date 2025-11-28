@@ -57,6 +57,13 @@ export const useOrderColumns = (): ColumnDef<OrderColumn>[] => {
     {
       accessorKey: "phone",
       header: t("columns.phone"),
+      cell: ({ row }) => (
+        <div className="text-sm text-muted-foreground">
+          {row.original.phone && row.original.phone !== ""
+            ? row.original.phone
+            : t("columns.na")}
+        </div>
+      ),
     },
     {
       accessorKey: "email",

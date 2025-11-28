@@ -8,7 +8,7 @@ import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FormLabel } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -79,7 +79,7 @@ export const CreateShippingModal = () => {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -110,7 +110,7 @@ export const CreateShippingModal = () => {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="space-y-2">
-                <FormLabel htmlFor="provider">Shipping Provider</FormLabel>
+                <Label htmlFor="provider">Shipping Provider</Label>
                 <Select
                   value={formData.provider}
                   onValueChange={(value) =>
@@ -130,7 +130,7 @@ export const CreateShippingModal = () => {
               </div>
 
               <div className="space-y-2">
-                <FormLabel htmlFor="shippingMethod">Shipping Method</FormLabel>
+                <Label htmlFor="shippingMethod">Shipping Method</Label>
                 <Input
                   id="shippingMethod"
                   value={formData.shippingMethod}
@@ -143,7 +143,7 @@ export const CreateShippingModal = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <FormLabel htmlFor="weight">Weight (grams)</FormLabel>
+                  <Label htmlFor="weight">Weight (grams)</Label>
                   <Input
                     id="weight"
                     type="number"
@@ -158,7 +158,7 @@ export const CreateShippingModal = () => {
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <FormLabel htmlFor="toCity">City</FormLabel>
+                  <Label htmlFor="toCity">City</Label>
                   <Input
                     id="toCity"
                     value={formData.toCity}
@@ -169,7 +169,7 @@ export const CreateShippingModal = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <FormLabel htmlFor="toDistrict">District</FormLabel>
+                  <Label htmlFor="toDistrict">District</Label>
                   <Input
                     id="toDistrict"
                     value={formData.toDistrict}
@@ -180,7 +180,7 @@ export const CreateShippingModal = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <FormLabel htmlFor="toWard">Ward</FormLabel>
+                  <Label htmlFor="toWard">Ward</Label>
                   <Input
                     id="toWard"
                     value={formData.toWard}

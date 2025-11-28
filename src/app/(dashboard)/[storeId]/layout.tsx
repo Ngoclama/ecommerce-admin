@@ -1,10 +1,13 @@
 import prisma from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { SidebarWrapper } from "@/components/sidebar-wrapper";
 import { HeaderWrapper } from "@/components/header-wrapper";
 import { SidebarToggleScript } from "@/components/sidebar-toggle-script";
 import { cn } from "@/lib/utils";
+
+// Danh sách email được phép truy cập Admin
+const ADMIN_ALLOWED_EMAILS = process.env.ADMIN_ALLOWED_EMAILS?.split(",").map(e => e.trim()) || [];
 
 export default async function DashboardLayout({
   children,
@@ -16,6 +19,22 @@ export default async function DashboardLayout({
   const { userId } = await auth();
   if (!userId) {
     redirect("/sign-in");
+  }
+
+  // Kiểm tra email nếu có cấu hình ADMIN_ALLOWED_EMAILS
+  if (ADMIN_ALLOWED_EMAILS.length > 0 && !ADMIN_ALLOWED_EMAILS.includes("*")) {
+    try {
+      const clerk = await clerkClient();
+      const user = await clerk.users.getUser(userId);
+      const userEmail = user.emailAddresses[0]?.emailAddress;
+
+      if (!userEmail || !ADMIN_ALLOWED_EMAILS.includes(userEmail)) {
+        redirect("/unauthorized");
+      }
+    } catch (error) {
+      console.error("[DASHBOARD_LAYOUT] Error checking email:", error);
+      redirect("/unauthorized");
+    }
   }
 
   const { storeId } = await params;
