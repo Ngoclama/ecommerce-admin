@@ -7,14 +7,14 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
   try {
     // Lấy tất cả categories từ tất cả stores (public)
+    // Tối ưu: chỉ select các field cần thiết, không include _count để giảm query time
     const categories = await prisma.category.findMany({
       select: {
         id: true,
         name: true,
         slug: true,
         billboardId: true,
-        createdAt: true,
-        updatedAt: true,
+        parentId: true,
         billboard: {
           select: {
             id: true,
@@ -22,13 +22,18 @@ export async function GET(req: Request) {
             imageUrl: true,
           },
         },
-        _count: {
-          select: { products: true },
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
         },
       },
       orderBy: {
-        createdAt: "desc",
+        name: "asc", // Sort by name instead of createdAt for better performance
       },
+      take: 1000, // Limit to prevent huge queries
     });
 
     return NextResponse.json({ success: true, data: categories });

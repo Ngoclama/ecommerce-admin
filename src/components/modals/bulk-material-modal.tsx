@@ -24,6 +24,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTranslation } from "@/hooks/use-translation";
 
 type Row = {
   name: string;
@@ -32,6 +33,7 @@ type Row = {
 
 export const BulkCreateMaterialModal: React.FC = () => {
   const { isOpen, onClose } = useBulkMaterialModal();
+  const { t } = useTranslation();
   const [rows, setRows] = useState<Row[]>([{ name: "", value: "" }]);
   const [isLoading, setIsLoading] = useState(false);
   const params = useParams();
@@ -67,11 +69,17 @@ export const BulkCreateMaterialModal: React.FC = () => {
   const validateForm = () => {
     for (let i = 0; i < rows.length; i++) {
       if (!rows[i].name.trim()) {
-        toast.error(`Row ${i + 1}: Name is required.`);
+        const errorMessage = t("bulk.material.rowError")
+          .replace("{row}", (i + 1).toString())
+          .replace("{field}", t("bulk.material.name"));
+        toast.error(errorMessage);
         return false;
       }
       if (!rows[i].value.trim()) {
-        toast.error(`Row ${i + 1}: Value is required.`);
+        const errorMessage = t("bulk.material.rowError")
+          .replace("{row}", (i + 1).toString())
+          .replace("{field}", t("bulk.material.value"));
+        toast.error(errorMessage);
         return false;
       }
     }
@@ -92,13 +100,17 @@ export const BulkCreateMaterialModal: React.FC = () => {
         rows: validRows,
       });
 
-      toast.success(`Successfully created ${validRows.length} materials!`);
+      const successMessage = t("bulk.material.createSuccess").replace(
+        "{count}",
+        validRows.length.toString()
+      );
+      toast.success(successMessage);
       router.refresh();
       onClose();
     } catch (error: any) {
       console.error(error);
       const errorMessage =
-        error.response?.data || "Failed to create materials.";
+        error.response?.data || t("bulk.material.createError");
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -114,19 +126,19 @@ export const BulkCreateMaterialModal: React.FC = () => {
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Layers className="w-6 h-6 text-primary" />
               </div>
-              Bulk Create Materials
+              {t("bulk.material.title")}
             </DialogTitle>
             <DialogDescription className="text-neutral-500">
-              Add multiple materials (e.g., Cotton, Silk) at once.
+              {t("bulk.material.description")}
             </DialogDescription>
           </DialogHeader>
         </div>
 
         {/* 2. Table Header (Sticky) */}
         <div className="bg-neutral-50/80 dark:bg-neutral-900/80 backdrop-blur-sm border-b dark:border-neutral-800 z-10 px-6 py-3 grid grid-cols-12 gap-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
-          <div className="col-span-5">Name (e.g., Cotton)</div>
-          <div className="col-span-5">Value (e.g., 100% Cotton)</div>
-          <div className="col-span-2 text-center">Action</div>
+          <div className="col-span-5">{t("bulk.material.name")}</div>
+          <div className="col-span-5">{t("bulk.material.value")}</div>
+          <div className="col-span-2 text-center">{t("columns.actions")}</div>
         </div>
 
         {/* 3. Scrollable Content Container */}
@@ -149,7 +161,7 @@ export const BulkCreateMaterialModal: React.FC = () => {
                 <div className="col-span-5">
                   <Input
                     disabled={isLoading}
-                    placeholder="Material Name"
+                    placeholder={t("bulk.material.namePlaceholder")}
                     value={row.name}
                     onChange={(e) =>
                       handleChange(index, "name", e.target.value)
@@ -166,7 +178,7 @@ export const BulkCreateMaterialModal: React.FC = () => {
                 <div className="col-span-5">
                   <Input
                     disabled={isLoading}
-                    placeholder="Material Value"
+                    placeholder={t("bulk.material.valuePlaceholder")}
                     value={row.value}
                     onChange={(e) =>
                       handleChange(index, "value", e.target.value)
@@ -208,7 +220,7 @@ export const BulkCreateMaterialModal: React.FC = () => {
             className="w-full py-3 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl text-neutral-500 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2 font-medium text-sm"
           >
             <Plus className="w-4 h-4" />
-            Add Another Material
+            {t("bulk.material.addRow")}
           </motion.button>
         </div>
 
@@ -220,7 +232,7 @@ export const BulkCreateMaterialModal: React.FC = () => {
             disabled={isLoading}
             className="h-11 px-6 text-neutral-500 hover:text-neutral-900"
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
 
           <div className="flex gap-3">
@@ -232,12 +244,13 @@ export const BulkCreateMaterialModal: React.FC = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
+                  {t("common.loading")}
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Save ({rows.length}) Materials
+                  {t("bulk.material.createSuccess")
+                    .replace("{count}", rows.length.toString())}
                 </>
               )}
             </Button>

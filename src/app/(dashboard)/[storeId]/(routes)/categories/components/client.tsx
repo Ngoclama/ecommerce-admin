@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
@@ -19,6 +19,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  buildCategoryTree,
+  flattenCategoryTree,
+  sortCategoryTree,
+} from "@/lib/category-tree";
 
 import { useBulkCategoryModal } from "@/hooks/use-bulk-category-modal";
 import { useAlertModal } from "@/hooks/use-alert-modal";
@@ -32,7 +37,46 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
   const { t } = useTranslation();
-  const columns = useCategoryColumns();
+  
+  // Extract original data (without level/hasChildren) for rebuilding tree
+  const originalData = useMemo(() => {
+    return data.map((item) => ({
+      id: item.id,
+      name: item.name,
+      slug: item.slug,
+      billboardLabel: item.billboardLabel,
+      parentName: item.parentName,
+      parentId: item.parentId || null,
+      productsCount: item.productsCount || "0",
+      createdAt: item.createdAt,
+    }));
+  }, [data]);
+
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => {
+    // Start with all categories expanded
+    return new Set(data.map((item) => item.id));
+  });
+
+  const handleToggleExpand = (id: string) => {
+    setExpandedIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  // Rebuild tree and flatten based on expanded state
+  const displayData = useMemo(() => {
+    const tree = buildCategoryTree(originalData);
+    const sortedTree = sortCategoryTree(tree);
+    return flattenCategoryTree(sortedTree, expandedIds);
+  }, [originalData, expandedIds]);
+
+  const columns = useCategoryColumns(expandedIds, handleToggleExpand);
   const { onOpen: openBulkModal } = useBulkCategoryModal();
   const { onOpen: openAlert, onClose: closeAlert } = useAlertModal();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -218,7 +262,7 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
         <DataTable
           searchKey="name"
           columns={columns}
-          data={data}
+          data={displayData}
           enableRowSelection={true}
           onRowSelectionChange={setSelectedRows}
         />

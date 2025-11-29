@@ -56,7 +56,10 @@ interface Product {
   isArchived: boolean;
   isPublished: boolean;
   gender: string;
-  category: { name: string };
+  category: {
+    name: string;
+    parent?: { name: string; slug: string } | null;
+  };
   material: { name: string } | null; // Fallback material
   variants: ProductVariant[];
   images: { url: string }[];
@@ -237,12 +240,23 @@ export const ProductViewModal: React.FC<ProductViewModalProps> = ({
                     <span className="font-medium">{data.name}</span>
                   </div>
                   {/* Category */}
-
                   <div className="flex items-center justify-between border-b pb-2">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Tag className="h-4 w-4" /> {t("columns.category")}
                     </div>
-                    <span className="font-medium">{data.category?.name}</span>
+                    <div className="flex items-center gap-2">
+                      {data.category?.parent && (
+                        <>
+                          <span className="text-xs text-muted-foreground">
+                            {data.category.parent.name}
+                          </span>
+                          <span className="text-muted-foreground">→</span>
+                        </>
+                      )}
+                      <span className="font-medium">
+                        {data.category?.name || t("columns.na")}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Fallback Material */}
@@ -316,85 +330,152 @@ export const ProductViewModal: React.FC<ProductViewModalProps> = ({
                 {data.variants && data.variants.length > 0 && (
                   <div className="mt-6">
                     <h3 className="text-sm font-medium mb-3">
-                      {t("columns.products")} {t("modals.variant")}
+                      {t("forms.product.variants")} ({data.variants.length})
                     </h3>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {data.variants.map((variant: any, idx: number) => (
                         <div
                           key={variant.id || idx}
-                          className="p-3 border rounded-lg bg-neutral-50 dark:bg-neutral-800/50"
+                          className="p-4 border rounded-lg bg-neutral-50 dark:bg-neutral-800/50 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                         >
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                            <div>
-                              <span className="text-muted-foreground">
-                                {t("columns.size")}:{" "}
-                              </span>
-                              <span className="font-medium">
-                                {variant.size.name}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">
-                                {t("columns.color")}:{" "}
-                              </span>
-                              <div
-                                className="h-3 w-3 rounded-full border"
-                                style={{ backgroundColor: variant.color.value }}
-                              />
-                              <span className="font-medium">
-                                {variant.color.name}
-                              </span>
-                            </div>
-                            {variant.material && (
-                              <div>
-                                <span className="text-muted-foreground">
-                                  {t("columns.material")}:{" "}
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                            {/* Size & Color */}
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Ruler className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-muted-foreground text-xs">
+                                  {t("columns.size")}:
                                 </span>
+                                <div className="flex items-center gap-1">
+                                  {variant.size?.name && (
+                                    <span className="font-medium">
+                                      {variant.size.name}
+                                    </span>
+                                  )}
+                                  {variant.size?.value && (
+                                    <>
+                                      {variant.size?.name && (
+                                        <span className="text-muted-foreground">
+                                          (
+                                        </span>
+                                      )}
+                                      <span className="font-mono text-xs bg-neutral-200 dark:bg-neutral-700 px-1.5 py-0.5 rounded">
+                                        {variant.size.value}
+                                      </span>
+                                      {variant.size?.name && (
+                                        <span className="text-muted-foreground">
+                                          )
+                                        </span>
+                                      )}
+                                    </>
+                                  )}
+                                  {!variant.size?.name &&
+                                    !variant.size?.value && (
+                                      <span className="font-medium text-muted-foreground">
+                                        {t("columns.na")}
+                                      </span>
+                                    )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Palette className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-muted-foreground text-xs">
+                                  {t("columns.color")}:
+                                </span>
+                                {variant.color?.value && (
+                                  <div
+                                    className="h-4 w-4 rounded-full border-2 border-neutral-300"
+                                    style={{
+                                      backgroundColor: variant.color.value,
+                                    }}
+                                  />
+                                )}
                                 <span className="font-medium">
-                                  {variant.material.name}
+                                  {variant.color?.name || t("columns.na")}
                                 </span>
                               </div>
-                            )}
-                            {variant.sku && (
-                              <div>
-                                <span className="text-muted-foreground">
-                                  {t("modals.sku")}:{" "}
-                                </span>
-                                <span className="font-mono font-medium">
-                                  {variant.sku}
-                                </span>
-                              </div>
-                            )}
-                            <div>
-                              <span className="text-muted-foreground">
-                                Stock:{" "}
-                              </span>
-                              <span
-                                className={`font-medium ${
-                                  variant.inventory <= variant.lowStockThreshold
-                                    ? "text-orange-600"
-                                    : "text-green-600"
-                                }`}
-                              >
-                                {variant.inventory}
-                              </span>
-                              {variant.inventory <=
-                                variant.lowStockThreshold && (
-                                <span className="text-xs text-orange-600 ml-1">
-                                  ({t("modals.lowStockThreshold")})
-                                </span>
+                            </div>
+
+                            {/* Material & SKU */}
+                            <div className="space-y-2">
+                              {variant.material && (
+                                <div className="flex items-center gap-2">
+                                  <Layers className="h-4 w-4 text-muted-foreground" />
+                                  <span className="text-muted-foreground text-xs">
+                                    {t("columns.material")}:
+                                  </span>
+                                  <span className="font-medium">
+                                    {variant.material.name}
+                                  </span>
+                                </div>
+                              )}
+                              {variant.sku && (
+                                <div className="flex items-center gap-2">
+                                  <Tag className="h-4 w-4 text-muted-foreground" />
+                                  <span className="text-muted-foreground text-xs">
+                                    {t("modals.sku")}:
+                                  </span>
+                                  <span className="font-mono font-medium text-xs">
+                                    {variant.sku}
+                                  </span>
+                                </div>
                               )}
                             </div>
-                            {variant.price && (
-                              <div>
-                                <span className="text-muted-foreground">
-                                  {t("columns.price")}:{" "}
+
+                            {/* Inventory & Price */}
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Package className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-muted-foreground text-xs">
+                                  {t("columns.inventory")}:
                                 </span>
-                                <span className="font-medium">
-                                  {formatter.format(variant.price)}
+                                <span
+                                  className={`font-medium ${
+                                    variant.inventory <=
+                                    variant.lowStockThreshold
+                                      ? "text-orange-600"
+                                      : "text-green-600"
+                                  }`}
+                                >
+                                  {variant.inventory}
                                 </span>
+                                {variant.inventory <=
+                                  variant.lowStockThreshold && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs text-orange-600 border-orange-600"
+                                  >
+                                    {t("modals.lowStockThreshold")}:{" "}
+                                    {variant.lowStockThreshold}
+                                  </Badge>
+                                )}
                               </div>
-                            )}
+                              <div className="flex items-center gap-2">
+                                <Tag className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-muted-foreground text-xs">
+                                  {t("columns.price")}:
+                                </span>
+                                <span className="font-bold text-primary">
+                                  {variant.price
+                                    ? formatter.format(variant.price)
+                                    : formatter.format(data.price)}
+                                </span>
+                                {variant.price &&
+                                  variant.price !== data.price && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-xs"
+                                    >
+                                      Riêng
+                                    </Badge>
+                                  )}
+                                {!variant.price && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Mặc định
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       ))}

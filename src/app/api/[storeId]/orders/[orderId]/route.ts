@@ -1,16 +1,7 @@
-// API route để quản lý một đơn hàng cụ thể
-// GET: Lấy thông tin chi tiết của đơn hàng
-// PATCH: Cập nhật thông tin đơn hàng
-// DELETE: Xóa đơn hàng
-
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 
-/**
- * GET: Lấy thông tin chi tiết của một đơn hàng
- * Trả về kèm danh sách sản phẩm trong đơn
- */
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ orderId: string }> }
@@ -18,12 +9,10 @@ export async function GET(
   try {
     const { orderId } = await params;
 
-    // Kiểm tra orderId có được truyền vào không
     if (!orderId) {
       return new NextResponse("Order ID is required", { status: 400 });
     }
 
-    // Tối ưu: chỉ select các field cần thiết
     const order = await prisma.order.findUnique({
       where: {
         id: orderId,
@@ -34,6 +23,9 @@ export async function GET(
         address: true,
         email: true,
         total: true,
+        subtotal: true,
+        tax: true,
+        discount: true,
         isPaid: true,
         status: true,
         shippingMethod: true,
@@ -54,6 +46,10 @@ export async function GET(
             productName: true,
             quantity: true,
             price: true,
+            productPrice: true,
+            sizeName: true,
+            colorName: true,
+            materialName: true,
             product: {
               select: {
                 id: true,
@@ -71,24 +67,17 @@ export async function GET(
       },
     });
 
-    // Kiểm tra đơn hàng có tồn tại không
     if (!order) {
       return new NextResponse("Order not found", { status: 404 });
     }
 
     return NextResponse.json(order);
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.log("[ORDER_GET]", error);
-    }
+    console.error("[ORDER_GET_ERROR]", error);
     return new NextResponse("Internal error", { status: 500 });
   }
 }
 
-/**
- * PATCH: Cập nhật thông tin đơn hàng
- * Có thể cập nhật status, shipping info, payment info, notes, etc.
- */
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ storeId: string; orderId: string }> }
@@ -98,67 +87,74 @@ export async function PATCH(
     const { userId } = await auth();
     const body = await req.json();
 
-    // Lấy các trường cần cập nhật từ request body
     const {
-      status, // Trạng thái đơn hàng (PENDING, PROCESSING, SHIPPED, etc.)
-      shippingMethod, // Phương thức giao hàng
-      shippingCost, // Phí vận chuyển
-      trackingNumber, // Mã vận đơn
-      paymentMethod, // Phương thức thanh toán
-      transactionId, // ID giao dịch từ payment gateway
-      customerNote, // Ghi chú từ khách hàng
-      adminNote, // Ghi chú nội bộ
-      email, // Email khách hàng
-      city, // Thành phố
-      postalCode, // Mã bưu điện
-      country, // Quốc gia
+      status,
+      shippingMethod,
+      shippingCost,
+      trackingNumber,
+      paymentMethod,
+      transactionId,
+      customerNote,
+      adminNote,
+      email,
+      city,
+      postalCode,
+      country,
     } = body;
 
-    // Kiểm tra authentication
     if (!userId) return new NextResponse("Unauthenticated", { status: 401 });
-
-    // Kiểm tra store có thuộc về user không
     const store = await prisma.store.findFirst({
       where: { id: storeId, userId },
     });
     if (!store) return new NextResponse("Unauthorized", { status: 403 });
 
-    // Cập nhật đơn hàng
-    // Các trường null sẽ không được cập nhật (giữ nguyên giá trị cũ)
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!existingOrder) {
+      return new NextResponse("Order not found", { status: 404 });
+    }
+
+    const updateData: any = {
+      status: status || existingOrder.status,
+      shippingMethod: shippingMethod !== undefined ? shippingMethod : null,
+      shippingCost: shippingCost !== undefined ? Number(shippingCost) : null,
+      trackingNumber: trackingNumber !== undefined ? trackingNumber : null,
+      paymentMethod: paymentMethod !== undefined ? paymentMethod : null,
+      transactionId: transactionId !== undefined ? transactionId : null,
+      customerNote: customerNote !== undefined ? customerNote : null,
+      adminNote: adminNote !== undefined ? adminNote : null,
+      email: email !== undefined ? email : null,
+      city: city !== undefined ? city : null,
+      postalCode: postalCode !== undefined ? postalCode : null,
+      country: country !== undefined ? country : null,
+    };
+
+    // Logic: Chỉ cập nhật isPaid cho COD khi status = DELIVERED
+    // Với thanh toán trực tuyến, isPaid đã được set = true khi tạo order
+    if (
+      status === "DELIVERED" &&
+      existingOrder.paymentMethod === "COD" &&
+      !existingOrder.isPaid
+    ) {
+      updateData.isPaid = true;
+    }
+
     const order = await prisma.order.update({
       where: {
         id: orderId,
       },
-      data: {
-        status,
-        shippingMethod: shippingMethod || null,
-        shippingCost: shippingCost ? Number(shippingCost) : null, // Convert sang number
-        trackingNumber: trackingNumber || null,
-        paymentMethod: paymentMethod || null,
-        transactionId: transactionId || null,
-        customerNote: customerNote || null,
-        adminNote: adminNote || null,
-        email: email || null,
-        city: city || null,
-        postalCode: postalCode || null,
-        country: country || null,
-      },
+      data: updateData,
     });
 
     return NextResponse.json(order);
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.log("[ORDER_PATCH]", error);
-    }
+    console.error("[ORDER_PATCH_ERROR]", error);
     return new NextResponse("Internal Error", { status: 500 });
   }
 }
 
-/**
- * DELETE: Xóa đơn hàng
- * OrderItem sẽ tự động xóa theo cascade delete
- * Nhưng cần xóa Return trước nếu có
- */
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ storeId: string; orderId: string }> }
@@ -167,27 +163,21 @@ export async function DELETE(
     const { storeId, orderId } = await params;
     const { userId } = await auth();
 
-    // Kiểm tra authentication
     if (!userId) return new NextResponse("Unauthenticated", { status: 401 });
 
-    // Kiểm tra store có thuộc về user không
     const storeByUserId = await prisma.store.findFirst({
       where: { id: storeId, userId },
     });
     if (!storeByUserId)
       return new NextResponse("Unauthorized", { status: 403 });
 
-    // Xóa đơn hàng
-    // OrderItem sẽ tự động xóa vì có onDelete: Cascade trong schema
     const order = await prisma.order.delete({
       where: { id: orderId },
     });
 
     return NextResponse.json(order);
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.log("[ORDER_DELETE]", error);
-    }
+    console.error("[ORDER_DELETE_ERROR]", error);
     return new NextResponse("Internal error", { status: 500 });
   }
 }

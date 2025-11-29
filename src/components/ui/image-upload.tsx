@@ -8,6 +8,11 @@ import { UploadButton } from "@/utils/uploadthing";
 import { generateUploadButton } from "@uploadthing/react";
 import type { OurFileRouter } from "@/app/api/uploadthing/core";
 
+// Helper function to check if URL is from UploadThing
+const isUploadThingUrl = (url: string) => {
+  return url.includes("ufs.sh") || url.includes("utfs.io");
+};
+
 export const UploadButtonComponent = generateUploadButton<OurFileRouter>();
 
 interface ImageUploadProps {
@@ -66,6 +71,11 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 loading="lazy"
                 quality={85}
+                unoptimized={isUploadThingUrl(url)}
+                onError={(e) => {
+                  console.error("Image load error:", url);
+                  // Fallback: có thể thêm placeholder image ở đây nếu cần
+                }}
               />
             </div>
           ))}

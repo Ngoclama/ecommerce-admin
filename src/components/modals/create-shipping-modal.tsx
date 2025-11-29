@@ -17,8 +17,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import axios from "axios";
+import { useTranslation } from "@/hooks/use-translation";
 
 export const CreateShippingModal = () => {
+  const { t } = useTranslation();
   const { isOpen, onClose, orderId, orderData } = useCreateShippingModal();
   const params = useParams();
   const router = useRouter();
@@ -55,19 +57,19 @@ export const CreateShippingModal = () => {
         shippingMethod: formData.shippingMethod,
         toAddress: orderData?.address || "",
         toPhone: orderData?.phone || "",
-        toName: orderData?.user?.name || "Customer",
+        toName: orderData?.user?.name || t("modals.customer") || "Customer",
         toCity: formData.toCity,
         toDistrict: formData.toDistrict,
         toWard: formData.toWard,
         weight: parseInt(formData.weight),
         codAmount: orderData?.total || 0,
       });
-      toast.success("Shipping order created successfully!");
+      toast.success(t("modals.shippingCreated") || "Shipping order created successfully!");
       router.refresh();
       onClose();
     } catch (error: any) {
       toast.error(
-        error.response?.data?.message || "Failed to create shipping order"
+        error.response?.data?.message || t("modals.shippingCreateError") || "Failed to create shipping order"
       );
     } finally {
       setLoading(false);
@@ -98,7 +100,7 @@ export const CreateShippingModal = () => {
             <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-800">
               <h2 className="text-2xl font-bold text-neutral-900 dark:text-white flex items-center gap-2">
                 <Truck className="h-6 w-6" />
-                Create Shipping Order
+                {t("modals.createShipping") || "Create Shipping Order"}
               </h2>
               <button
                 onClick={onClose}
@@ -110,7 +112,7 @@ export const CreateShippingModal = () => {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="provider">Shipping Provider</Label>
+                <Label htmlFor="provider">{t("modals.shippingProvider") || "Shipping Provider"}</Label>
                 <Select
                   value={formData.provider}
                   onValueChange={(value) =>
@@ -121,16 +123,16 @@ export const CreateShippingModal = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="CUSTOM">Custom</SelectItem>
-                    <SelectItem value="GHN">Giao Hàng Nhanh (GHN)</SelectItem>
-                    <SelectItem value="VIETTELPOST">Viettel Post</SelectItem>
-                    <SelectItem value="GHTK">Giao Hàng Tiết Kiệm</SelectItem>
+                    <SelectItem value="CUSTOM">{t("modals.providerCustom") || "Custom"}</SelectItem>
+                    <SelectItem value="GHN">{t("modals.providerGHN") || "Giao Hàng Nhanh (GHN)"}</SelectItem>
+                    <SelectItem value="VIETTELPOST">{t("modals.providerViettelPost") || "Viettel Post"}</SelectItem>
+                    <SelectItem value="GHTK">{t("modals.providerGHTK") || "Giao Hàng Tiết Kiệm"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="shippingMethod">Shipping Method</Label>
+                <Label htmlFor="shippingMethod">{t("modals.shippingMethod") || "Shipping Method"}</Label>
                 <Input
                   id="shippingMethod"
                   value={formData.shippingMethod}
@@ -143,7 +145,7 @@ export const CreateShippingModal = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="weight">Weight (grams)</Label>
+                  <Label htmlFor="weight">{t("modals.weight") || "Weight (grams)"}</Label>
                   <Input
                     id="weight"
                     type="number"
@@ -158,46 +160,46 @@ export const CreateShippingModal = () => {
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="toCity">City</Label>
+                  <Label htmlFor="toCity">{t("columns.city") || "City"}</Label>
                   <Input
                     id="toCity"
                     value={formData.toCity}
                     onChange={(e) =>
                       setFormData({ ...formData, toCity: e.target.value })
                     }
-                    placeholder="City"
+                    placeholder={t("columns.city") || "City"}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="toDistrict">District</Label>
+                  <Label htmlFor="toDistrict">{t("modals.district") || "District"}</Label>
                   <Input
                     id="toDistrict"
                     value={formData.toDistrict}
                     onChange={(e) =>
                       setFormData({ ...formData, toDistrict: e.target.value })
                     }
-                    placeholder="District"
+                    placeholder={t("modals.district") || "District"}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="toWard">Ward</Label>
+                  <Label htmlFor="toWard">{t("modals.ward") || "Ward"}</Label>
                   <Input
                     id="toWard"
                     value={formData.toWard}
                     onChange={(e) =>
                       setFormData({ ...formData, toWard: e.target.value })
                     }
-                    placeholder="Ward"
+                    placeholder={t("modals.ward") || "Ward"}
                   />
                 </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={onClose}>
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button type="submit" disabled={loading}>
-                  {loading ? "Creating..." : "Create Shipping"}
+                  {loading ? (t("common.loading") || "Creating...") : (t("modals.createShipping") || "Create Shipping")}
                 </Button>
               </div>
             </form>

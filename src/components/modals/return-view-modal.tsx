@@ -20,7 +20,7 @@ export const ReturnViewModal = () => {
 
   useEffect(() => {
     if (error) {
-      toast.error("Failed to load return details");
+      toast.error(t("modals.failedToFetch") || "Failed to load return details");
       onClose();
     }
   }, [error, onClose]);
@@ -99,7 +99,10 @@ export const ReturnViewModal = () => {
                         <span>{t("columns.customer")}</span>
                       </div>
                       <p className="font-semibold">
-                        {data.user?.name || data.user?.email || "Anonymous"}
+                        {data.user?.name ||
+                          data.user?.email ||
+                          t("modals.unknown") ||
+                          "Anonymous"}
                       </p>
                       <p className="text-sm text-neutral-500">
                         {data.user?.email}

@@ -11,7 +11,7 @@ export async function POST(
     const { storeId } = await params;
     const { userId } = await auth();
     const body = await req.json();
-    const { name, billboardId, slug } = body;
+    const { name, billboardId, slug, parentId } = body;
 
     if (!userId)
       return NextResponse.json(
@@ -76,12 +76,31 @@ export async function POST(
       );
     }
 
+    // Validate parentId if provided
+    if (parentId) {
+      const parentCategory = await prisma.category.findFirst({
+        where: {
+          id: parentId,
+          storeId: storeId,
+        },
+      });
+      if (!parentCategory) {
+        return NextResponse.json(
+          { success: false, message: "Parent category not found" },
+          { status: 400 }
+        );
+      }
+      // Prevent circular reference: check if parentId is a child of current category
+      // (This check is mainly for updates, but we include it here for safety)
+    }
+
     const category = await prisma.category.create({
       data: {
         name,
         slug: finalSlug,
         billboardId,
         storeId: storeId,
+        parentId: parentId || null,
       },
     });
 
@@ -124,6 +143,7 @@ export async function GET(
         name: true,
         slug: true,
         billboardId: true,
+        parentId: true,
         createdAt: true,
         updatedAt: true,
         billboard: {

@@ -24,6 +24,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTranslation } from "@/hooks/use-translation";
 
 type Row = {
   name: string;
@@ -32,6 +33,7 @@ type Row = {
 
 export const BulkCreateColorModal: React.FC = () => {
   const { isOpen, onClose } = useBulkColorModal();
+  const { t } = useTranslation();
   const [rows, setRows] = useState<Row[]>([{ name: "", value: "#FFFFFF" }]);
   const [isLoading, setIsLoading] = useState(false);
   const params = useParams();
@@ -68,11 +70,16 @@ export const BulkCreateColorModal: React.FC = () => {
     const hexRegex = /^#([0-9A-F]{3}){1,2}$/i;
     for (let i = 0; i < rows.length; i++) {
       if (!rows[i].name.trim()) {
-        toast.error(`Row ${i + 1}: Name is required.`);
+        const errorMessage = t("bulk.color.rowError")
+          .replace("{row}", (i + 1).toString())
+          .replace("{field}", t("bulk.color.name"));
+        toast.error(errorMessage);
         return false;
       }
       if (!hexRegex.test(rows[i].value.trim())) {
-        toast.error(`Row ${i + 1}: Invalid Hex code.`);
+        const errorMessage = t("bulk.color.invalidHex")
+          .replace("{row}", (i + 1).toString());
+        toast.error(errorMessage);
         return false;
       }
     }
@@ -86,12 +93,16 @@ export const BulkCreateColorModal: React.FC = () => {
       setIsLoading(true);
       await axios.post(`/api/${params.storeId}/colors/bulk`, { rows });
 
-      toast.success(`Successfully created ${rows.length} colors!`);
+      const successMessage = t("bulk.color.createSuccess").replace(
+        "{count}",
+        rows.length.toString()
+      );
+      toast.success(successMessage);
       router.refresh();
       onClose();
     } catch (error: any) {
       console.error(error);
-      const errorMessage = error.response?.data || "Failed to create colors.";
+      const errorMessage = error.response?.data || t("bulk.color.createError");
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -108,20 +119,20 @@ export const BulkCreateColorModal: React.FC = () => {
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Palette className="w-6 h-6 text-primary" />
               </div>
-              Bulk Create Colors
+              {t("bulk.color.title")}
             </DialogTitle>
             <DialogDescription className="text-neutral-500">
-              Add multiple colors (Name and Hex Value) at once.
+              {t("bulk.color.description")}
             </DialogDescription>
           </DialogHeader>
         </div>
 
         {/* 2. Table Header (Sticky) */}
         <div className="bg-neutral-50/80 dark:bg-neutral-900/80 backdrop-blur-sm border-b dark:border-neutral-800 z-10 px-6 py-3 grid grid-cols-12 gap-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
-          <div className="col-span-1 text-center">Preview</div>
-          <div className="col-span-5">Name (e.g., Red)</div>
-          <div className="col-span-4">Value (Hex)</div>
-          <div className="col-span-2 text-center">Action</div>
+          <div className="col-span-1 text-center">{t("common.preview") || "Preview"}</div>
+          <div className="col-span-5">{t("bulk.color.name")}</div>
+          <div className="col-span-4">{t("bulk.color.value")}</div>
+          <div className="col-span-2 text-center">{t("columns.actions")}</div>
         </div>
 
         {/* 3. Scrollable Content Container */}
@@ -168,7 +179,7 @@ export const BulkCreateColorModal: React.FC = () => {
                 <div className="col-span-5">
                   <Input
                     disabled={isLoading}
-                    placeholder="Color Name"
+                    placeholder={t("bulk.color.namePlaceholder")}
                     value={row.name}
                     onChange={(e) =>
                       handleChange(index, "name", e.target.value)
@@ -230,7 +241,7 @@ export const BulkCreateColorModal: React.FC = () => {
             className="w-full py-3 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl text-neutral-500 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2 font-medium text-sm"
           >
             <Plus className="w-4 h-4" />
-            Add Another Color
+            {t("bulk.color.addRow")}
           </motion.button>
         </div>
 
@@ -242,7 +253,7 @@ export const BulkCreateColorModal: React.FC = () => {
             disabled={isLoading}
             className="h-11 px-6 text-neutral-500 hover:text-neutral-900"
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
 
           <div className="flex gap-3">
@@ -254,12 +265,13 @@ export const BulkCreateColorModal: React.FC = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
+                  {t("common.loading")}
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Save ({rows.length}) Colors
+                  {t("bulk.color.createSuccess")
+                    .replace("{count}", rows.length.toString())}
                 </>
               )}
             </Button>

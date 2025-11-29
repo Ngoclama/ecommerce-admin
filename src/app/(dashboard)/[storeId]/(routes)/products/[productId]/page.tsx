@@ -28,7 +28,20 @@ const ProductPage = async ({
           },
         });
 
-  const categories = await prisma.category.findMany({ where: { storeId } });
+  const categories = await prisma.category.findMany({
+    where: { storeId },
+    include: {
+      parent: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
   const sizes = await prisma.size.findMany({ where: { storeId } });
   const colors = await prisma.color.findMany({ where: { storeId } });
   const materials = await prisma.material.findMany({ where: { storeId } });

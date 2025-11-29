@@ -30,10 +30,20 @@ export async function POST(req: Request) {
       items,
       shippingAddress,
       shippingMethod,
+      paymentMethod,
+      coupon,
+      customerNote,
     }: {
       items: CheckoutItem[];
       shippingAddress?: ShippingAddress;
       shippingMethod?: string;
+      paymentMethod?: string;
+      coupon?: {
+        code: string;
+        value: number;
+        type: "PERCENT" | "FIXED";
+      } | null;
+      customerNote?: string | null;
     } = await req.json();
 
     // Log để debug
@@ -200,7 +210,19 @@ export async function POST(req: Request) {
 
     // Tính toán tổng giá trị đơn hàng
     const tax = 0; // Có thể tính từ subtotal
-    const discount = 0; // Có thể áp dụng coupon
+    
+    // Tính discount từ coupon nếu có
+    let discount = 0;
+    if (coupon) {
+      if (coupon.type === "PERCENT") {
+        discount = Math.round((subtotal * coupon.value) / 100);
+      } else {
+        discount = coupon.value;
+      }
+      // Đảm bảo discount không vượt quá subtotal
+      discount = Math.min(discount, subtotal);
+    }
+    
     // Tính shipping cost dựa trên method và subtotal
     let shippingCost = 0;
     if (subtotal >= 500000) {
@@ -247,6 +269,7 @@ export async function POST(req: Request) {
         ...(shippingAddress && shippingAddress.phone && shippingAddress.address
           ? {
               phone: shippingAddress.phone,
+              email: shippingAddress.email || null,
               address: `${shippingAddress.address}, ${
                 shippingAddress.ward || ""
               }, ${shippingAddress.district || ""}, ${
@@ -260,6 +283,14 @@ export async function POST(req: Request) {
         // Lưu shipping method
         ...(shippingMethod && {
           shippingMethod: shippingMethod,
+        }),
+        // Lưu payment method
+        ...(paymentMethod && {
+          paymentMethod: paymentMethod,
+        }),
+        // Lưu customer note
+        ...(customerNote && {
+          customerNote: customerNote,
         }),
         orderItems: {
           create: items.map((checkoutItem) => {
@@ -311,6 +342,16 @@ export async function POST(req: Request) {
       },
     });
 
+    // Nếu là COD, trả về success ngay lập tức
+    if (paymentMethod === "COD") {
+      return NextResponse.json({
+        success: true,
+        orderId: order.id,
+        message: "Đặt hàng thành công! Bạn sẽ thanh toán khi nhận hàng.",
+      });
+    }
+
+    // Chỉ tạo Stripe session cho các phương thức thanh toán khác
     const session = await stripe.checkout.sessions.create({
       line_items,
       mode: "payment",

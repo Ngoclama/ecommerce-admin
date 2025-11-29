@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTranslation } from "@/hooks/use-translation";
 
 type Row = {
   code: string;
@@ -42,6 +43,7 @@ type Row = {
 
 export const BulkCreateCouponModal = () => {
   const { isOpen, onClose } = useBulkCouponModal();
+  const { t } = useTranslation();
   const [rows, setRows] = useState<Row[]>([
     { code: "", value: "", type: "PERCENT", expiresAt: "" },
   ]);
@@ -80,15 +82,20 @@ export const BulkCreateCouponModal = () => {
       (code, index) => code && codes.indexOf(code) !== index
     );
     if (duplicateCodes.length > 0) {
-      toast.error(
-        `Duplicate codes found: ${[...new Set(duplicateCodes)].join(", ")}`
+      const errorMessage = t("bulk.coupon.duplicateCodes").replace(
+        "{codes}",
+        [...new Set(duplicateCodes)].join(", ")
       );
+      toast.error(errorMessage);
       return false;
     }
 
     for (let i = 0; i < rows.length; i++) {
       if (!rows[i].code.trim()) {
-        toast.error(`Row ${i + 1}: Code is required.`);
+        const errorMessage = t("bulk.coupon.rowError")
+          .replace("{row}", (i + 1).toString())
+          .replace("{field}", t("bulk.coupon.code"));
+        toast.error(errorMessage);
         return false;
       }
 
@@ -98,26 +105,25 @@ export const BulkCreateCouponModal = () => {
       const hasNumber = /[0-9]/.test(codeValue);
 
       if (!hasLetter) {
-        toast.error(
-          `Row ${
-            i + 1
-          }: Code must contain at least one letter (not only numbers).`
-        );
+        const errorMessage = t("bulk.coupon.invalidCode")
+          .replace("{row}", (i + 1).toString());
+        toast.error(errorMessage);
         return false;
       }
 
       // Code chỉ được chứa chữ cái, số, và có thể có dấu gạch ngang/underscore
       if (!/^[a-zA-Z0-9_-]+$/.test(codeValue)) {
-        toast.error(
-          `Row ${
-            i + 1
-          }: Code can only contain letters, numbers, hyphens, and underscores.`
-        );
+        const errorMessage = t("bulk.coupon.rowError")
+          .replace("{row}", (i + 1).toString())
+          .replace("{field}", t("bulk.coupon.code"));
+        toast.error(errorMessage);
         return false;
       }
 
       if (!rows[i].value || isNaN(Number(rows[i].value))) {
-        toast.error(`Row ${i + 1}: Valid value is required.`);
+        const errorMessage = t("bulk.coupon.invalidValue")
+          .replace("{row}", (i + 1).toString());
+        toast.error(errorMessage);
         return false;
       }
       // Kiểm tra ngày quá khứ
@@ -126,7 +132,9 @@ export const BulkCreateCouponModal = () => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         if (selectedDate < today) {
-          toast.error(`Row ${i + 1}: Expiration date cannot be in the past.`);
+          const errorMessage = t("bulk.coupon.invalidDate")
+            .replace("{row}", (i + 1).toString());
+          toast.error(errorMessage);
           return false;
         }
       }
@@ -140,7 +148,11 @@ export const BulkCreateCouponModal = () => {
     try {
       setIsLoading(true);
       await axios.post(`/api/${params.storeId}/coupons/bulk`, { rows });
-      toast.success(`Successfully created ${rows.length} coupons!`);
+      const successMessage = t("bulk.coupon.createSuccess").replace(
+        "{count}",
+        rows.length.toString()
+      );
+      toast.success(successMessage);
       router.refresh();
       onClose();
     } catch (error: any) {
@@ -148,8 +160,7 @@ export const BulkCreateCouponModal = () => {
 
       // Xử lý lỗi 409 (Conflict - trùng tên)
       if (error.response?.status === 409 || error.code === "ERR_BAD_REQUEST") {
-        let errorMessage =
-          "Coupon code already exists. Please change the code name and try again.";
+        let errorMessage = t("forms.coupon.codeExists");
 
         try {
           const errorData = error.response?.data;
@@ -188,8 +199,7 @@ export const BulkCreateCouponModal = () => {
           duration: 6000,
         });
       } else {
-        let errorMessage =
-          "Failed to create coupons. Please check your input and try again.";
+        let errorMessage = t("bulk.coupon.createError");
 
         try {
           const errorData = error.response?.data;
@@ -234,11 +244,10 @@ export const BulkCreateCouponModal = () => {
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold flex items-center gap-2">
               <Ticket className="w-6 h-6 text-primary" />
-              Bulk Create Coupons
+              {t("bulk.coupon.title")}
             </DialogTitle>
             <DialogDescription>
-              Add multiple coupons at once. Define code, value, type, and
-              optional expiration date.
+              {t("bulk.coupon.description")}
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -247,11 +256,11 @@ export const BulkCreateCouponModal = () => {
           <ScrollArea className="h-full w-full p-6">
             {/* Grid Layout Adjustment: Code(3) - Value(2) - Type(3) - Expires(3) - Action(1) */}
             <div className="hidden md:grid grid-cols-12 gap-4 mb-4 px-4 font-medium text-sm text-neutral-500 uppercase tracking-wider">
-              <div className="col-span-3">Code</div>
-              <div className="col-span-2">Value</div>
-              <div className="col-span-3">Type</div>
-              <div className="col-span-3">Expires At</div>
-              <div className="col-span-1 text-center">Action</div>
+              <div className="col-span-3">{t("bulk.coupon.code")}</div>
+              <div className="col-span-2">{t("bulk.coupon.value")}</div>
+              <div className="col-span-3">{t("bulk.coupon.type")}</div>
+              <div className="col-span-3">{t("bulk.coupon.expiresAt")}</div>
+              <div className="col-span-1 text-center">{t("columns.actions")}</div>
             </div>
 
             <div className="space-y-3 pb-4">
@@ -270,12 +279,12 @@ export const BulkCreateCouponModal = () => {
                       {/* Code Input (3 cols) */}
                       <div className="col-span-1 md:col-span-3">
                         <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
-                          Code
+                          {t("bulk.coupon.code")}
                         </label>
                         <div className="relative">
                           <Input
                             disabled={isLoading}
-                            placeholder="e.g., SALE50"
+                            placeholder={t("bulk.coupon.codePlaceholder")}
                             value={row.code}
                             onChange={(e) => {
                               const value = e.target.value;
@@ -303,12 +312,12 @@ export const BulkCreateCouponModal = () => {
                       {/* Value Input (2 cols) */}
                       <div className="col-span-1 md:col-span-2">
                         <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
-                          Value
+                          {t("bulk.coupon.value")}
                         </label>
                         <Input
                           type="number"
                           disabled={isLoading}
-                          placeholder="Amount"
+                          placeholder={t("bulk.coupon.valuePlaceholder")}
                           value={row.value}
                           onChange={(e) =>
                             handleChange(index, "value", e.target.value)
@@ -319,7 +328,7 @@ export const BulkCreateCouponModal = () => {
                       {/* Type Select (3 cols - Increased from 2) */}
                       <div className="col-span-1 md:col-span-3">
                         <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
-                          Type
+                          {t("bulk.coupon.type")}
                         </label>
                         <Select
                           disabled={isLoading}
@@ -329,14 +338,14 @@ export const BulkCreateCouponModal = () => {
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select type" />
+                            <SelectValue placeholder={t("bulk.coupon.typePlaceholder")} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="PERCENT">
-                              Percentage (%)
+                              {t("bulk.coupon.typePercent")}
                             </SelectItem>
                             <SelectItem value="FIXED">
-                              Fixed Amount ($)
+                              {t("bulk.coupon.typeFixed")}
                             </SelectItem>
                           </SelectContent>
                         </Select>
@@ -345,7 +354,7 @@ export const BulkCreateCouponModal = () => {
                       {/* Expires At Input (3 cols) */}
                       <div className="col-span-1 md:col-span-3">
                         <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
-                          Expires At
+                          {t("bulk.coupon.expiresAt")}
                         </label>
                         <div className="relative">
                           <Input
@@ -360,11 +369,9 @@ export const BulkCreateCouponModal = () => {
                                 const today = new Date();
                                 today.setHours(0, 0, 0, 0);
                                 if (date < today) {
-                                  toast.error(
-                                    `Row ${
-                                      index + 1
-                                    }: Expiration date cannot be in the past.`
-                                  );
+                                  const errorMessage = t("bulk.coupon.invalidDate")
+                                    .replace("{row}", (index + 1).toString());
+                                  toast.error(errorMessage);
                                   return;
                                 }
                               }
@@ -408,7 +415,7 @@ export const BulkCreateCouponModal = () => {
             className="gap-2 h-11 px-5 text-sm"
           >
             <Plus className="w-4 h-4" />
-            Add Another Row
+            {t("bulk.coupon.addRow")}
           </Button>
 
           <div className="flex gap-3">
@@ -418,7 +425,7 @@ export const BulkCreateCouponModal = () => {
               disabled={isLoading}
               className="h-11 px-5"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={onSubmit}
@@ -428,12 +435,13 @@ export const BulkCreateCouponModal = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating...
+                  {t("common.loading")}
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
-                  Save ({rows.length})
+                  {t("bulk.coupon.createSuccess")
+                    .replace("{count}", rows.length.toString())}
                 </>
               )}
             </Button>

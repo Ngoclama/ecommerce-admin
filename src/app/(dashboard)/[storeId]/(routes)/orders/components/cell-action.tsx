@@ -37,17 +37,17 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
 
   const onCopy = (id: string) => {
     navigator.clipboard.writeText(id);
-    toast.success("Order ID copied to clipboard.");
+    toast.success(t("actions.orderIdCopied"));
   };
 
   const onDelete = async () => {
     try {
       setLoading(true);
       await axios.delete(`/api/${params.storeId}/orders/${data.id}`);
-      toast.success("Order deleted.");
+      toast.success(t("actions.orderDeleted"));
       router.refresh();
     } catch (error) {
-      toast.error("Something went wrong.");
+      toast.error(t("actions.somethingWentWrong"));
     } finally {
       setLoading(false);
       setOpenDelete(false);
@@ -85,7 +85,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="h-8 w-8 p-0">
-            <span className="sr-only">Open menu</span>
+            <span className="sr-only">{t("actions.openMenu")}</span>
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
@@ -113,7 +113,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
                 );
                 onCreateShipping(data.id, res.data);
               } catch (error) {
-                toast.error("Failed to load order details");
+                toast.error(t("actions.failedToLoadOrderDetails"));
               }
             }}
             className="flex items-center gap-2 cursor-pointer"

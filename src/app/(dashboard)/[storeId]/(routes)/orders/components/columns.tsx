@@ -102,9 +102,26 @@ export const useOrderColumns = (): ColumnDef<OrderColumn>[] => {
         if (status === "DELIVERED") variant = "default";
         if (status === "CANCELLED") variant = "destructive";
 
+        const getStatusText = (status: string) => {
+          switch (status?.toUpperCase()) {
+            case "PENDING":
+              return t("actions.pending");
+            case "PROCESSING":
+              return t("actions.processingStatus");
+            case "SHIPPED":
+              return t("actions.shipped");
+            case "DELIVERED":
+              return t("actions.delivered");
+            case "CANCELLED":
+              return t("actions.cancelled");
+            default:
+              return status;
+          }
+        };
+
         return (
           <Badge variant={variant} className="uppercase text-[10px]">
-            {status}
+            {getStatusText(status)}
           </Badge>
         );
       },
@@ -112,11 +129,33 @@ export const useOrderColumns = (): ColumnDef<OrderColumn>[] => {
     {
       accessorKey: "isPaid",
       header: t("columns.paid"),
-      cell: ({ row }) => (
-        <Badge variant={row.original.isPaid ? "default" : "destructive"}>
-          {row.original.isPaid ? t("columns.yes") : t("columns.no")}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const { isPaid, paymentMethod, status } = row.original;
+
+        // Logic: Nếu thanh toán trực tuyến thì đã thanh toán, còn COD thì chỉ khi đã giao
+        let displayPaid = isPaid;
+        if (paymentMethod === "COD") {
+          // COD: chỉ đã thanh toán khi status là DELIVERED
+          displayPaid = status === "DELIVERED";
+        } else if (
+          paymentMethod &&
+          ["STRIPE", "MOMO", "VNPAY", "QR"].includes(paymentMethod)
+        ) {
+          // Thanh toán trực tuyến: luôn đã thanh toán
+          displayPaid = true;
+        }
+
+        return (
+          <Badge
+            variant={displayPaid ? "default" : "destructive"}
+            className={
+              displayPaid ? "bg-green-500 hover:bg-green-600 text-white" : ""
+            }
+          >
+            {displayPaid ? t("columns.yes") : t("columns.no")}
+          </Badge>
+        );
+      },
     },
     {
       accessorKey: "trackingNumber",

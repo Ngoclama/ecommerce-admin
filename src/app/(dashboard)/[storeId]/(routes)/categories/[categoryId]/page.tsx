@@ -22,10 +22,30 @@ const CategoryPage = async ({
     },
   });
 
+  // Fetch all categories for parent selection (exclude current category to prevent circular reference)
+  const categories = await prisma.category.findMany({
+    where: {
+      storeId: storeId,
+      ...(categoryId && isValidId ? { id: { not: categoryId } } : {}), // Exclude current category
+    },
+    select: {
+      id: true,
+      name: true,
+      parentId: true,
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
+
   return (
     <div className="flex flex-col">
       <div className="flex-1 space-y-4 p-8 pt-6">
-        <CategoryForm billboards={billboards} initialData={category} />
+        <CategoryForm 
+          billboards={billboards} 
+          initialData={category}
+          categories={categories}
+        />
       </div>
     </div>
   );

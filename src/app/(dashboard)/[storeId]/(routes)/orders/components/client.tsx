@@ -45,17 +45,15 @@ export const OrderClient: React.FC<OrderClientProps> = ({ data }) => {
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || "Failed to delete orders");
+        throw new Error(errorData.message || t("actions.failedToDeleteOrders"));
       }
 
       const result = await res.json();
-      toast.success(result.message || "All orders deleted successfully");
+      toast.success(result.message || t("actions.allOrdersDeleted"));
       router.refresh();
     } catch (error: any) {
       console.error("[ORDER_DELETE_ALL_ERROR]", error);
-      toast.error(
-        error.message || "Failed to delete orders. Please try again."
-      );
+      toast.error(error.message || t("actions.failedToDeleteOrders"));
     } finally {
       setIsLoading(false);
       setDeleteAllOpen(false);
@@ -81,7 +79,7 @@ export const OrderClient: React.FC<OrderClientProps> = ({ data }) => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Failed to delete orders");
+        throw new Error(errorData.message || t("actions.failedToDeleteOrders"));
       }
 
       const result = await response.json();
@@ -97,7 +95,7 @@ export const OrderClient: React.FC<OrderClientProps> = ({ data }) => {
       toast.error(
         error.message ||
           t("actions.deleteSelectedError") ||
-          "Unable to delete selected orders."
+          t("actions.unableToDeleteSelectedOrders")
       );
     } finally {
       setIsLoading(false);

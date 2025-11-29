@@ -1,6 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { isAdmin, getUserFromDb } from "@/lib/permissions";
 
 const allowedOrigins = [
   process.env.NEXT_PUBLIC_API_URL,
@@ -69,24 +68,12 @@ export default clerkMiddleware(async (auth, request) => {
         return response;
       }
 
-      const user = await getUserFromDb(userId);
-
-      if (user) {
-        if (user.role !== "ADMIN") {
-          return NextResponse.redirect(new URL("/unauthorized", request.url));
-        }
-
-        if (user.isBanned) {
-          return NextResponse.redirect(new URL("/unauthorized", request.url));
-        }
-      } else {
-        if (
-          ADMIN_ALLOWED_EMAILS.length === 0 ||
-          ADMIN_ALLOWED_EMAILS.includes("*")
-        ) {
-          return response;
-        }
-
+      // Chỉ kiểm tra email từ Clerk (không dùng Prisma trong Edge Runtime)
+      // Việc kiểm tra role chi tiết sẽ được thực hiện trong route handlers (Node.js runtime)
+      if (
+        ADMIN_ALLOWED_EMAILS.length > 0 &&
+        !ADMIN_ALLOWED_EMAILS.includes("*")
+      ) {
         const { clerkClient } = await import("@clerk/nextjs/server");
         const clerk = await clerkClient();
         const clerkUser = await clerk.users.getUser(userId);
@@ -97,7 +84,8 @@ export default clerkMiddleware(async (auth, request) => {
         }
       }
     } catch (error) {
-      console.error("[MIDDLEWARE] Error checking role:", error);
+      console.error("[MIDDLEWARE] Error checking email:", error);
+      // Không block request nếu có lỗi, để route handlers xử lý
     }
   }
 

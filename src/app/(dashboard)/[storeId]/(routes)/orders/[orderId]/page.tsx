@@ -22,6 +22,19 @@ const OrderPage = async ({
 
   const order = await prisma.order.findUnique({
     where: { id: orderId },
+    include: {
+      orderItems: {
+        include: {
+          product: {
+            include: {
+              images: {
+                take: 1,
+              },
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!order) {

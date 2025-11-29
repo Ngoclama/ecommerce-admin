@@ -135,9 +135,15 @@ export function useCategory(storeId: string, categoryId: string | null) {
     name: string;
     slug: string;
     billboardId: string;
+    parentId?: string | null;
     billboard?: {
       label: string;
     };
+    parent?: {
+      id: string;
+      name: string;
+      slug: string;
+    } | null;
     createdAt: string;
     updatedAt: string;
   } | null>({
@@ -149,9 +155,15 @@ export function useCategory(storeId: string, categoryId: string | null) {
       name: string;
       slug: string;
       billboardId: string;
+      parentId?: string | null;
       billboard?: {
         label: string;
       };
+      parent?: {
+        id: string;
+        name: string;
+        slug: string;
+      } | null;
       createdAt: string;
       updatedAt: string;
     } | null> => {
@@ -161,9 +173,15 @@ export function useCategory(storeId: string, categoryId: string | null) {
         name: string;
         slug: string;
         billboardId: string;
+        parentId?: string | null;
         billboard?: {
           label: string;
         };
+        parent?: {
+          id: string;
+          name: string;
+          slug: string;
+        } | null;
         createdAt: string;
         updatedAt: string;
       }>(`/api/${storeId}/categories/${categoryId}`);

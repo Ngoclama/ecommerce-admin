@@ -8,6 +8,7 @@ import axios from "axios";
 import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
 import { Truck, Loader2 } from "lucide-react";
+import { useTranslation } from "@/hooks/use-translation";
 
 import {
   Dialog,
@@ -67,6 +68,7 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
 }) => {
   const params = useParams();
   const router = useRouter();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -82,11 +84,11 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
     try {
       setIsLoading(true);
       await axios.patch(`/api/${params.storeId}/orders/${orderId}`, values);
-      toast.success("Order status updated.");
+      toast.success(t("actions.orderStatusUpdated"));
       router.refresh();
       onClose();
     } catch (error) {
-      toast.error("Failed to update order.");
+      toast.error(t("actions.failedToUpdateOrder"));
     } finally {
       setIsLoading(false);
     }
@@ -98,10 +100,10 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Truck className="w-5 h-5" />
-            Update Order Status
+            {t("actions.updateOrderStatus")}
           </DialogTitle>
           <DialogDescription>
-            Update shipping information and status for this order.
+            {t("actions.updateOrderStatusDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -113,7 +115,7 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
               name="status"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Order Status</FormLabel>
+                  <FormLabel>{t("actions.orderStatus")}</FormLabel>
                   <Select
                     disabled={isLoading}
                     onValueChange={field.onChange}
@@ -122,15 +124,25 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
+                        <SelectValue placeholder={t("actions.selectStatus")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="PENDING">Pending</SelectItem>
-                      <SelectItem value="PROCESSING">Processing</SelectItem>
-                      <SelectItem value="SHIPPED">Shipped</SelectItem>
-                      <SelectItem value="DELIVERED">Delivered</SelectItem>
-                      <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                      <SelectItem value="PENDING">
+                        {t("actions.pending")}
+                      </SelectItem>
+                      <SelectItem value="PROCESSING">
+                        {t("actions.processingStatus")}
+                      </SelectItem>
+                      <SelectItem value="SHIPPED">
+                        {t("actions.shipped")}
+                      </SelectItem>
+                      <SelectItem value="DELIVERED">
+                        {t("actions.delivered")}
+                      </SelectItem>
+                      <SelectItem value="CANCELLED">
+                        {t("actions.cancelled")}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -144,11 +156,11 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
               name="shippingMethod"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Shipping Method</FormLabel>
+                  <FormLabel>{t("actions.shippingMethod")}</FormLabel>
                   <FormControl>
                     <Input
                       disabled={isLoading}
-                      placeholder="e.g. Standard, Express, GHN, ViettelPost"
+                      placeholder={t("actions.shippingMethodPlaceholder")}
                       {...field}
                       value={field.value || ""}
                     />
@@ -164,11 +176,11 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
               name="trackingNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tracking Number</FormLabel>
+                  <FormLabel>{t("actions.trackingNumber")}</FormLabel>
                   <FormControl>
                     <Input
                       disabled={isLoading}
-                      placeholder="e.g. VTP12345678"
+                      placeholder={t("actions.trackingNumberPlaceholder")}
                       {...field}
                       value={field.value || ""}
                     />
@@ -185,11 +197,11 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
                 onClick={onClose}
                 type="button"
               >
-                Cancel
+                {t("actions.cancel")}
               </Button>
               <Button disabled={isLoading} type="submit">
                 {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Save Changes
+                {t("actions.save")}
               </Button>
             </DialogFooter>
           </form>

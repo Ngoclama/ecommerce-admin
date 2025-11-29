@@ -19,6 +19,13 @@ export async function GET(
       },
       include: {
         billboard: true,
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
       },
     });
 
@@ -37,7 +44,7 @@ export async function PATCH(
     const { storeId, categoryId } = await params;
     const { userId } = await auth();
     const body = await req.json();
-    const { name, billboardId, slug } = body;
+    const { name, billboardId, slug, parentId } = body;
 
     if (!userId) return new NextResponse("Unauthorized", { status: 401 });
     if (!name) return new NextResponse("Name is required", { status: 400 });
@@ -93,9 +100,63 @@ export async function PATCH(
       );
     }
 
+    // Validate parentId if provided
+    if (parentId) {
+      // Prevent setting self as parent
+      if (parentId === categoryId) {
+        return NextResponse.json(
+          { message: "Category cannot be its own parent" },
+          { status: 400 }
+        );
+      }
+
+      const parentCategory = await prisma.category.findFirst({
+        where: {
+          id: parentId,
+          storeId: storeId,
+        },
+      });
+      if (!parentCategory) {
+        return NextResponse.json(
+          { message: "Parent category not found" },
+          { status: 400 }
+        );
+      }
+
+      // Prevent circular reference: check if parentId is a descendant of current category
+      const checkCircularReference = async (
+        checkId: string,
+        depth: number = 0
+      ): Promise<boolean> => {
+        if (depth > 10) return true; // Prevent infinite loop
+        if (checkId === categoryId) return true; // Circular reference found
+
+        const category = await prisma.category.findUnique({
+          where: { id: checkId },
+          select: { parentId: true },
+        });
+
+        if (!category || !category.parentId) return false;
+        return checkCircularReference(category.parentId, depth + 1);
+      };
+
+      const hasCircularRef = await checkCircularReference(parentId);
+      if (hasCircularRef) {
+        return NextResponse.json(
+          { message: "Cannot set parent: would create circular reference" },
+          { status: 400 }
+        );
+      }
+    }
+
     const category = await prisma.category.update({
       where: { id: categoryId },
-      data: { name, billboardId, slug: finalSlug },
+      data: {
+        name,
+        billboardId,
+        slug: finalSlug,
+        parentId: parentId === null || parentId === undefined ? null : parentId,
+      },
     });
 
     return NextResponse.json(category);

@@ -12,7 +12,6 @@ const OrdersPage = async ({
 }) => {
   const { storeId } = await params;
 
-  // Tối ưu: chỉ select các field cần thiết
   const orders = await prisma.order
     .findMany({
       where: {
@@ -46,17 +45,13 @@ const OrdersPage = async ({
       orderBy: {
         createdAt: "desc",
       },
-      take: 100, // Giới hạn số lượng
+      take: 100,
     })
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .catch((error: any) => {
-      // Xử lý lỗi khi dữ liệu cũ có updatedAt = null
       if (error?.code === "P2032" && error?.meta?.field === "updatedAt") {
-        if (process.env.NODE_ENV === "development") {
-          console.error(
-            "Detected old data with null updatedAt. Please run: npx ts-node --esm scripts/fix-order-dates.ts"
-          );
-        }
+        console.error(
+          "[ORDERS_PAGE] Detected old data with null updatedAt. Please run: npx ts-node --esm scripts/fix-order-dates.ts"
+        );
         return [];
       }
       throw error;

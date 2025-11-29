@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import prisma from "@/lib/prisma";
 import { CategoryClient } from "./components/client";
 import { CategoryColumn } from "./components/columns";
+
 const CategoriesPage = async ({
   params,
 }: {
@@ -14,7 +15,12 @@ const CategoriesPage = async ({
     },
     include: {
       billboard: true,
-
+      parent: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
       _count: {
         select: {
           products: true,
@@ -26,11 +32,14 @@ const CategoriesPage = async ({
     },
   });
 
+  // Format categories with parent info (original data without level)
   const formattedCategories: CategoryColumn[] = categories.map((item) => ({
     id: item.id,
     name: item.name,
     billboardLabel: item.billboard?.label || "N/A",
     slug: item.slug || "",
+    parentName: item.parent?.name || null,
+    parentId: item.parentId || undefined,
     productsCount: item._count.products.toString(),
     createdAt: format(item.createdAt, "MMMM do, yyyy"),
   }));

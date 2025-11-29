@@ -48,6 +48,7 @@ export async function POST(
           slug: slug,
           billboardId: r.billboardId,
           storeId: storeId,
+          parentId: r.parentId || null,
         };
       });
 

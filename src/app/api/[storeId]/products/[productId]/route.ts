@@ -10,6 +10,11 @@ export async function GET(
     const { productId } = await params;
     if (!productId) return new NextResponse("ID required", { status: 400 });
 
+    // Nếu productId là "new", trả về null (cho form tạo mới)
+    if (productId === "new") {
+      return NextResponse.json(null);
+    }
+
     // Tối ưu: chỉ select các field cần thiết
     const product = await prisma.product.findUnique({
       where: { id: productId },
@@ -42,6 +47,13 @@ export async function GET(
             id: true,
             name: true,
             slug: true,
+            parent: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
           },
         },
         material: {

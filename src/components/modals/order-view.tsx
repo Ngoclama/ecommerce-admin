@@ -13,7 +13,15 @@ import {
   User,
   Printer,
   Mail,
-  Store as StoreIcon,
+  Calendar,
+  Clock,
+  Hash,
+  Truck,
+  Receipt,
+  FileText,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
 } from "lucide-react";
 
 import {
@@ -36,6 +44,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 interface OrderViewModalProps {
   isOpen: boolean;
@@ -54,8 +63,12 @@ type OrderItem = {
   price: number;
   productPrice: number | null;
   product?: {
+    id: string;
     name: string;
     price: number;
+    images?: Array<{
+      url: string;
+    }>;
   };
 };
 
@@ -73,11 +86,12 @@ type OrderDetails = {
   shippingCost: number | null;
   trackingNumber: string | null;
   paymentMethod: string | null;
+  transactionId: string | null;
   subtotal: number;
   tax: number;
   discount: number;
   total: number;
-  totalPrice: number; // Legacy field
+  totalPrice: number;
   customerNote: string | null;
   adminNote: string | null;
   createdAt: string;
@@ -99,17 +113,16 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
   orderId,
 }) => {
   const { t } = useTranslation();
-  // Use React Query for caching
   const { data, isLoading: loading, error } = useOrder(storeId, orderId);
   const order = (data?.order as OrderDetails) || null;
   const store = (data?.store as StoreInfo) || null;
 
   useEffect(() => {
     if (error) {
-      toast.error("Failed to fetch details.");
+      toast.error(t("modals.failedToFetch"));
       onClose();
     }
-  }, [error, onClose]);
+  }, [error, onClose, t]);
 
   const formatter = new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -123,293 +136,562 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
     });
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case "DELIVERED":
+        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800";
+      case "PROCESSING":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800";
+      case "SHIPPED":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800";
+      case "CANCELLED":
+        return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800";
+      default:
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800";
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case "PENDING":
+        return t("actions.pending");
+      case "PROCESSING":
+        return t("actions.processingStatus");
+      case "SHIPPED":
+        return t("actions.shipped");
+      case "DELIVERED":
+        return t("actions.delivered");
+      case "CANCELLED":
+        return t("actions.cancelled");
+      default:
+        return status || t("actions.pending");
+    }
+  };
+
   const onPrint = () => {
     window.print();
   };
 
+  if (loading) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="!max-w-none !w-screen !h-screen !m-0 !rounded-none !inset-0 !translate-x-0 !translate-y-0">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{t("modals.orderDetails")}</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden bg-white dark:bg-neutral-900 print:border-none print:shadow-none print:max-w-none print:max-h-none print:overflow-visible">
-        {/* HEADER MODAL (Ẩn khi in) */}
-        <DialogHeader className="flex flex-row items-center justify-between print:hidden">
-          <div>
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <ShoppingBag className="h-5 w-5" />
-              {t("modals.orderDetails")}
-            </DialogTitle>
-            <DialogDescription>
-              {t("nav.orders")}{" "}
-              <span className="font-mono font-bold">
-                #{order?.id.slice(-6)}
-              </span>
-            </DialogDescription>
-          </div>
-          <div className="flex items-center gap-2 mr-8">
-            <Button variant="outline" size="sm" onClick={onPrint}>
-              <Printer className="h-4 w-4 mr-2" />
-              {t("modals.printInvoice")}
-            </Button>
-          </div>
+      <DialogContent className="!max-w-none !w-screen !h-screen !m-0 !rounded-none flex flex-col overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 print:bg-white print:border-none print:shadow-none print:max-w-none print:max-h-none print:overflow-visible p-0 gap-0 !inset-0 !translate-x-0 !translate-y-0">
+        <DialogHeader className="sr-only">
+          <DialogTitle>{t("modals.orderDetails")}</DialogTitle>
+          <DialogDescription>
+            {t("nav.orders")} #{order?.id.slice(-8).toUpperCase()}
+          </DialogDescription>
         </DialogHeader>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
+        {/* Modern Header */}
+        <div className="relative bg-gradient-to-r from-primary/10 via-primary/5 to-transparent dark:from-primary/20 dark:via-primary/10 border-b border-gray-200 dark:border-gray-800 px-8 py-5 print:hidden shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 rounded-xl bg-primary/10 dark:bg-primary/20">
+                <ShoppingBag className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight">
+                  {t("modals.orderDetails")}
+                </h2>
+                <div className="mt-1.5 flex items-center gap-2 text-sm text-muted-foreground">
+                  <Hash className="h-3.5 w-3.5" />
+                  <span className="font-mono font-semibold text-primary">
+                    #{order?.id.slice(-8).toUpperCase()}
+                  </span>
+                  {order && <span>• {formatDate(order.createdAt)}</span>}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onPrint}
+                className="gap-2"
+              >
+                <Printer className="h-4 w-4" />
+                {t("modals.printInvoice")}
+              </Button>
+            </div>
           </div>
-        ) : order ? (
-          <ScrollArea className="flex-1 pr-4 -mr-4 print:pr-0 print:mr-0">
-            <div className="space-y-8 p-1 print:space-y-4">
-              <div className="hidden print:block border-b pb-6 mb-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h1 className="text-2xl font-bold uppercase tracking-wider">
-                      {store?.name || "Store Name"}
-                    </h1>
-                    {store?.address && (
-                      <div className="flex items-center gap-2 text-sm mt-2 text-gray-600">
-                        <MapPin className="h-3 w-3" /> {store.address}
-                      </div>
-                    )}
-                    <div className="flex gap-4 mt-1">
-                      {store?.phone && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Phone className="h-3 w-3" /> {store.phone}
-                        </div>
+        </div>
+
+        {!order ? (
+          <div className="flex items-center justify-center py-20 flex-1">
+            <div className="text-center space-y-3">
+              <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
+              <p className="text-lg font-medium">{t("modals.orderNotFound")}</p>
+            </div>
+          </div>
+        ) : (
+          <ScrollArea className="flex-1 px-8 py-6 min-h-0">
+            <div className="space-y-6 w-full">
+              {/* Status Banner */}
+              <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-r from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 p-6 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-2.5 rounded-xl border font-semibold",
+                        getStatusColor(order.status)
                       )}
-                      {store?.email && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Mail className="h-3 w-3" /> {store.email}
-                        </div>
+                    >
+                      {order.status === "DELIVERED" && (
+                        <CheckCircle2 className="h-4 w-4" />
                       )}
+                      {order.status === "CANCELLED" && (
+                        <XCircle className="h-4 w-4" />
+                      )}
+                      {(order.status === "PENDING" ||
+                        order.status === "PROCESSING") && (
+                        <Clock className="h-4 w-4" />
+                      )}
+                      {getStatusText(order.status)}
+                    </div>
+                    <div
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-2.5 rounded-xl border font-semibold",
+                        order.isPaid
+                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800"
+                          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800"
+                      )}
+                    >
+                      {order.isPaid ? (
+                        <CheckCircle2 className="h-4 w-4" />
+                      ) : (
+                        <XCircle className="h-4 w-4" />
+                      )}
+                      {order.isPaid ? t("columns.paid") : t("modals.unpaid")}
                     </div>
                   </div>
                   <div className="text-right">
-                    <h2 className="text-xl font-bold text-gray-800">
-                      {t("modals.invoice")}
-                    </h2>
-                    <p className="text-sm text-gray-500">
-                      #{order.id.slice(-6)}
-                    </p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {formatDate(order.createdAt)}
-                    </p>
+                    <div className="text-sm text-muted-foreground mb-1">
+                      {t("modals.totalAmount")}
+                    </div>
+                    <div className="text-3xl font-bold text-primary">
+                      {formatter.format(order.total || order.totalPrice)}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Thông tin khách hàng */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-neutral-500 uppercase tracking-wide">
-                    <User className="h-4 w-4" /> {t("modals.customerInfo")}
-                  </div>
-                  <div className="p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl text-sm border border-neutral-100 dark:border-neutral-800 print:border-gray-300 print:bg-white print:p-2">
-                    <div className="font-semibold mb-1">
-                      {t("modals.contact")}
-                    </div>
-                    <div>{order.phone || t("modals.noPhone")}</div>
-                    {order.email && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {order.email}
+              {/* Main Grid */}
+              <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+                {/* Customer Info Card */}
+                <div className="xl:col-span-1 space-y-4">
+                  <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/30">
+                        <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                       </div>
-                    )}
-                    <div className="font-semibold mt-2 mb-1">
-                      {t("columns.address")}:
+                      <h3 className="text-lg font-semibold">
+                        {t("modals.customerInfo")}
+                      </h3>
                     </div>
-                    <div>
-                      {order.address || t("modals.noAddress")}
-                      {order.city && `, ${order.city}`}
-                      {order.postalCode && ` ${order.postalCode}`}
-                      {order.country && `, ${order.country}`}
+                    <div className="space-y-4">
+                      <div>
+                        <div className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
+                          {t("modals.contact")}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          {order.phone || t("modals.noPhone")}
+                        </div>
+                        {order.email && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1.5">
+                            <Mail className="h-4 w-4" />
+                            {order.email}
+                          </div>
+                        )}
+                      </div>
+                      <Separator />
+                      <div>
+                        <div className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
+                          {t("columns.address")}
+                        </div>
+                        <div className="flex items-start gap-2 text-sm">
+                          <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                          <div className="leading-relaxed">
+                            {order.address || t("modals.noAddress")}
+                            {order.city && `, ${order.city}`}
+                            {order.postalCode && ` ${order.postalCode}`}
+                            {order.country && `, ${order.country}`}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-neutral-500 uppercase tracking-wide">
-                    <CreditCard className="h-4 w-4" /> {t("modals.paymentInfo")}
+                {/* Payment & Shipping Cards */}
+                <div className="xl:col-span-4 grid grid-cols-1 md:grid-cols-4 gap-6">
+                  {/* Payment Info */}
+                  <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="p-2 rounded-xl bg-green-100 dark:bg-green-900/30">
+                        <CreditCard className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold">
+                        {t("modals.paymentInfo")}
+                      </h3>
+                    </div>
+                    <div className="space-y-4">
+                      {order.paymentMethod && (
+                        <div>
+                          <div className="text-xs font-medium text-muted-foreground mb-1.5">
+                            {t("modals.paymentMethod")}
+                          </div>
+                          <div className="text-sm font-medium">
+                            {order.paymentMethod}
+                          </div>
+                        </div>
+                      )}
+                      {order.transactionId && (
+                        <div>
+                          <div className="text-xs font-medium text-muted-foreground mb-1.5">
+                            {t("modals.transactionId")}
+                          </div>
+                          <div className="text-xs font-mono break-all bg-muted px-2 py-1.5 rounded-md">
+                            {order.transactionId}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl text-sm border border-neutral-100 dark:border-neutral-800 print:border-gray-300 print:bg-white print:p-2">
-                    <div className="flex justify-between mb-2">
-                      <span>{t("modals.paymentStatus")}</span>
-                      <Badge variant={order.isPaid ? "default" : "destructive"}>
-                        {order.isPaid ? t("columns.paid") : t("modals.unpaid")}
-                      </Badge>
-                    </div>
-                    <div className="flex justify-between mb-2">
-                      <span>{t("modals.orderStatus")}</span>
-                      <Badge variant="outline" className="uppercase">
-                        {order.status || "PENDING"}
-                      </Badge>
-                    </div>
-                    {order.trackingNumber && (
-                      <div className="flex justify-between mb-2 text-xs">
-                        <span>{t("columns.tracking")}:</span>
-                        <span className="font-mono">
-                          {order.trackingNumber}
-                        </span>
+
+                  {/* Shipping Info */}
+                  <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="p-2 rounded-xl bg-purple-100 dark:bg-purple-900/30">
+                        <Truck className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                       </div>
-                    )}
-                    {order.shippingMethod && (
-                      <div className="flex justify-between mb-2 text-xs">
-                        <span>{t("nav.shipping")}:</span>
-                        <span>{order.shippingMethod}</span>
+                      <h3 className="text-lg font-semibold">
+                        {t("modals.shipping")}
+                      </h3>
+                    </div>
+                    <div className="space-y-4">
+                      {order.shippingMethod && (
+                        <div>
+                          <div className="text-xs font-medium text-muted-foreground mb-1.5">
+                            {t("modals.shippingMethod")}
+                          </div>
+                          <div className="text-sm font-medium">
+                            {order.shippingMethod}
+                          </div>
+                        </div>
+                      )}
+                      <div>
+                        <div className="text-xs font-medium text-muted-foreground mb-1.5">
+                          {t("modals.shippingFee")}
+                        </div>
+                        <div className="text-sm font-medium">
+                          {order.shippingCost === 0
+                            ? t("modals.free")
+                            : order.shippingCost !== null
+                            ? formatter.format(order.shippingCost)
+                            : t("columns.na")}
+                        </div>
                       </div>
-                    )}
-                    <div className="flex justify-between text-lg font-bold border-t pt-2">
-                      <span>{t("columns.total")}:</span>
-                      <span>
-                        {formatter.format(order.total || order.totalPrice)}
+                      {order.trackingNumber && (
+                        <div>
+                          <div className="text-xs font-medium text-muted-foreground mb-1.5">
+                            {t("columns.tracking")}
+                          </div>
+                          <div className="text-xs font-mono break-all bg-muted px-2 py-1.5 rounded-md">
+                            {order.trackingNumber}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Order Summary & Details */}
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                {/* Financial Summary */}
+                <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-900/30">
+                      <Receipt className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold">
+                      {t("modals.orderSummary")}
+                    </h3>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-sm text-muted-foreground">
+                        {t("modals.subtotal")}
                       </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Order Summary */}
-              {(order.subtotal > 0 || order.tax > 0 || order.discount > 0) && (
-                <div className="bg-neutral-50 dark:bg-neutral-800/50 rounded-xl p-4 border print:bg-white print:border-gray-300">
-                  <h3 className="text-sm font-semibold mb-3">
-                    {t("modals.orderSummary")}
-                  </h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>{t("modals.subtotal")}</span>
-                      <span>
+                      <span className="font-semibold">
                         {formatter.format(order.subtotal || order.totalPrice)}
                       </span>
                     </div>
                     {order.discount > 0 && (
-                      <div className="flex justify-between text-green-600">
-                        <span>{t("columns.discount")}:</span>
-                        <span>-{formatter.format(order.discount)}</span>
+                      <div className="flex justify-between items-center py-2 text-green-600 dark:text-green-400">
+                        <span className="text-sm">{t("modals.discount")}</span>
+                        <span className="font-semibold">
+                          -{formatter.format(order.discount)}
+                        </span>
                       </div>
                     )}
                     {order.tax > 0 && (
-                      <div className="flex justify-between">
-                        <span>{t("modals.tax")}</span>
-                        <span>{formatter.format(order.tax)}</span>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-sm text-muted-foreground">
+                          {t("modals.tax")}
+                        </span>
+                        <span className="font-semibold">
+                          {formatter.format(order.tax)}
+                        </span>
                       </div>
                     )}
-                    {order.shippingCost && order.shippingCost > 0 && (
-                      <div className="flex justify-between">
-                        <span>{t("nav.shipping")}:</span>
-                        <span>{formatter.format(order.shippingCost)}</span>
+                    {order.shippingCost !== null && (
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-sm text-muted-foreground">
+                          {t("nav.shipping")}
+                        </span>
+                        <span className="font-semibold">
+                          {order.shippingCost === 0
+                            ? t("modals.free")
+                            : formatter.format(order.shippingCost)}
+                        </span>
                       </div>
                     )}
-                    <div className="flex justify-between font-bold text-lg border-t pt-2">
-                      <span>{t("columns.total")}:</span>
-                      <span>
+                    <Separator />
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-base font-semibold">
+                        {t("columns.total")}
+                      </span>
+                      <span className="text-xl font-bold text-primary">
                         {formatter.format(order.total || order.totalPrice)}
                       </span>
                     </div>
                   </div>
                 </div>
-              )}
+
+                {/* Order Details */}
+                <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="p-2 rounded-xl bg-indigo-100 dark:bg-indigo-900/30">
+                      <FileText className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold">
+                      {t("modals.orderInformation")}
+                    </h3>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center py-2">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Hash className="h-4 w-4" />
+                        {t("modals.orderCode")}
+                      </div>
+                      <span className="text-xs font-mono">{order.id}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        {t("modals.createdAt")}
+                      </div>
+                      <span className="text-sm">
+                        {formatDate(order.createdAt)}
+                      </span>
+                    </div>
+                    {order.updatedAt && order.updatedAt !== order.createdAt && (
+                      <div className="flex justify-between items-center py-2">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock className="h-4 w-4" />
+                          {t("modals.updated")}
+                        </div>
+                        <span className="text-sm">
+                          {formatDate(order.updatedAt)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
 
               {/* Notes */}
               {(order.customerNote || order.adminNote) && (
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {order.customerNote && (
-                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                      <div className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-1">
-                        {t("modals.customerNote")}
+                    <div className="rounded-2xl border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10 p-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                          {t("modals.customerNote")}
+                        </h4>
                       </div>
-                      <div className="text-sm text-blue-900 dark:text-blue-100">
+                      <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
                         {order.customerNote}
-                      </div>
+                      </p>
                     </div>
                   )}
                   {order.adminNote && (
-                    <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
-                      <div className="text-xs font-semibold text-orange-700 dark:text-orange-300 mb-1">
-                        {t("modals.adminNote")}
+                    <div className="rounded-2xl border border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/10 p-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <FileText className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                        <h4 className="text-sm font-semibold text-orange-900 dark:text-orange-100">
+                          {t("modals.adminNote")}
+                        </h4>
                       </div>
-                      <div className="text-sm text-orange-900 dark:text-orange-100">
+                      <p className="text-sm text-orange-800 dark:text-orange-200 leading-relaxed">
                         {order.adminNote}
-                      </div>
+                      </p>
                     </div>
                   )}
                 </div>
               )}
 
-              <Separator className="print:hidden" />
-
-              <div>
-                <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mb-4 print:mb-2">
-                  {t("modals.orderItems")}
-                </h3>
-                <div className="border rounded-xl overflow-hidden print:border-gray-300">
+              {/* Order Items */}
+              <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
+                <div className="p-6 border-b bg-gradient-to-r from-gray-50 to-transparent dark:from-gray-900 dark:to-transparent">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-primary/10">
+                      <Package className="h-5 w-5 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-semibold">
+                      {t("modals.orderItems")}
+                      <span className="ml-2 text-sm font-normal text-muted-foreground">
+                        ({order.orderItems.length} {t("modals.products")})
+                      </span>
+                    </h3>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-neutral-50 dark:bg-neutral-800/50 print:bg-gray-100">
-                        <TableHead className="print:text-black">
-                          {t("columns.products")}
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="min-w-[400px]">
+                          {t("modals.product")}
                         </TableHead>
-                        <TableHead className="print:text-black">
+                        <TableHead className="min-w-[280px]">
                           {t("modals.variant")}
                         </TableHead>
-                        <TableHead className="text-center print:text-black">
+                        <TableHead className="text-center min-w-[120px]">
                           {t("modals.qty")}
                         </TableHead>
-                        <TableHead className="text-right print:text-black">
-                          {t("columns.price")}
+                        <TableHead className="text-right min-w-[160px]">
+                          {t("modals.unitPrice")}
                         </TableHead>
-                        <TableHead className="text-right print:text-black">
+                        <TableHead className="text-right min-w-[160px]">
                           {t("columns.total")}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {order.orderItems.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">
-                            {item.productName || item.product?.name}
+                      {order.orderItems.map((item, idx) => (
+                        <TableRow
+                          key={item.id}
+                          className={cn(
+                            "hover:bg-muted/50 transition-colors",
+                            idx !== order.orderItems.length - 1 && "border-b"
+                          )}
+                        >
+                          <TableCell>
+                            <div className="flex items-center gap-4">
+                              {item.product?.images &&
+                                item.product.images[0]?.url && (
+                                  <div className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 shrink-0">
+                                    <img
+                                      src={item.product.images[0].url}
+                                      alt={
+                                        item.productName ||
+                                        item.product?.name ||
+                                        t("modals.product")
+                                      }
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                )}
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-base mb-1.5">
+                                  {item.productName || item.product?.name}
+                                </div>
+                                {item.product?.id && (
+                                  <div className="text-xs text-muted-foreground font-mono">
+                                    {t("modals.productId")}:{" "}
+                                    {item.product.id.slice(-8)}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </TableCell>
                           <TableCell>
-                            <div className="flex flex-wrap gap-1 text-xs">
+                            <div className="flex flex-wrap gap-1.5">
                               {item.sizeName && (
-                                <Badge variant="outline" className="text-xs">
-                                  {t("columns.size")}: {item.sizeName}
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs border-gray-300"
+                                >
+                                  {t("modals.size")}: {item.sizeName}
                                 </Badge>
                               )}
                               {item.colorName && (
-                                <Badge variant="outline" className="text-xs">
-                                  {t("columns.color")}: {item.colorName}
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs border-gray-300"
+                                >
+                                  {t("modals.color")}: {item.colorName}
                                 </Badge>
                               )}
                               {item.materialName && (
-                                <Badge variant="outline" className="text-xs">
-                                  {t("columns.material")}: {item.materialName}
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs border-gray-300"
+                                >
+                                  {t("modals.material")}: {item.materialName}
                                 </Badge>
                               )}
                               {!item.sizeName &&
                                 !item.colorName &&
                                 !item.materialName && (
-                                  <span className="text-muted-foreground">
+                                  <span className="text-xs text-muted-foreground">
                                     {t("columns.na")}
                                   </span>
                                 )}
                             </div>
                           </TableCell>
                           <TableCell className="text-center">
-                            {item.quantity}
+                            <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-muted font-semibold text-sm">
+                              {item.quantity}
+                            </div>
                           </TableCell>
                           <TableCell className="text-right">
-                            {formatter.format(
-                              item.price ||
+                            <div className="font-semibold">
+                              {formatter.format(
                                 item.productPrice ||
-                                item.product?.price ||
-                                0
-                            )}
+                                  item.price ||
+                                  item.product?.price ||
+                                  0
+                              )}
+                            </div>
                           </TableCell>
-                          <TableCell className="text-right font-semibold">
-                            {formatter.format(
-                              (item.price ||
-                                item.productPrice ||
-                                item.product?.price ||
-                                0) * item.quantity
-                            )}
+                          <TableCell className="text-right">
+                            <div className="font-bold text-primary">
+                              {formatter.format(
+                                (item.productPrice ||
+                                  item.price ||
+                                  item.product?.price ||
+                                  0) * item.quantity
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -418,19 +700,15 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
                 </div>
               </div>
 
-              {/* Footer in hóa đơn */}
-              <div className="hidden print:block text-center text-sm text-gray-500 mt-10 pt-10 border-t">
-                <p>{t("modals.thankYou")}</p>
-                <p>
+              {/* Print Footer */}
+              <div className="hidden print:block text-center text-sm text-muted-foreground mt-10 pt-10 border-t">
+                <p className="font-medium">{t("modals.thankYou")}</p>
+                <p className="mt-2">
                   {store?.name} - {store?.phone}
                 </p>
               </div>
             </div>
           </ScrollArea>
-        ) : (
-          <div className="py-10 text-center text-neutral-500">
-            {t("modals.orderNotFound")}
-          </div>
         )}
       </DialogContent>
     </Dialog>

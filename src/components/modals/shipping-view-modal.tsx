@@ -42,7 +42,9 @@ export const ShippingViewModal = () => {
           const res = await axios.get(`/api/${storeId}/shipping/${shippingId}`);
           setData(res.data);
         } catch (error) {
-          toast.error("Failed to load shipping details");
+          toast.error(
+            t("modals.failedToFetch") || "Failed to load shipping details"
+          );
           onClose(); // Đóng modal nếu có lỗi
         } finally {
           setIsLoading(false);

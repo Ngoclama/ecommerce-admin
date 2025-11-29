@@ -82,8 +82,14 @@ model Category {
   billboard   Billboard? @relation(fields: [billboardId], references: [id])
   billboardId String?    @db.ObjectId
 
+  // Category hierarchy (parent-child relationship)
+  parentId String?    @db.ObjectId
+  parent   Category?  @relation("CategoryParent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children Category[] @relation("CategoryParent")
+
   @@unique([storeId, slug])
   @@index([storeId])
+  @@index([parentId])
 }
 
 model Size {

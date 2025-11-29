@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
 import { useBulkCategoryModal } from "@/hooks/use-bulk-category-modal";
+import { useTranslation } from "@/hooks/use-translation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
@@ -37,21 +38,33 @@ type Billboard = {
   label: string;
 };
 
+type Category = {
+  id: string;
+  name: string;
+  parentId: string | null;
+};
+
 type Row = {
   name: string;
   billboardId: string;
+  parentId: string | null;
 };
 
 export const BulkCreateCategoryModal: React.FC = () => {
   const { isOpen, onClose } = useBulkCategoryModal();
-  const [rows, setRows] = useState<Row[]>([{ name: "", billboardId: "" }]);
+  const { t } = useTranslation();
+  const [rows, setRows] = useState<Row[]>([
+    { name: "", billboardId: "", parentId: null },
+  ]);
   const [billboards, setBillboards] = useState<Billboard[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isBillboardsLoading, setIsBillboardsLoading] = useState(false);
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(false);
   const params = useParams();
   const router = useRouter();
 
-  // Fetch Billboards khi mở modal
+  // Fetch Billboards và Categories khi mở modal
   useEffect(() => {
     if (isOpen) {
       const fetchBillboards = async () => {
@@ -68,7 +81,26 @@ export const BulkCreateCategoryModal: React.FC = () => {
           setIsBillboardsLoading(false);
         }
       };
+
+      const fetchCategories = async () => {
+        try {
+          setIsCategoriesLoading(true);
+          const res = await axios.get<{ success: boolean; data: Category[] }>(
+            `/api/${params.storeId}/categories`
+          );
+          if (res.data.success) {
+            setCategories(res.data.data);
+          }
+        } catch (error) {
+          console.error("Failed to fetch categories:", error);
+          // Don't show error toast for categories as it's optional
+        } finally {
+          setIsCategoriesLoading(false);
+        }
+      };
+
       fetchBillboards();
+      fetchCategories();
     }
   }, [isOpen, params.storeId]);
 
@@ -76,13 +108,13 @@ export const BulkCreateCategoryModal: React.FC = () => {
   useEffect(() => {
     if (!isOpen) {
       setTimeout(() => {
-        setRows([{ name: "", billboardId: "" }]);
+        setRows([{ name: "", billboardId: "", parentId: null }]);
       }, 300);
     }
   }, [isOpen]);
 
   const handleAddRow = () => {
-    setRows([...rows, { name: "", billboardId: "" }]);
+    setRows([...rows, { name: "", billboardId: "", parentId: null }]);
   };
 
   const handleRemoveRow = (index: number) => {
@@ -91,22 +123,25 @@ export const BulkCreateCategoryModal: React.FC = () => {
     setRows(newRows);
   };
 
-  const handleChange = (index: number, field: keyof Row, value: string) => {
+  const handleChange = (
+    index: number,
+    field: keyof Row,
+    value: string | null
+  ) => {
     const newRows = [...rows];
     newRows[index] = { ...newRows[index], [field]: value };
     setRows(newRows);
   };
 
   const validateForm = () => {
-    for (let i = 0; i < rows.length; i++) {
-      if (!rows[i].name.trim()) {
-        toast.error(`Row ${i + 1}: Name is required.`);
-        return false;
-      }
-      if (!rows[i].billboardId) {
-        toast.error(`Row ${i + 1}: Please select a billboard.`);
-        return false;
-      }
+    const invalidRows = rows.filter((r) => !r.name.trim() || !r.billboardId);
+    if (invalidRows.length > 0) {
+      const message = t("bulk.category.incompleteRows").replace(
+        "{count}",
+        invalidRows.length.toString()
+      );
+      toast.error(message);
+      return false;
     }
     return true;
   };
@@ -120,10 +155,15 @@ export const BulkCreateCategoryModal: React.FC = () => {
         rows: rows.map((r) => ({
           name: r.name,
           billboardId: r.billboardId,
+          parentId: r.parentId || null,
         })),
       });
 
-      toast.success(`Successfully created ${rows.length} categories!`);
+      const successMessage = t("bulk.category.createSuccess").replace(
+        "{count}",
+        rows.length.toString()
+      );
+      toast.success(successMessage);
       router.refresh();
       onClose();
     } catch (error: any) {
@@ -143,11 +183,10 @@ export const BulkCreateCategoryModal: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold flex items-center gap-2">
               <Tag className="w-6 h-6 text-primary" />
-              Bulk Create Categories
+              {t("bulk.category.title")}
             </DialogTitle>
             <DialogDescription>
-              Add multiple categories at once. Assign a name and a billboard to
-              each.
+              {t("bulk.category.description")}
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -157,9 +196,14 @@ export const BulkCreateCategoryModal: React.FC = () => {
           <ScrollArea className="h-full w-full p-6">
             {/* Table Header (Desktop only) */}
             <div className="hidden md:grid grid-cols-12 gap-4 mb-4 px-4 font-medium text-sm text-neutral-500 uppercase tracking-wider">
-              <div className="col-span-6">Name</div>
-              <div className="col-span-5">Billboard</div>
-              <div className="col-span-1 text-center">Action</div>
+              <div className="col-span-4">{t("bulk.category.name")}</div>
+              <div className="col-span-4">{t("bulk.category.billboard")}</div>
+              <div className="col-span-3">
+                {t("bulk.category.parentCategory")}
+              </div>
+              <div className="col-span-1 text-center">
+                {t("columns.actions")}
+              </div>
             </div>
 
             {/* Rows */}
@@ -177,14 +221,14 @@ export const BulkCreateCategoryModal: React.FC = () => {
                   >
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start md:items-center">
                       {/* Name Input */}
-                      <div className="col-span-1 md:col-span-6">
+                      <div className="col-span-1 md:col-span-4">
                         <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
-                          Name
+                          {t("bulk.category.name")}
                         </label>
                         <div className="relative">
                           <Input
                             disabled={isLoading}
-                            placeholder="Category Name (e.g., T-Shirts)"
+                            placeholder={t("bulk.category.namePlaceholder")}
                             value={row.name}
                             onChange={(e) =>
                               handleChange(index, "name", e.target.value)
@@ -204,9 +248,9 @@ export const BulkCreateCategoryModal: React.FC = () => {
                       </div>
 
                       {/* Billboard Select */}
-                      <div className="col-span-1 md:col-span-5">
+                      <div className="col-span-1 md:col-span-4">
                         <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
-                          Billboard
+                          {t("bulk.category.billboard")}
                         </label>
                         <Select
                           disabled={isLoading || isBillboardsLoading}
@@ -225,15 +269,15 @@ export const BulkCreateCategoryModal: React.FC = () => {
                             <SelectValue
                               placeholder={
                                 isBillboardsLoading
-                                  ? "Loading..."
-                                  : "Select a billboard"
+                                  ? t("common.loading")
+                                  : t("bulk.category.billboardPlaceholder")
                               }
                             />
                           </SelectTrigger>
                           <SelectContent>
                             {billboards.length === 0 && (
                               <div className="p-2 text-sm text-muted-foreground text-center">
-                                No billboards found
+                                {t("columns.na")}
                               </div>
                             )}
                             {billboards.map((billboard) => (
@@ -242,6 +286,44 @@ export const BulkCreateCategoryModal: React.FC = () => {
                                 value={billboard.id}
                               >
                                 {billboard.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Parent Category Select */}
+                      <div className="col-span-1 md:col-span-3">
+                        <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
+                          {t("bulk.category.parentCategory")}
+                        </label>
+                        <Select
+                          disabled={isLoading || isCategoriesLoading}
+                          value={row.parentId || "__none__"}
+                          onValueChange={(value) =>
+                            handleChange(
+                              index,
+                              "parentId",
+                              value === "__none__" ? null : value
+                            )
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={
+                                isCategoriesLoading
+                                  ? t("common.loading")
+                                  : t("bulk.category.parentCategoryPlaceholder")
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">
+                              {t("bulk.category.noParent")}
+                            </SelectItem>
+                            {categories.map((category) => (
+                              <SelectItem key={category.id} value={category.id}>
+                                {category.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -282,7 +364,7 @@ export const BulkCreateCategoryModal: React.FC = () => {
             className="gap-2 h-11 px-5 text-sm"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add Row
+            {t("bulk.category.addRow")}
           </Button>
 
           <div className="flex gap-3">
@@ -292,7 +374,7 @@ export const BulkCreateCategoryModal: React.FC = () => {
               disabled={isLoading}
               className="h-11 px-5"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={onSubmit}
@@ -302,12 +384,12 @@ export const BulkCreateCategoryModal: React.FC = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating...
+                  {t("forms.processing")}
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Save ({rows.length})
+                  {t("common.save")} ({rows.length})
                 </>
               )}
             </Button>

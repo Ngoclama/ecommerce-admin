@@ -24,6 +24,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTranslation } from "@/hooks/use-translation";
 
 type Row = {
   name: string;
@@ -32,6 +33,7 @@ type Row = {
 
 export const BulkCreateSizeModal: React.FC = () => {
   const { isOpen, onClose } = useBulkSizeModal();
+  const { t } = useTranslation();
   const [rows, setRows] = useState<Row[]>([{ name: "", value: "" }]);
   const [isLoading, setIsLoading] = useState(false);
   const params = useParams();
@@ -67,11 +69,17 @@ export const BulkCreateSizeModal: React.FC = () => {
   const validateForm = () => {
     for (let i = 0; i < rows.length; i++) {
       if (!rows[i].name.trim()) {
-        toast.error(`Row ${i + 1}: Name is required.`);
+        const errorMessage = t("bulk.size.rowError")
+          .replace("{row}", (i + 1).toString())
+          .replace("{field}", t("bulk.size.name"));
+        toast.error(errorMessage);
         return false;
       }
       if (!rows[i].value.trim()) {
-        toast.error(`Row ${i + 1}: Value is required.`);
+        const errorMessage = t("bulk.size.rowError")
+          .replace("{row}", (i + 1).toString())
+          .replace("{field}", t("bulk.size.value"));
+        toast.error(errorMessage);
         return false;
       }
     }
@@ -85,12 +93,16 @@ export const BulkCreateSizeModal: React.FC = () => {
       setIsLoading(true);
       await axios.post(`/api/${params.storeId}/sizes/bulk`, { rows });
 
-      toast.success(`Successfully created ${rows.length} sizes!`);
+      const successMessage = t("bulk.size.createSuccess").replace(
+        "{count}",
+        rows.length.toString()
+      );
+      toast.success(successMessage);
       router.refresh();
       onClose();
     } catch (error: any) {
       console.error(error);
-      const errorMessage = error.response?.data || "Failed to create sizes.";
+      const errorMessage = error.response?.data || t("bulk.size.createError");
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -106,18 +118,18 @@ export const BulkCreateSizeModal: React.FC = () => {
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Ruler className="w-6 h-6 text-primary" />
               </div>
-              Bulk Create Sizes
+              {t("bulk.size.title")}
             </DialogTitle>
             <DialogDescription className="text-neutral-500">
-              Add multiple sizes (Name and Value) at once.
+              {t("bulk.size.description")}
             </DialogDescription>
           </DialogHeader>
         </div>
 
         <div className="bg-neutral-50/80 dark:bg-neutral-900/80 backdrop-blur-sm border-b dark:border-neutral-800 z-10 px-6 py-3 grid grid-cols-12 gap-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
-          <div className="col-span-5">Name (Display)</div>
-          <div className="col-span-5">Value (Code)</div>
-          <div className="col-span-2 text-center">Action</div>
+          <div className="col-span-5">{t("bulk.size.name")}</div>
+          <div className="col-span-5">{t("bulk.size.value")}</div>
+          <div className="col-span-2 text-center">{t("columns.actions")}</div>
         </div>
 
         <div
@@ -139,7 +151,7 @@ export const BulkCreateSizeModal: React.FC = () => {
                 <div className="col-span-5">
                   <Input
                     disabled={isLoading}
-                    placeholder="e.g., XL, Medium"
+                    placeholder={t("bulk.size.namePlaceholder")}
                     value={row.name}
                     onChange={(e) =>
                       handleChange(index, "name", e.target.value)
@@ -156,7 +168,7 @@ export const BulkCreateSizeModal: React.FC = () => {
                 <div className="col-span-5">
                   <Input
                     disabled={isLoading}
-                    placeholder="e.g., Extra Large, M"
+                    placeholder={t("bulk.size.valuePlaceholder")}
                     value={row.value}
                     onChange={(e) =>
                       handleChange(index, "value", e.target.value)
@@ -195,7 +207,7 @@ export const BulkCreateSizeModal: React.FC = () => {
             className="w-full py-3 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl text-neutral-500 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2 font-medium text-sm"
           >
             <Plus className="w-4 h-4" />
-            Add Another Size
+            {t("bulk.size.addRow")}
           </motion.button>
         </div>
 
@@ -206,7 +218,7 @@ export const BulkCreateSizeModal: React.FC = () => {
             disabled={isLoading}
             className="h-11 px-6 text-neutral-500 hover:text-neutral-900"
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
 
           <div className="flex gap-3">
@@ -218,12 +230,13 @@ export const BulkCreateSizeModal: React.FC = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
+                  {t("common.loading")}
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Save ({rows.length}) Sizes
+                  {t("bulk.size.createSuccess")
+                    .replace("{count}", rows.length.toString())}
                 </>
               )}
             </Button>

@@ -4,16 +4,26 @@ import { ColumnDef } from "@tanstack/react-table";
 import { CellAction } from "./cell-action";
 import { useTranslation } from "@/hooks/use-translation";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ChevronRight, ChevronDown } from "lucide-react";
+import { useState } from "react";
 
 export type CategoryColumn = {
   id: string;
   name: string;
   slug: string;
   billboardLabel: string;
+  parentName?: string | null;
+  parentId?: string;
+  level?: number;
+  hasChildren?: boolean;
+  productsCount?: string;
   createdAt: string;
 };
 
-export const useCategoryColumns = (): ColumnDef<CategoryColumn>[] => {
+export const useCategoryColumns = (
+  expandedIds: Set<string>,
+  onToggleExpand: (id: string) => void
+): ColumnDef<CategoryColumn>[] => {
   const { t } = useTranslation();
 
   return [
@@ -42,6 +52,42 @@ export const useCategoryColumns = (): ColumnDef<CategoryColumn>[] => {
     {
       accessorKey: "name",
       header: t("columns.name"),
+      cell: ({ row }) => {
+        const level = row.original.level || 0;
+        const hasChildren = row.original.hasChildren || false;
+        const isExpanded = expandedIds.has(row.original.id);
+
+        return (
+          <div
+            className="flex items-center gap-2"
+            style={{ paddingLeft: `${level * 24}px` }}
+          >
+            {hasChildren ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleExpand(row.original.id);
+                }}
+                className="flex items-center justify-center w-5 h-5 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded transition-colors"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
+                )}
+              </button>
+            ) : (
+              <div className="w-5" /> // Spacer for alignment
+            )}
+            <span className="font-medium">{row.original.name}</span>
+            {row.original.parentName && (
+              <span className="text-xs text-muted-foreground">
+                ({row.original.parentName})
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "slug",

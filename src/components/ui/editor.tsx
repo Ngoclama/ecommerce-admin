@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import "react-quill-new/dist/quill.snow.css";
 import { uploadFiles } from "@/lib/uploadthing";
 import { toast } from "sonner";
@@ -34,6 +34,41 @@ export const Editor = ({
     () => dynamic(() => import("react-quill-new"), { ssr: false }) as any,
     []
   );
+
+  // Thêm style cho toolbar sticky và editor scrollable
+  useEffect(() => {
+    const styleId = "quill-editor-sticky-toolbar";
+    // Kiểm tra xem style đã tồn tại chưa để tránh duplicate
+    if (document.getElementById(styleId)) {
+      return;
+    }
+
+    const style = document.createElement("style");
+    style.id = styleId;
+    style.textContent = `
+      .ql-container {
+        max-height: 400px;
+        overflow-y: auto;
+      }
+      .ql-toolbar {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 10 !important;
+        background: white !important;
+        border-bottom: 1px solid #e5e7eb !important;
+      }
+      .dark .ql-toolbar {
+        background: #171717 !important;
+        border-bottom-color: #404040 !important;
+      }
+      .ql-editor {
+        min-height: 200px;
+        max-height: 400px;
+      }
+    `;
+    document.head.appendChild(style);
+    // Không cleanup style vì nó là global style cho tất cả Editor
+  }, []);
 
   const imageHandler = () => {
     const input = document.createElement("input");
@@ -107,7 +142,7 @@ export const Editor = ({
         placeholder={placeholder}
         minRows={minRows}
         maxRows={maxRows}
-        className="h-[300px] mb-12 sm:mb-0"
+        className="editor-wrapper"
       />
     </div>
   );

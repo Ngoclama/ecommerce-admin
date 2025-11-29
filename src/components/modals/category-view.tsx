@@ -18,6 +18,7 @@ import {
   Tag,
   Link as LinkIcon,
   Store as StoreIcon,
+  FolderTree,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "@/hooks/use-translation";
@@ -34,9 +35,15 @@ type CategoryDetails = {
   name: string;
   slug: string;
   billboardId: string;
+  parentId?: string | null;
   billboard?: {
     label: string;
   };
+  parent?: {
+    id: string;
+    name: string;
+    slug: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -122,6 +129,28 @@ export const CategoryViewModal: React.FC<CategoryViewModalProps> = ({
               <div className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-800 text-sm font-medium border">
                 {categoryData.billboard?.label ||
                   t("modals.noBillboardAssigned")}
+              </div>
+            </div>
+
+            {/* Parent Category */}
+            <div className="grid grid-cols-1 gap-2">
+              <Label className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 flex items-center gap-1">
+                <FolderTree className="h-4 w-4 opacity-70" />{" "}
+                {t("forms.category.parentCategory")}
+              </Label>
+              <div className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-800 text-sm font-medium border">
+                {categoryData.parent ? (
+                  <div className="flex flex-col gap-1">
+                    <span className="font-semibold">{categoryData.parent.name}</span>
+                    <code className="text-xs text-neutral-500 dark:text-neutral-400">
+                      {categoryData.parent.slug}
+                    </code>
+                  </div>
+                ) : (
+                  <span className="text-neutral-500 dark:text-neutral-400 italic">
+                    {t("forms.category.noParent")}
+                  </span>
+                )}
               </div>
             </div>
 

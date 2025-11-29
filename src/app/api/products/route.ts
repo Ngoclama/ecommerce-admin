@@ -11,10 +11,105 @@ export async function GET(req: Request) {
     const colorId = searchParams.get("colorId") || undefined;
     const sizeId = searchParams.get("sizeId") || undefined;
     const isFeatured = searchParams.get("isFeatured");
+    const searchQuery =
+      searchParams.get("q") || searchParams.get("search") || undefined;
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const skip = (page - 1) * limit;
+
+    // Build search conditions for MongoDB (Prisma MongoDB uses contains with case-insensitive)
+    let searchConditions: any = undefined;
+    if (searchQuery && searchQuery.trim()) {
+      const searchTerm = searchQuery.trim();
+      // Escape special regex characters
+      const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+      searchConditions = {
+        OR: [
+          {
+            name: {
+              contains: escapedTerm,
+            },
+          },
+          {
+            description: {
+              contains: escapedTerm,
+            },
+          },
+          {
+            slug: {
+              contains: escapedTerm,
+            },
+          },
+          {
+            variants: {
+              some: {
+                OR: [
+                  {
+                    sku: {
+                      contains: escapedTerm,
+                    },
+                  },
+                  {
+                    size: {
+                      OR: [
+                        {
+                          name: {
+                            contains: escapedTerm,
+                          },
+                        },
+                        {
+                          value: {
+                            contains: escapedTerm,
+                          },
+                        },
+                      ],
+                    },
+                  },
+                  {
+                    color: {
+                      OR: [
+                        {
+                          name: {
+                            contains: escapedTerm,
+                          },
+                        },
+                        {
+                          value: {
+                            contains: escapedTerm,
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+          {
+            category: {
+              OR: [
+                {
+                  name: {
+                    contains: escapedTerm,
+                  },
+                },
+                {
+                  slug: {
+                    contains: escapedTerm,
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      };
+    }
 
     // Tối ưu: chỉ select các field cần thiết
     const products = await prisma.product.findMany({
       where: {
+        ...(searchConditions && searchConditions),
         categoryId,
         isFeatured: isFeatured ? true : undefined,
         isArchived: false,
@@ -92,10 +187,54 @@ export async function GET(req: Request) {
       orderBy: {
         createdAt: "desc",
       },
-      take: 100, // Giới hạn số lượng để tránh query quá lớn
+      skip,
+      take: limit,
     });
 
-    return NextResponse.json(products);
+    // Get total count for pagination
+    const totalCount = await prisma.product.count({
+      where: {
+        ...(searchConditions && searchConditions),
+        categoryId,
+        isFeatured: isFeatured ? true : undefined,
+        isArchived: false,
+        isPublished: true,
+        variants:
+          sizeId || colorId
+            ? {
+                some: {
+                  sizeId: sizeId || undefined,
+                  colorId: colorId || undefined,
+                },
+              }
+            : undefined,
+      },
+    });
+
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // If no pagination params provided and no search query, return simple array for backward compatibility
+    const hasPaginationParams =
+      searchParams.get("page") || searchParams.get("limit");
+    const hasSearchQuery = searchQuery && searchQuery.trim();
+
+    if (!hasPaginationParams && !hasSearchQuery && limit === 10) {
+      // Backward compatibility: return array if no pagination/search params
+      return NextResponse.json(products);
+    }
+
+    // Return pagination format for search or when pagination params are provided
+    return NextResponse.json({
+      products,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    });
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.log("[PRODUCTS_PUBLIC_GET]", error);
@@ -103,4 +242,3 @@ export async function GET(req: Request) {
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
-

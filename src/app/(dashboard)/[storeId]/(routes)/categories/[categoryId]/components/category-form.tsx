@@ -35,6 +35,7 @@ import { useTranslation } from "@/hooks/use-translation";
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   billboardId: z.string().min(1, "Billboard is required"),
+  parentId: z.string().nullable().optional(),
 });
 
 type CategoryFormValues = z.infer<typeof formSchema>;
@@ -42,11 +43,13 @@ type CategoryFormValues = z.infer<typeof formSchema>;
 interface CategoryFormProps {
   initialData: Category | null;
   billboards: Billboard[];
+  categories: Array<{ id: string; name: string; parentId: string | null }>;
 }
 
 export const CategoryForm: React.FC<CategoryFormProps> = ({
   initialData,
   billboards,
+  categories,
 }) => {
   const { t } = useTranslation();
   const router = useRouter();
@@ -69,10 +72,12 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       ? {
           name: initialData.name || "",
           billboardId: initialData.billboardId || "",
+          parentId: initialData.parentId || null,
         }
       : {
           name: "",
           billboardId: "",
+          parentId: null,
         },
   });
 
@@ -227,6 +232,43 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                         {billboards.map((billboard) => (
                           <SelectItem key={billboard.id} value={billboard.id}>
                             {billboard.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Parent Category Select */}
+              <FormField
+                control={form.control}
+                name="parentId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("forms.category.parentCategory") || "Parent Category"}</FormLabel>
+                    <Select
+                      disabled={isLoading}
+                      onValueChange={(value) => field.onChange(value === "__none__" ? null : value)}
+                      value={field.value || "__none__"}
+                      defaultValue={field.value || "__none__"}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="rounded-xl border-neutral-300 dark:border-neutral-700">
+                          <SelectValue
+                            defaultValue={field.value || "__none__"}
+                            placeholder={t("forms.category.parentCategoryPlaceholder") || "Select parent category (optional)"}
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="__none__">
+                          {t("forms.category.noParent") || "No Parent (Top Level)"}
+                        </SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
