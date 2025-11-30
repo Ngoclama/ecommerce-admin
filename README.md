@@ -60,33 +60,52 @@ npx prisma db push
 3. Mở Prisma Studio
 npx prisma studio
 
-🏗️ Cấu trúc dự án
 ecommerce-admin/
 │
-├── app/                # App router của Next.js
-│   ├── (routes)        # Các route con của admin
-│   ├── api/            # API Route handlers
-│   └── layout.tsx
+├── app/                           # App Router của Next.js
+│   ├── (routes)/                  # Các route chính của Admin Panel
+│   │   ├── dashboard/             # Trang dashboard thống kê
+│   │   ├── products/              # CRUD sản phẩm
+│   │   ├── categories/            # CRUD danh mục
+│   │   ├── orders/                # Quản lý đơn hàng
+│   │   └── ...                    # Các route khác
+│   │
+│   ├── api/                       # Next.js API Route Handlers
+│   │   ├── products/              # API sản phẩm
+│   │   ├── upload/                # API upload ảnh (UploadThing/Cloudinary)
+│   │   └── ...                    # Các API khác
+│   │
+│   ├── layout.tsx                 # Layout gốc của App Router
+│   └── page.tsx                   # Trang mặc định
 │
-├── components/         # UI components
-│   ├── ui/             # shadcn/ui components
-│   ├── forms/          # form components
-│   └── ...
+├── components/                    # UI components dùng trong dự án
+│   ├── ui/                        # Component từ shadcn/ui
+│   ├── forms/                     # Component form, input
+│   ├── layout/                    # Layout components
+│   └── ...                        # Các component khác
 │
-├── lib/                # Helper / middleware / prisma
-│   ├── prisma.ts
-│   ├── utils.ts
-│   └── auth.ts
+├── lib/                           # Thư mục chứa helper, config
+│   ├── prisma.ts                  # Kết nối Prisma
+│   ├── auth.ts                    # Xử lý Clerk Auth
+│   ├── utils.ts                   # Hàm tiện ích
+│   └── validation.ts              # Zod schemas (nếu có)
 │
-├── prisma/             # Prisma schema + migrations
-│   └── schema.prisma
+├── prisma/                        # Prisma ORM
+│   ├── schema.prisma              # Định nghĩa mô hình database
+│   └── migrations/                # Lưu trữ lịch sử migration DB
 │
-├── public/             # Ảnh, icon, file tĩnh
+├── public/                        # File tĩnh (ảnh/logo/icon)
+│   ├── images/                    
+│   └── favicon.ico
 │
-├── styles/             # Global styles
+├── styles/                        # Global CSS / Tailwind
+│   └── globals.css
 │
-├── .env                # Biến môi trường
+├── .env                           # Biến môi trường (KHÔNG commit lên git)
+├── package.json
+├── tsconfig.json
 └── README.md
+
 
 🔐 Authentication (Clerk)
 
