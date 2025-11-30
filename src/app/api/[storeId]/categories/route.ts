@@ -2,6 +2,8 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import slugify from "slugify";
+import { API_MESSAGES, HTTP_STATUS } from "@/lib/constants";
+import { devError } from "@/lib/api-utils";
 
 export async function POST(
   req: Request,
@@ -13,26 +15,30 @@ export async function POST(
     const body = await req.json();
     const { name, billboardId, slug, parentId } = body;
 
-    if (!userId)
+    if (!userId) {
       return NextResponse.json(
-        { success: false, message: "Unauthenticated" },
-        { status: 401 }
+        { success: false, message: API_MESSAGES.UNAUTHENTICATED },
+        { status: HTTP_STATUS.UNAUTHORIZED }
       );
-    if (!name)
+    }
+    if (!name) {
       return NextResponse.json(
-        { success: false, message: "Name is required" },
-        { status: 400 }
+        { success: false, message: API_MESSAGES.NAME_REQUIRED },
+        { status: HTTP_STATUS.BAD_REQUEST }
       );
-    if (!billboardId)
+    }
+    if (!billboardId) {
       return NextResponse.json(
-        { success: false, message: "Billboard ID is required" },
-        { status: 400 }
+        { success: false, message: "ID billboard là bắt buộc" },
+        { status: HTTP_STATUS.BAD_REQUEST }
       );
-    if (!storeId)
+    }
+    if (!storeId) {
       return NextResponse.json(
-        { success: false, message: "Store ID is required" },
-        { status: 400 }
+        { success: false, message: API_MESSAGES.STORE_ID_REQUIRED },
+        { status: HTTP_STATUS.BAD_REQUEST }
       );
+    }
 
     const store = await prisma.store.findFirst({
       where: { id: storeId, userId },
@@ -163,7 +169,7 @@ export async function GET(
     return NextResponse.json({ success: true, data: categories });
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
-      console.error("[CATEGORY_GET]", error);
+      devError("[CATEGORY_GET] Lỗi khi lấy danh sách categories:", error);
     }
     return NextResponse.json(
       { success: false, message: "Internal Server Error" },

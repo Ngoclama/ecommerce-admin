@@ -4,16 +4,12 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ImagePlus, Trash } from "lucide-react";
 import Image from "next/image";
-import { UploadButton } from "@/utils/uploadthing";
-import { generateUploadButton } from "@uploadthing/react";
-import type { OurFileRouter } from "@/app/api/uploadthing/core";
+import { UploadButton } from "@/lib/uploadthing";
 
-// Helper function to check if URL is from UploadThing
+// Hàm helper để kiểm tra URL có phải từ UploadThing không
 const isUploadThingUrl = (url: string) => {
   return url.includes("ufs.sh") || url.includes("utfs.io");
 };
-
-export const UploadButtonComponent = generateUploadButton<OurFileRouter>();
 
 interface ImageUploadProps {
   disabled?: boolean;
@@ -73,7 +69,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                 quality={85}
                 unoptimized={isUploadThingUrl(url)}
                 onError={(e) => {
-                  console.error("Image load error:", url);
+                  // Lỗi khi tải hình ảnh - đã được xử lý bởi onError handler
                   // Fallback: có thể thêm placeholder image ở đây nếu cần
                 }}
               />
@@ -82,12 +78,12 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         </div>
       )}
 
-      <UploadButtonComponent
+      <UploadButton
         endpoint="imageUploader"
         onClientUploadComplete={(res) => {
           try {
             if (!res || !Array.isArray(res) || res.length === 0) {
-              console.warn("Upload response is empty or invalid");
+              // Phản hồi upload trống hoặc không hợp lệ
               return;
             }
 
@@ -101,12 +97,12 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
               onChange(newUrls);
             }
           } catch (error) {
-            console.error("Error processing upload response:", error);
+            // Lỗi khi xử lý phản hồi upload
             alert("Error processing uploaded images. Please try again.");
           }
         }}
         onUploadError={(error: Error) => {
-          console.error("Upload error:", error);
+          // Lỗi khi upload
           alert(`Upload failed: ${error.message || "Unknown error"}`);
         }}
         appearance={{

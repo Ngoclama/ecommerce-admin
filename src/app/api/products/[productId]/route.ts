@@ -31,6 +31,7 @@ export async function GET(
         isFeatured: true,
         isArchived: true,
         isPublished: true,
+        storeId: true,
         createdAt: true,
         updatedAt: true,
         images: {

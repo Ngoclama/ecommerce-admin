@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslation } from "@/hooks/use-translation";
 
 const formSchema = z.object({
   response: z.string().min(1, "Response content is required"),
@@ -45,10 +46,15 @@ export const ReviewReplyModal: React.FC<ReviewReplyModalProps> = ({
 }) => {
   const params = useParams();
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(
+      z.object({
+        response: z.string().min(1, t("modals.responseRequired")),
+      })
+    ),
     defaultValues: {
       response: initialResponse,
     },
@@ -60,11 +66,11 @@ export const ReviewReplyModal: React.FC<ReviewReplyModalProps> = ({
       await axios.patch(`/api/${params.storeId}/reviews/${reviewId}`, {
         adminResponse: values.response,
       });
-      toast.success("Response sent.");
+      toast.success(t("actions.responseSent"));
       router.refresh();
       onClose();
     } catch (error) {
-      toast.error("Something went wrong.");
+      toast.error(t("actions.somethingWentWrong"));
     } finally {
       setLoading(false);
     }
@@ -74,9 +80,9 @@ export const ReviewReplyModal: React.FC<ReviewReplyModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Reply to Review</DialogTitle>
+          <DialogTitle>{t("modals.replyToReview")}</DialogTitle>
           <DialogDescription>
-            Your reply will be visible to customers.
+            {t("modals.replyDescription")}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -86,11 +92,11 @@ export const ReviewReplyModal: React.FC<ReviewReplyModalProps> = ({
               name="response"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Your Reply</FormLabel>
+                  <FormLabel>{t("modals.yourReply")}</FormLabel>
                   <FormControl>
                     <Textarea
                       disabled={loading}
-                      placeholder="Thank you for your feedback..."
+                      placeholder={t("modals.replyPlaceholder")}
                       rows={4}
                       {...field}
                     />
@@ -106,10 +112,10 @@ export const ReviewReplyModal: React.FC<ReviewReplyModalProps> = ({
                 onClick={onClose}
                 type="button"
               >
-                Cancel
+                {t("actions.cancel")}
               </Button>
               <Button disabled={loading} type="submit">
-                Send Reply
+                {t("modals.sendReply")}
               </Button>
             </div>
           </form>

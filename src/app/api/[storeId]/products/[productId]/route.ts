@@ -1,6 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { API_MESSAGES, HTTP_STATUS, DEFAULTS } from "@/lib/constants";
+import { devError } from "@/lib/api-utils";
 
 export async function GET(
   req: Request,
@@ -8,7 +10,11 @@ export async function GET(
 ) {
   try {
     const { productId } = await params;
-    if (!productId) return new NextResponse("ID required", { status: 400 });
+    if (!productId) {
+      return new NextResponse(API_MESSAGES.ID_REQUIRED, { 
+        status: HTTP_STATUS.BAD_REQUEST 
+      });
+    }
 
     // Nếu productId là "new", trả về null (cho form tạo mới)
     if (productId === "new") {
@@ -129,9 +135,15 @@ export async function PATCH(
       variants,
     } = body;
 
-    if (!userId) return new NextResponse("Unauthenticated", { status: 401 });
+    if (!userId) {
+      return new NextResponse(API_MESSAGES.UNAUTHENTICATED, { 
+        status: HTTP_STATUS.UNAUTHORIZED 
+      });
+    }
     if (!name || !price || !categoryId || !variants?.length) {
-      return new NextResponse("Missing data", { status: 400 });
+      return new NextResponse(API_MESSAGES.VALIDATION_ERROR, { 
+        status: HTTP_STATUS.BAD_REQUEST 
+      });
     }
 
     // Check authorization
@@ -152,14 +164,14 @@ export async function PATCH(
         description,
         isFeatured,
         isArchived,
-        isPublished: isPublished !== undefined ? isPublished : true,
+        isPublished: isPublished !== undefined ? isPublished : DEFAULTS.IS_PUBLISHED,
         materialId: materialId || null,
         gender,
         metaTitle: metaTitle || null,
         metaDescription: metaDescription || null,
         tags: tags || [],
-        trackQuantity: trackQuantity !== undefined ? trackQuantity : true,
-        allowBackorder: allowBackorder !== undefined ? allowBackorder : false,
+        trackQuantity: trackQuantity !== undefined ? trackQuantity : DEFAULTS.TRACK_QUANTITY,
+        allowBackorder: allowBackorder !== undefined ? allowBackorder : DEFAULTS.ALLOW_BACKORDER,
         images: { deleteMany: {} }, // Xóa ảnh cũ
         variants: { deleteMany: {} }, // Xóa variant cũ
       },
@@ -173,13 +185,21 @@ export async function PATCH(
         },
         variants: {
           createMany: {
-            data: variants.map((v: any) => ({
+            data: variants.map((v: {
+              sizeId: string;
+              colorId: string;
+              materialId?: string | null;
+              sku?: string | null;
+              inventory: number;
+              lowStockThreshold?: number;
+              price?: number | null;
+            }) => ({
               sizeId: v.sizeId,
               colorId: v.colorId,
               materialId: v.materialId || null,
               sku: v.sku || null,
               inventory: Number(v.inventory),
-              lowStockThreshold: Number(v.lowStockThreshold) || 10,
+              lowStockThreshold: Number(v.lowStockThreshold) || DEFAULTS.LOW_STOCK_THRESHOLD,
               price: v.price ? Number(v.price) : null,
             })),
           },
@@ -190,10 +210,10 @@ export async function PATCH(
 
     return NextResponse.json(product);
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.log("[PRODUCT_PATCH]", error);
-    }
-    return new NextResponse("Internal Error", { status: 500 });
+    devError("[PRODUCT_PATCH] Lỗi khi cập nhật sản phẩm:", error);
+    return new NextResponse(API_MESSAGES.SERVER_ERROR, { 
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR 
+    });
   }
 }
 
@@ -204,7 +224,11 @@ export async function DELETE(
   try {
     const { productId, storeId } = await params;
     const { userId } = await auth();
-    if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+    if (!userId) {
+      return new NextResponse(API_MESSAGES.UNAUTHENTICATED, { 
+        status: HTTP_STATUS.UNAUTHORIZED 
+      });
+    }
 
     // Check authorization
     const storeByUserId = await prisma.store.findFirst({
@@ -214,8 +238,11 @@ export async function DELETE(
       return new NextResponse("Unauthorized", { status: 403 });
 
     await prisma.product.delete({ where: { id: productId } });
-    return NextResponse.json({ message: "Deleted" });
+    return NextResponse.json({ message: API_MESSAGES.DELETED });
   } catch (error) {
-    return new NextResponse("Internal Error", { status: 500 });
+    devError("[PRODUCT_DELETE] Lỗi khi xóa sản phẩm:", error);
+    return new NextResponse(API_MESSAGES.SERVER_ERROR, { 
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR 
+    });
   }
 }

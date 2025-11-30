@@ -1,5 +1,8 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { API_MESSAGES, HTTP_STATUS, PAGINATION } from "@/lib/constants";
+import { devError } from "@/lib/api-utils";
+import { Prisma } from "@prisma/client";
 
 // ───────────────────────────────────────────────
 // GET: Public API - Lấy tất cả sản phẩm (không cần storeId)
@@ -11,14 +14,21 @@ export async function GET(req: Request) {
     const colorId = searchParams.get("colorId") || undefined;
     const sizeId = searchParams.get("sizeId") || undefined;
     const isFeatured = searchParams.get("isFeatured");
+    const sort = searchParams.get("sort") || undefined;
     const searchQuery =
       searchParams.get("q") || searchParams.get("search") || undefined;
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const page = parseInt(
+      searchParams.get("page") || String(PAGINATION.DEFAULT_PAGE)
+    );
+    const limit = Math.min(
+      parseInt(searchParams.get("limit") || String(PAGINATION.DEFAULT_LIMIT)),
+      PAGINATION.MAX_LIMIT
+    );
     const skip = (page - 1) * limit;
 
-    // Build search conditions for MongoDB (Prisma MongoDB uses contains with case-insensitive)
-    let searchConditions: any = undefined;
+    // Xây dựng điều kiện tìm kiếm cho MongoDB (Prisma MongoDB sử dụng contains không phân biệt hoa thường)
+    // Sử dụng Prisma.ProductWhereInput để type-safe với Prisma queries
+    let searchConditions: Prisma.ProductWhereInput | undefined = undefined;
     if (searchQuery && searchQuery.trim()) {
       const searchTerm = searchQuery.trim();
       // Escape special regex characters
@@ -106,6 +116,145 @@ export async function GET(req: Request) {
       };
     }
 
+    // Handle bestseller sort - need to calculate from order items
+    if (sort === "bestseller") {
+      // Get all orders with order items
+      const orders = await prisma.order.findMany({
+        where: {
+          isPaid: true, // Only count paid orders
+        },
+        select: {
+          orderItems: {
+            select: {
+              productId: true,
+              quantity: true,
+            },
+          },
+        },
+      });
+
+      // Calculate total sold quantity per product
+      const productSales: Record<string, number> = {};
+      orders.forEach((order) => {
+        order.orderItems.forEach((item) => {
+          productSales[item.productId] =
+            (productSales[item.productId] || 0) + item.quantity;
+        });
+      });
+
+      // Get all products first
+      const allProducts = await prisma.product.findMany({
+        where: {
+          ...(searchConditions && searchConditions),
+          categoryId,
+          isFeatured: isFeatured ? true : undefined,
+          isArchived: false,
+          isPublished: true,
+          variants:
+            sizeId || colorId
+              ? {
+                  some: {
+                    sizeId: sizeId || undefined,
+                    colorId: colorId || undefined,
+                  },
+                }
+              : undefined,
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          price: true,
+          compareAtPrice: true,
+          description: true,
+          isFeatured: true,
+          isArchived: true,
+          isPublished: true,
+          createdAt: true,
+          updatedAt: true,
+          images: {
+            select: {
+              id: true,
+              url: true,
+            },
+          },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+          material: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          variants: {
+            select: {
+              id: true,
+              sku: true,
+              inventory: true,
+              price: true,
+              size: {
+                select: {
+                  id: true,
+                  name: true,
+                  value: true,
+                },
+              },
+              color: {
+                select: {
+                  id: true,
+                  name: true,
+                  value: true,
+                },
+              },
+              material: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Sort by sold quantity and add sold count
+      const productsWithSales = allProducts
+        .map((product) => ({
+          ...product,
+          sold: productSales[product.id] || 0,
+        }))
+        .sort((a, b) => b.sold - a.sold)
+        .slice(skip, skip + limit);
+
+      const totalCount = allProducts.length;
+      const totalPages = Math.ceil(totalCount / limit);
+
+      // Always return pagination format when page/limit is provided
+      const hasPaginationParams =
+        searchParams.get("page") || searchParams.get("limit");
+
+      if (!hasPaginationParams && limit === 10) {
+        return NextResponse.json(productsWithSales);
+      }
+
+      return NextResponse.json({
+        products: productsWithSales,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1,
+        },
+      });
+    }
+
     // Tối ưu: chỉ select các field cần thiết
     const products = await prisma.product.findMany({
       where: {
@@ -184,9 +333,12 @@ export async function GET(req: Request) {
           },
         },
       },
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy:
+        sort === "newest"
+          ? { createdAt: "desc" }
+          : sort === "oldest"
+          ? { createdAt: "asc" }
+          : { createdAt: "desc" },
       skip,
       take: limit,
     });
@@ -213,13 +365,12 @@ export async function GET(req: Request) {
 
     const totalPages = Math.ceil(totalCount / limit);
 
-    // If no pagination params provided and no search query, return simple array for backward compatibility
+    // If no pagination params provided, return simple array for backward compatibility
     const hasPaginationParams =
       searchParams.get("page") || searchParams.get("limit");
-    const hasSearchQuery = searchQuery && searchQuery.trim();
 
-    if (!hasPaginationParams && !hasSearchQuery && limit === 10) {
-      // Backward compatibility: return array if no pagination/search params
+    if (!hasPaginationParams && limit === 10) {
+      // Backward compatibility: return array if no pagination params
       return NextResponse.json(products);
     }
 

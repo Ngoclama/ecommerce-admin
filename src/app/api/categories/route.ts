@@ -1,5 +1,7 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { API_MESSAGES, HTTP_STATUS, PAGINATION } from "@/lib/constants";
+import { devError } from "@/lib/api-utils";
 
 // ───────────────────────────────────────────────
 // GET: Public API - Lấy tất cả categories (không cần storeId)
@@ -33,17 +35,15 @@ export async function GET(req: Request) {
       orderBy: {
         name: "asc", // Sort by name instead of createdAt for better performance
       },
-      take: 1000, // Limit to prevent huge queries
+      take: PAGINATION.MAX_LIMIT * 10, // Giới hạn để tránh query quá lớn
     });
 
     return NextResponse.json({ success: true, data: categories });
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("[CATEGORIES_PUBLIC_GET]", error);
-    }
+    devError("[CATEGORIES_PUBLIC_GET] Lỗi khi lấy danh sách categories:", error);
     return NextResponse.json(
-      { success: false, message: "Internal Server Error" },
-      { status: 500 }
+      { success: false, message: API_MESSAGES.SERVER_ERROR },
+      { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     );
   }
 }

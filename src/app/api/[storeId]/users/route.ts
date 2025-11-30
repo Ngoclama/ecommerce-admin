@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
+import { API_MESSAGES, HTTP_STATUS } from "@/lib/constants";
+import { devError } from "@/lib/api-utils";
 
 // Lấy danh sách User
 export async function GET(
@@ -12,7 +14,9 @@ export async function GET(
     const { userId } = await auth();
 
     if (!userId) {
-      return new NextResponse("Unauthenticated", { status: 401 });
+      return new NextResponse(API_MESSAGES.UNAUTHENTICATED, { 
+        status: HTTP_STATUS.UNAUTHORIZED 
+      });
     }
 
     const users = await prisma.user.findMany({
@@ -26,7 +30,9 @@ export async function GET(
 
     return NextResponse.json(users);
   } catch (error) {
-    console.log("[USERS_GET]", error);
-    return new NextResponse("Internal error", { status: 500 });
+    devError("[USERS_GET] Lỗi khi lấy danh sách users:", error);
+    return new NextResponse(API_MESSAGES.SERVER_ERROR, { 
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR 
+    });
   }
 }

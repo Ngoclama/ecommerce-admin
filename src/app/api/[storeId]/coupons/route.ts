@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { API_MESSAGES, HTTP_STATUS, COUPON_TYPES, DEFAULTS, PRISMA_ERROR_CODES } from "@/lib/constants";
+import { devError } from "@/lib/api-utils";
 
 export async function POST(
   req: Request,
@@ -13,17 +15,28 @@ export async function POST(
 
     const { code, value, type, expiresAt } = body;
 
-    if (!userId) return new NextResponse("Unauthenticated", { status: 403 });
-    if (!code) return new NextResponse("Code is required", { status: 400 });
+    if (!userId) {
+      return new NextResponse(API_MESSAGES.UNAUTHENTICATED, { 
+        status: HTTP_STATUS.UNAUTHORIZED 
+      });
+    }
+    if (!code) {
+      return new NextResponse(API_MESSAGES.CODE_REQUIRED, { 
+        status: HTTP_STATUS.BAD_REQUEST 
+      });
+    }
     
     // Nếu không có value hoặc value <= 0, mặc định là 1
-    const finalValue = value && value > 0 ? Number(value) : 1;
+    const finalValue = value && value > 0 ? Number(value) : DEFAULTS.COUPON_VALUE;
     
     // Nếu không có type, mặc định là PERCENT
-    const finalType = type || "PERCENT";
+    const finalType = type || DEFAULTS.COUPON_TYPE;
 
-    if (!storeId)
-      return new NextResponse("Store id is required", { status: 400 });
+    if (!storeId) {
+      return new NextResponse(API_MESSAGES.STORE_ID_REQUIRED, { 
+        status: HTTP_STATUS.BAD_REQUEST 
+      });
+    }
 
     const storeByUserId = await prisma.store.findFirst({
       where: { id: storeId, userId },
@@ -40,10 +53,9 @@ export async function POST(
       if (selectedDate < today) {
         return NextResponse.json(
           {
-            error:
-              "Expiration date cannot be in the past. Please select a future date.",
+            error: API_MESSAGES.EXPIRED_DATE_PAST,
           },
-          { status: 400 }
+          { status: HTTP_STATUS.BAD_REQUEST }
         );
       }
     }
@@ -58,11 +70,9 @@ export async function POST(
     if (existingCoupon) {
       return NextResponse.json(
         {
-          error: `Coupon code "${code
-            .trim()
-            .toUpperCase()}" already exists. Please change the code name and try again.`,
+          error: `${API_MESSAGES.DUPLICATE_CODE}: "${code.trim().toUpperCase()}". Vui lòng đổi tên mã và thử lại.`,
         },
-        { status: 409 }
+        { status: HTTP_STATUS.CONFLICT }
       );
     }
 
@@ -101,10 +111,10 @@ export async function GET(
 
     return NextResponse.json(coupons);
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("[COUPONS_GET]", error);
-    }
-    return new NextResponse("Internal error", { status: 500 });
+    devError("[COUPONS_GET] Lỗi khi lấy danh sách coupon:", error);
+    return new NextResponse(API_MESSAGES.SERVER_ERROR, { 
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR 
+    });
   }
 }
 
@@ -116,10 +126,17 @@ export async function DELETE(
     const { storeId } = await params;
     const { userId } = await auth();
 
-    if (!userId) return new NextResponse("Unauthenticated", { status: 403 });
+    if (!userId) {
+      return new NextResponse(API_MESSAGES.UNAUTHENTICATED, { 
+        status: HTTP_STATUS.UNAUTHORIZED 
+      });
+    }
 
-    if (!storeId)
-      return new NextResponse("Store id is required", { status: 400 });
+    if (!storeId) {
+      return new NextResponse(API_MESSAGES.STORE_ID_REQUIRED, { 
+        status: HTTP_STATUS.BAD_REQUEST 
+      });
+    }
 
     const storeByUserId = await prisma.store.findFirst({
       where: { id: storeId, userId },
@@ -128,8 +145,8 @@ export async function DELETE(
     if (!storeByUserId)
       return new NextResponse("Unauthorized", { status: 405 });
 
-    // Check if request body has specific IDs to delete
-    let body: any = {};
+    // Kiểm tra request body có chứa IDs cụ thể để xóa không
+    let body: { ids?: string[] } = {};
     const contentLength = req.headers.get("content-length");
     if (contentLength && parseInt(contentLength) > 0) {
       try {
@@ -158,9 +175,9 @@ export async function DELETE(
       if (couponIds.length === 0) {
         return NextResponse.json(
           {
-            message: "No valid coupons found to delete.",
+            message: "Không tìm thấy coupon hợp lệ để xóa.",
           },
-          { status: 400 }
+          { status: HTTP_STATUS.BAD_REQUEST }
         );
       }
     } else {
@@ -181,13 +198,13 @@ export async function DELETE(
     });
 
     return NextResponse.json({
-      message: "All coupons deleted",
+      message: `Đã xóa thành công ${result.count} coupon.`,
       count: result.count,
     });
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("[COUPONS_DELETE_ALL]", error);
-    }
-    return new NextResponse("Internal error", { status: 500 });
+    devError("[COUPONS_DELETE_ALL] Lỗi khi xóa coupon:", error);
+    return new NextResponse(API_MESSAGES.SERVER_ERROR, { 
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR 
+    });
   }
 }

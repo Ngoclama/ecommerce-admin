@@ -24,7 +24,7 @@ interface ShippingAddress {
 export async function POST(req: Request) {
   try {
     if (process.env.NODE_ENV === "development") {
-      console.log("[CHECKOUT_PUBLIC_POST] Request received");
+      console.log("[CHECKOUT_PUBLIC_POST] Đã nhận request");
     }
     const {
       items,
@@ -46,10 +46,10 @@ export async function POST(req: Request) {
       customerNote?: string | null;
     } = await req.json();
 
-    // Log để debug
+    // Ghi log để debug (chỉ trong development)
     if (process.env.NODE_ENV === "development") {
-      console.log("[CHECKOUT_PUBLIC_POST] Shipping Address:", shippingAddress);
-      console.log("[CHECKOUT_PUBLIC_POST] Shipping Method:", shippingMethod);
+      console.log("[CHECKOUT_PUBLIC_POST] Địa chỉ giao hàng:", shippingAddress);
+      console.log("[CHECKOUT_PUBLIC_POST] Phương thức giao hàng:", shippingMethod);
     }
 
     if (!items || items.length === 0) {
@@ -387,7 +387,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ url: session.url });
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
-      console.error("[CHECKOUT_PUBLIC_POST_ERROR]", error);
+      console.error("[CHECKOUT_PUBLIC_POST_ERROR] Lỗi khi xử lý checkout:", error);
     }
     return NextResponse.json(
       { message: "Lỗi máy chủ: Xử lý thanh toán thất bại." },

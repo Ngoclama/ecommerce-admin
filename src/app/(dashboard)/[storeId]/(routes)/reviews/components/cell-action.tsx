@@ -43,9 +43,9 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       setLoading(true);
       await axios.delete(`/api/${params.storeId}/reviews/${data.id}`);
       router.refresh();
-      toast.success("Review deleted.");
+      toast.success(t("actions.reviewDeleted"));
     } catch (error) {
-      toast.error("Something went wrong.");
+      toast.error(t("actions.somethingWentWrong"));
     } finally {
       setLoading(false);
       setOpenAlert(false);
@@ -56,14 +56,16 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const onToggleArchive = async () => {
     try {
       setLoading(true);
-      const newStatus = !data.isArchived; 
+      const newStatus = !data.isArchived;
       await axios.patch(`/api/${params.storeId}/reviews/${data.id}`, {
         isArchived: newStatus,
       });
-      toast.success(newStatus ? "Review hidden." : "Review visible.");
+      toast.success(
+        newStatus ? t("actions.reviewHidden") : t("actions.reviewVisible")
+      );
       router.refresh();
     } catch (error) {
-      toast.error("Something went wrong.");
+      toast.error(t("actions.somethingWentWrong"));
     } finally {
       setLoading(false);
     }
@@ -89,7 +91,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="h-8 w-8 p-0">
-            <span className="sr-only">Open menu</span>
+            <span className="sr-only">{t("actions.openMenu")}</span>
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>

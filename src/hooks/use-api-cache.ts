@@ -25,8 +25,27 @@ export const queryKeys = {
   coupons: (storeId: string) => ["coupons", storeId],
   billboards: (storeId: string) => ["billboards", storeId],
   users: (storeId: string) => ["users", storeId],
+  user: (storeId: string, userId: string) => ["user", storeId, userId],
   reviews: (storeId: string) => ["reviews", storeId],
+  user: (storeId: string, userId: string) => ["user", storeId, userId],
 };
+
+// Custom hook for fetching user details with cache
+export function useUser(storeId: string, userId: string | null) {
+  return useQuery({
+    queryKey: userId
+      ? queryKeys.user(storeId, userId)
+      : ["user", storeId, "null"],
+    queryFn: async () => {
+      if (!userId) return null;
+      const response = await axios.get(`/api/${storeId}/users/${userId}`);
+      return response.data;
+    },
+    enabled: !!userId && !!storeId,
+    staleTime: 0, // Always refetch to get latest data
+    refetchOnWindowFocus: true,
+  });
+}
 
 // Custom hook for fetching product details with cache
 export function useProduct(storeId: string, productId: string | null) {

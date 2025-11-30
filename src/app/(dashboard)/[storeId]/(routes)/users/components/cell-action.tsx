@@ -11,6 +11,7 @@ import {
   ShieldBan,
   Star,
   UserX,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner"; 
 import { useParams, useRouter } from "next/navigation";
@@ -24,6 +25,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UserColumn } from "./columns";
+import { UserViewModal } from "@/components/modals/user-view";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface CellActionProps {
   data: UserColumn;
@@ -32,7 +35,9 @@ interface CellActionProps {
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
 
   const onToggleVIP = async () => {
     try {
@@ -78,20 +83,31 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-8 w-8 p-0">
-          <span className="sr-only">Open menu</span>
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>Thao tác</DropdownMenuLabel>
-        <DropdownMenuItem
-          onClick={() => navigator.clipboard.writeText(data.id)}
-        >
-          <Copy className="mr-2 h-4 w-4" /> Copy ID
-        </DropdownMenuItem>
+    <>
+      <UserViewModal
+        isOpen={viewModalOpen}
+        onClose={() => setViewModalOpen(false)}
+        userId={data.id}
+      />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Mở menu</span>
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Thao tác</DropdownMenuLabel>
+          <DropdownMenuItem onClick={() => setViewModalOpen(true)}>
+            <Eye className="mr-2 h-4 w-4" />
+            {t("actions.viewDetails") || "Xem chi tiết"}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => navigator.clipboard.writeText(data.id)}
+          >
+            <Copy className="mr-2 h-4 w-4" />
+            {t("actions.copyId") || "Sao chép ID"}
+          </DropdownMenuItem>
 
         <DropdownMenuItem onClick={onToggleVIP}>
           {data.isVIP ? (
@@ -118,10 +134,12 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
         </DropdownMenuItem>
 
         <DropdownMenuItem onClick={onDelete}>
-          <Trash className="mr-2 h-4 w-4" /> Xóa User
+          <Trash className="mr-2 h-4 w-4" />
+          {t("actions.delete") || "Xóa"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    </>
   );
 };
 

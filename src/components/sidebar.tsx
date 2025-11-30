@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useParams, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   Users,
-  Image,
+  Image as ImageIcon,
   FolderTree,
   ShoppingCart,
   Star,
@@ -67,7 +68,7 @@ export function Sidebar({
     {
       href: `/${params.storeId}/billboards`,
       label: t("nav.billboards"),
-      icon: Image,
+      icon: ImageIcon,
       active: pathname.includes("billboards"),
     },
     {
@@ -254,11 +255,14 @@ export function Sidebar({
               </div>
             ) : (
               <div className="flex items-center justify-center">
-                <img
-                  src="/logo.png"
-                  alt="Logo"
-                  className="h-8 w-8 object-contain"
-                />
+                <div className="relative h-8 w-8">
+                  <Image
+                    src="/logo.png"
+                    alt="Logo"
+                    fill
+                    className="object-contain"
+                  />
+                </div>
               </div>
             )}
           </div>

@@ -2,6 +2,8 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import slugify from "slugify";
+import { API_MESSAGES, HTTP_STATUS, DEFAULTS } from "@/lib/constants";
+import { devLog, devError } from "@/lib/api-utils";
 
 // ───────────────────────────────────────────────
 // POST: Tạo sản phẩm mới
@@ -35,18 +37,36 @@ export async function POST(
       variants, // Nhận mảng variants từ form
     } = body;
 
-    if (!userId) return new NextResponse("Unauthenticated", { status: 401 });
-    if (!storeId)
-      return new NextResponse("Store ID is required", { status: 400 });
-    if (!name) return new NextResponse("Name is required", { status: 400 });
-    if (!price) return new NextResponse("Price is required", { status: 400 });
-    if (!categoryId)
-      return new NextResponse("Category ID is required", { status: 400 });
+    if (!userId) {
+      return new NextResponse(API_MESSAGES.UNAUTHENTICATED, { 
+        status: HTTP_STATUS.UNAUTHORIZED 
+      });
+    }
+    if (!storeId) {
+      return new NextResponse(API_MESSAGES.STORE_ID_REQUIRED, { 
+        status: HTTP_STATUS.BAD_REQUEST 
+      });
+    }
+    if (!name) {
+      return new NextResponse(API_MESSAGES.NAME_REQUIRED, { 
+        status: HTTP_STATUS.BAD_REQUEST 
+      });
+    }
+    if (!price) {
+      return new NextResponse(API_MESSAGES.PRICE_REQUIRED, { 
+        status: HTTP_STATUS.BAD_REQUEST 
+      });
+    }
+    if (!categoryId) {
+      return new NextResponse(API_MESSAGES.CATEGORY_ID_REQUIRED, { 
+        status: HTTP_STATUS.BAD_REQUEST 
+      });
+    }
 
     // Kiểm tra variants
     if (!variants || !Array.isArray(variants) || variants.length === 0) {
-      return new NextResponse("At least one variant is required", {
-        status: 400,
+      return new NextResponse(API_MESSAGES.VARIANTS_REQUIRED, {
+        status: HTTP_STATUS.BAD_REQUEST,
       });
     }
 
@@ -79,15 +99,15 @@ export async function POST(
         description,
         isFeatured: isFeatured ? true : false,
         isArchived: isArchived ? true : false,
-        isPublished: isPublished !== undefined ? isPublished : true,
+        isPublished: isPublished !== undefined ? isPublished : DEFAULTS.IS_PUBLISHED,
         categoryId,
         materialId: materialId || null,
-        gender: gender || "UNISEX",
+        gender: gender || DEFAULTS.GENDER,
         metaTitle: metaTitle || null,
         metaDescription: metaDescription || null,
         tags: tags || [],
-        trackQuantity: trackQuantity !== undefined ? trackQuantity : true,
-        allowBackorder: allowBackorder !== undefined ? allowBackorder : false,
+        trackQuantity: trackQuantity !== undefined ? trackQuantity : DEFAULTS.TRACK_QUANTITY,
+        allowBackorder: allowBackorder !== undefined ? allowBackorder : DEFAULTS.ALLOW_BACKORDER,
         storeId: storeId,
         images: {
           createMany: {
@@ -96,13 +116,21 @@ export async function POST(
         },
         variants: {
           createMany: {
-            data: variants.map((v: any) => ({
+            data: variants.map((v: {
+            sizeId: string;
+            colorId: string;
+            materialId?: string | null;
+            sku?: string | null;
+            inventory: number;
+            lowStockThreshold?: number;
+            price?: number | null;
+          }) => ({
               sizeId: v.sizeId,
               colorId: v.colorId,
               materialId: v.materialId || null,
               sku: v.sku || null,
               inventory: Number(v.inventory),
-              lowStockThreshold: Number(v.lowStockThreshold) || 10,
+              lowStockThreshold: Number(v.lowStockThreshold) || DEFAULTS.LOW_STOCK_THRESHOLD,
               price: v.price ? Number(v.price) : null,
             })),
           },
@@ -112,10 +140,10 @@ export async function POST(
 
     return NextResponse.json(product);
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.log("[PRODUCTS_POST]", error);
-    }
-    return new NextResponse("Internal Server Error", { status: 500 });
+    devError("[PRODUCTS_POST] Lỗi khi tạo sản phẩm:", error);
+    return new NextResponse(API_MESSAGES.SERVER_ERROR, { 
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR 
+    });
   }
 }
 
@@ -135,7 +163,9 @@ export async function GET(
     const isFeatured = searchParams.get("isFeatured");
 
     if (!storeId) {
-      return new NextResponse("Store ID is required", { status: 400 });
+      return new NextResponse(API_MESSAGES.STORE_ID_REQUIRED, { 
+        status: HTTP_STATUS.BAD_REQUEST 
+      });
     }
 
     // Tối ưu: chỉ select các field cần thiết
@@ -223,10 +253,10 @@ export async function GET(
 
     return NextResponse.json(products);
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.log("[PRODUCTS_GET]", error);
-    }
-    return new NextResponse("Internal Server Error", { status: 500 });
+    devError("[PRODUCTS_GET] Lỗi khi lấy danh sách sản phẩm:", error);
+    return new NextResponse(API_MESSAGES.SERVER_ERROR, { 
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR 
+    });
   }
 }
 
@@ -241,14 +271,21 @@ export async function DELETE(
     const { userId } = await auth();
     const { storeId } = await params;
 
-    if (!userId) return new NextResponse("Unauthenticated", { status: 401 });
+    if (!userId) {
+      return new NextResponse(API_MESSAGES.UNAUTHENTICATED, { 
+        status: HTTP_STATUS.UNAUTHORIZED 
+      });
+    }
 
     const storeByUserId = await prisma.store.findFirst({
       where: { id: storeId, userId },
     });
 
-    if (!storeByUserId)
-      return new NextResponse("Unauthorized", { status: 403 });
+    if (!storeByUserId) {
+      return new NextResponse(API_MESSAGES.UNAUTHORIZED, { 
+        status: HTTP_STATUS.FORBIDDEN 
+      });
+    }
 
     // Check if request body has specific IDs to delete
     let body: any = {};
@@ -280,9 +317,9 @@ export async function DELETE(
       if (productIds.length === 0) {
         return NextResponse.json(
           {
-            message: "No valid products found to delete.",
+            message: "Không tìm thấy sản phẩm hợp lệ để xóa.",
           },
-          { status: 400 }
+          { status: HTTP_STATUS.BAD_REQUEST }
         );
       }
     } else {
@@ -318,21 +355,21 @@ export async function DELETE(
     });
 
     return NextResponse.json({
-      message: `Successfully deleted all products.`,
+      message: `Đã xóa thành công ${result.count} sản phẩm.`,
       count: result.count,
     });
-  } catch (error: any) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("[PRODUCTS_DELETE_ALL_ERROR]", error);
-    }
+  } catch (error: unknown) {
+    devError("[PRODUCTS_DELETE_ALL_ERROR] Lỗi khi xóa sản phẩm:", error);
 
-    if (error.code === "P2003") {
+    if (error && typeof error === "object" && "code" in error && error.code === "P2003") {
       return new NextResponse(
-        "Failed to delete products due to foreign key constraints. Some products may be linked to orders.",
-        { status: 400 }
+        "Không thể xóa sản phẩm do ràng buộc khóa ngoại. Một số sản phẩm có thể đã được liên kết với đơn hàng.",
+        { status: HTTP_STATUS.BAD_REQUEST }
       );
     }
 
-    return new NextResponse("Internal Server Error", { status: 500 });
+    return new NextResponse(API_MESSAGES.SERVER_ERROR, { 
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR 
+    });
   }
 }

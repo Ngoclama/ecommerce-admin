@@ -9,6 +9,7 @@ import {
 import React, { useState } from "react";
 import { Store } from "@prisma/client";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -80,11 +81,14 @@ export default function StoreSwitcher({
           )}
         >
           <div className="flex items-center gap-2 truncate">
-            <img
-              src="/logo.png"
-              alt="Logo"
-              className="h-4 w-4 object-contain opacity-70"
-            />
+            <div className="relative h-4 w-4 shrink-0">
+              <Image
+                src="/logo.png"
+                alt="Logo"
+                fill
+                className="object-contain opacity-70"
+              />
+            </div>
             {currentStore?.label}
           </div>
           <ChevronDown

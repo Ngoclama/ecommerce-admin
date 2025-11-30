@@ -22,8 +22,8 @@ export class GHNProvider implements ShippingProvider {
     data: CreateShippingOrderData
   ): Promise<CreateShippingOrderResponse> {
     try {
-      // TODO: Implement actual GHN API call
-      // This is a placeholder implementation
+      // TODO: Triển khai API call thực tế cho GHN
+      // Đây là implementation placeholder
       const response = await fetch(`${this.apiUrl}/shipping-order/create`, {
         method: "POST",
         headers: {
@@ -85,7 +85,7 @@ export class GHNProvider implements ShippingProvider {
 
   async getTracking(trackingNumber: string): Promise<TrackingResponse> {
     try {
-      // TODO: Implement actual GHN tracking API
+      // TODO: Triển khai API tracking thực tế cho GHN
       const response = await fetch(`${this.apiUrl}/shipping-order/detail`, {
         method: "POST",
         headers: {

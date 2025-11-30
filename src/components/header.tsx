@@ -10,6 +10,7 @@ import {
   Image as ImageIcon,
   ChevronRight,
 } from "lucide-react";
+import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import NavbarUser from "./navbar-user";
@@ -240,11 +241,14 @@ export function Header({
       {/* Search Bar */}
       <div className="flex-1 max-w-md">
         <div className="relative">
-          <img
-            src="/logo.png"
-            alt="Logo"
-            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 object-contain opacity-60"
-          />
+          <div className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 opacity-60">
+            <Image
+              src="/logo.png"
+              alt="Logo"
+              fill
+              className="object-contain"
+            />
+          </div>
           <Input
             type="search"
             placeholder="Search..."
