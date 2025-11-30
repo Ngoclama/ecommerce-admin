@@ -27,7 +27,6 @@ export const queryKeys = {
   users: (storeId: string) => ["users", storeId],
   user: (storeId: string, userId: string) => ["user", storeId, userId],
   reviews: (storeId: string) => ["reviews", storeId],
-  user: (storeId: string, userId: string) => ["user", storeId, userId],
 };
 
 // Custom hook for fetching user details with cache
