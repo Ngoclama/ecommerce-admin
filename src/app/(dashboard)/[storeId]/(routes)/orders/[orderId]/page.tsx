@@ -51,14 +51,36 @@ const OrderPage = async ({
   const transformedOrder = {
     ...order,
     orderItems: order.orderItems.map((item) => ({
-      ...item,
-      productName: item.productName || item.product.name,
+      id: item.id,
+      productName: item.productName || item.product.name || "",
+      quantity: item.quantity,
+      price: item.price,
+      productPrice: item.productPrice,
+      sizeName: item.sizeName,
+      colorName: item.colorName,
+      materialName: item.materialName,
       product: {
         id: item.product.id,
         name: item.product.name,
         images: item.product.images.map((img) => ({ url: img.url })),
       },
     })),
+  } as typeof order & {
+    orderItems: Array<{
+      id: string;
+      productName: string;
+      quantity: number;
+      price: number | null;
+      productPrice: number | null;
+      sizeName: string | null;
+      colorName: string | null;
+      materialName: string | null;
+      product: {
+        id: string;
+        name: string;
+        images: Array<{ url: string }>;
+      };
+    }>;
   };
 
   return (
