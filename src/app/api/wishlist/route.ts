@@ -3,6 +3,42 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { verifyToken, createClerkClient } from "@clerk/backend";
 import prisma from "@/lib/prisma";
 
+// Helper function to get CORS headers based on request origin
+const getCorsHeaders = (req: Request) => {
+  const origin = req.headers.get("origin");
+  const allowedOrigins = [
+    process.env.FRONTEND_STORE_URL,
+    process.env.NEXT_PUBLIC_API_URL?.replace("/api", ""),
+    "https://ecommerce-store-henna-nine.vercel.app", // Store production URL
+    "http://localhost:3000",
+    "http://localhost:3001",
+  ].filter(Boolean) as string[];
+
+  // When using credentials, we MUST use a specific origin, not wildcard
+  // If origin matches any allowed origin, use it
+  // Otherwise, use the store URL from env (never use wildcard)
+  let allowedOrigin: string;
+
+  if (origin) {
+    // Check if origin exactly matches or starts with any allowed origin
+    const matchedOrigin = allowedOrigins.find(
+      (url) => origin === url || origin.startsWith(url)
+    );
+    allowedOrigin = matchedOrigin || origin; // Use origin if it's provided
+  } else {
+    // No origin header (e.g., same-origin request), use store URL
+    allowedOrigin =
+      allowedOrigins[0] || "https://ecommerce-store-henna-nine.vercel.app";
+  }
+
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Credentials": "true",
+  };
+};
+
 async function getClerkUserId(
   req: Request
 ): Promise<{ userId: string; isStoreUser: boolean } | null> {
@@ -81,6 +117,19 @@ async function getClerkUser(clerkUserId: string, isStoreUser: boolean) {
 
 export async function POST(req: Request) {
   try {
+    // Handle CORS preflight
+    if (req.method === "OPTIONS") {
+      const corsHeaders = getCorsHeaders(req);
+      return new NextResponse(null, {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Access-Control-Max-Age": "86400",
+        },
+      });
+    }
+
+    const corsHeaders = getCorsHeaders(req);
     const headers = req.headers;
     const cookieHeader = headers.get("cookie");
     const authHeader = headers.get("authorization");
@@ -128,14 +177,14 @@ export async function POST(req: Request) {
       }
       return NextResponse.json(
         { success: false, message: "Unauthorized - Please sign in" },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
     if (!productId) {
       return NextResponse.json(
         { success: false, message: "Product ID required" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -187,7 +236,7 @@ export async function POST(req: Request) {
           console.error("[WISHLIST_USER_CREATE_ERROR]", createError);
           return NextResponse.json(
             { success: false, message: "Failed to create user account" },
-            { status: 500 }
+            { status: 500, headers: corsHeaders }
           );
         }
       }
@@ -251,11 +300,14 @@ export async function POST(req: Request) {
         await prisma.wishlist.delete({
           where: { id: existingWishlist.id },
         });
-        return NextResponse.json({
-          success: true,
-          isLiked: false,
-          message: "Removed from wishlist",
-        });
+        return NextResponse.json(
+          {
+            success: true,
+            isLiked: false,
+            message: "Removed from wishlist",
+          },
+          { headers: corsHeaders }
+        );
       } else {
         // Chưa có trong wishlist -> Thêm
         await prisma.wishlist.create({
@@ -264,11 +316,14 @@ export async function POST(req: Request) {
             productId,
           },
         });
-        return NextResponse.json({
-          success: true,
-          isLiked: true,
-          message: "Added to wishlist",
-        });
+        return NextResponse.json(
+          {
+            success: true,
+            isLiked: true,
+            message: "Added to wishlist",
+          },
+          { headers: corsHeaders }
+        );
       }
     }
 
@@ -277,11 +332,14 @@ export async function POST(req: Request) {
 
     if (shouldAdd) {
       if (existingWishlist) {
-        return NextResponse.json({
-          success: true,
-          isLiked: true,
-          message: "Product already in wishlist",
-        });
+        return NextResponse.json(
+          {
+            success: true,
+            isLiked: true,
+            message: "Product already in wishlist",
+          },
+          { headers: corsHeaders }
+        );
       }
 
       await prisma.wishlist.create({
@@ -291,11 +349,14 @@ export async function POST(req: Request) {
         },
       });
 
-      return NextResponse.json({
-        success: true,
-        isLiked: true,
-        message: "Added to wishlist",
-      });
+      return NextResponse.json(
+        {
+          success: true,
+          isLiked: true,
+          message: "Added to wishlist",
+        },
+        { headers: corsHeaders }
+      );
     } else {
       if (existingWishlist) {
         await prisma.wishlist.delete({
@@ -303,31 +364,48 @@ export async function POST(req: Request) {
         });
       }
 
-      return NextResponse.json({
-        success: true,
-        isLiked: false,
-        message: "Removed from wishlist",
-      });
+      return NextResponse.json(
+        {
+          success: true,
+          isLiked: false,
+          message: "Removed from wishlist",
+        },
+        { headers: corsHeaders }
+      );
     }
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error("[WISHLIST_PUBLIC_POST]", error);
     }
+    const corsHeaders = getCorsHeaders(req);
     return NextResponse.json(
       { success: false, message: "Internal Server Error" },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
 
 export async function GET(req: Request) {
   try {
+    // Handle CORS preflight
+    if (req.method === "OPTIONS") {
+      const corsHeaders = getCorsHeaders(req);
+      return new NextResponse(null, {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Access-Control-Max-Age": "86400",
+        },
+      });
+    }
+
+    const corsHeaders = getCorsHeaders(req);
     const clerkAuth = await getClerkUserId(req);
     const clerkUserId = clerkAuth?.userId || null;
     if (!clerkUserId) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -338,7 +416,7 @@ export async function GET(req: Request) {
     if (!user) {
       return NextResponse.json(
         { success: false, message: "User not found" },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       );
     }
 
@@ -351,17 +429,21 @@ export async function GET(req: Request) {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: wishlist.map((item) => item.productId),
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: wishlist.map((item) => item.productId),
+      },
+      { headers: corsHeaders }
+    );
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error("[WISHLIST_PUBLIC_GET]", error);
     }
+    const corsHeaders = getCorsHeaders(req);
     return NextResponse.json(
       { success: false, message: "Internal Server Error" },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }

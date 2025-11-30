@@ -3,6 +3,42 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import prisma from "@/lib/prisma";
 
+// Helper function to get CORS headers based on request origin
+const getCorsHeaders = (req: Request) => {
+  const origin = req.headers.get("origin");
+  const allowedOrigins = [
+    process.env.FRONTEND_STORE_URL,
+    process.env.NEXT_PUBLIC_API_URL?.replace("/api", ""),
+    "https://ecommerce-store-henna-nine.vercel.app", // Store production URL
+    "http://localhost:3000",
+    "http://localhost:3001",
+  ].filter(Boolean) as string[];
+
+  // When using credentials, we MUST use a specific origin, not wildcard
+  // If origin matches any allowed origin, use it
+  // Otherwise, use the store URL from env (never use wildcard)
+  let allowedOrigin: string;
+
+  if (origin) {
+    // Check if origin exactly matches or starts with any allowed origin
+    const matchedOrigin = allowedOrigins.find(
+      (url) => origin === url || origin.startsWith(url)
+    );
+    allowedOrigin = matchedOrigin || origin; // Use origin if it's provided
+  } else {
+    // No origin header (e.g., same-origin request), use store URL
+    allowedOrigin =
+      allowedOrigins[0] || "https://ecommerce-store-henna-nine.vercel.app";
+  }
+
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Credentials": "true",
+  };
+};
+
 interface CheckoutItem {
   productId: string;
   variantId?: string; // Variant ID (nếu có)
@@ -24,6 +60,18 @@ interface ShippingAddress {
 
 export async function POST(req: Request) {
   try {
+    // Handle CORS preflight
+    if (req.method === "OPTIONS") {
+      const corsHeaders = getCorsHeaders(req);
+      return new NextResponse(null, {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Access-Control-Max-Age": "86400",
+        },
+      });
+    }
+
     if (process.env.NODE_ENV === "development") {
       console.log("[CHECKOUT_PUBLIC_POST] Đã nhận request");
     }
@@ -50,13 +98,18 @@ export async function POST(req: Request) {
     // Ghi log để debug (chỉ trong development)
     if (process.env.NODE_ENV === "development") {
       console.log("[CHECKOUT_PUBLIC_POST] Địa chỉ giao hàng:", shippingAddress);
-      console.log("[CHECKOUT_PUBLIC_POST] Phương thức giao hàng:", shippingMethod);
+      console.log(
+        "[CHECKOUT_PUBLIC_POST] Phương thức giao hàng:",
+        shippingMethod
+      );
     }
+
+    const corsHeaders = getCorsHeaders(req);
 
     if (!items || items.length === 0) {
       return NextResponse.json(
         { message: "Vui lòng thêm sản phẩm vào giỏ hàng." },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -92,6 +145,7 @@ export async function POST(req: Request) {
         },
         {
           status: 404,
+          headers: corsHeaders,
         }
       );
     }
@@ -101,7 +155,7 @@ export async function POST(req: Request) {
     if (!storeId) {
       return NextResponse.json(
         { message: "Không tìm thấy cửa hàng." },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -112,6 +166,7 @@ export async function POST(req: Request) {
         { message: "Tất cả sản phẩm phải từ cùng một cửa hàng." },
         {
           status: 400,
+          headers: corsHeaders,
         }
       );
     }
@@ -128,7 +183,7 @@ export async function POST(req: Request) {
           {
             message: `Không tìm thấy sản phẩm với ID ${checkoutItem.productId}.`,
           },
-          { status: 404 }
+          { status: 404, headers: corsHeaders }
         );
       }
 
@@ -153,7 +208,7 @@ export async function POST(req: Request) {
             {
               message: `Sản phẩm '${product.name}' (${variant.size.name}/${variant.color.name}) chỉ còn ${variant.inventory} cái.`,
             },
-            { status: 400 }
+            { status: 400, headers: corsHeaders }
           );
         }
       } else {
@@ -167,7 +222,7 @@ export async function POST(req: Request) {
             {
               message: `Sản phẩm '${product.name}' chỉ còn ${totalInventory} cái.`,
             },
-            { status: 400 }
+            { status: 400, headers: corsHeaders }
           );
         }
       }
@@ -181,6 +236,7 @@ export async function POST(req: Request) {
           { message: `Giá không hợp lệ cho sản phẩm ${product.name}` },
           {
             status: 400,
+            headers: corsHeaders,
           }
         );
       }
@@ -211,7 +267,7 @@ export async function POST(req: Request) {
 
     // Tính toán tổng giá trị đơn hàng
     const tax = 0; // Có thể tính từ subtotal
-    
+
     // Tính discount từ coupon nếu có
     let discount = 0;
     if (coupon) {
@@ -223,7 +279,7 @@ export async function POST(req: Request) {
       // Đảm bảo discount không vượt quá subtotal
       discount = Math.min(discount, subtotal);
     }
-    
+
     // Tính shipping cost dựa trên method và subtotal
     let shippingCost = 0;
     if (subtotal >= 500000) {
@@ -345,11 +401,16 @@ export async function POST(req: Request) {
 
     // Nếu là COD, trả về success ngay lập tức
     if (paymentMethod === "COD") {
-      return NextResponse.json({
-        success: true,
-        orderId: order.id,
-        message: "Đặt hàng thành công! Bạn sẽ thanh toán khi nhận hàng.",
-      });
+      return NextResponse.json(
+        {
+          success: true,
+          orderId: order.id,
+          message: "Đặt hàng thành công! Bạn sẽ thanh toán khi nhận hàng.",
+        },
+        {
+          headers: corsHeaders,
+        }
+      );
     }
 
     // Chỉ tạo Stripe session cho các phương thức thanh toán khác
@@ -385,14 +446,26 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json(
+      { url: session.url },
+      {
+        headers: corsHeaders,
+      }
+    );
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
-      console.error("[CHECKOUT_PUBLIC_POST_ERROR] Lỗi khi xử lý checkout:", error);
+      console.error(
+        "[CHECKOUT_PUBLIC_POST_ERROR] Lỗi khi xử lý checkout:",
+        error
+      );
     }
+    const corsHeaders = getCorsHeaders(req);
     return NextResponse.json(
       { message: "Lỗi máy chủ: Xử lý thanh toán thất bại." },
-      { status: 500 }
+      {
+        status: 500,
+        headers: corsHeaders,
+      }
     );
   }
 }
