@@ -47,10 +47,24 @@ const OrderPage = async ({
     );
   }
 
+  // Transform order data to match OrderForm interface
+  const transformedOrder = {
+    ...order,
+    orderItems: order.orderItems.map((item) => ({
+      ...item,
+      productName: item.productName || item.product.name,
+      product: {
+        id: item.product.id,
+        name: item.product.name,
+        images: item.product.images.map((img) => ({ url: img.url })),
+      },
+    })),
+  };
+
   return (
     <div className="flex flex-col">
       <div className="flex-1 space-y-4 p-8 pt-6">
-        <OrderForm initialData={order} />
+        <OrderForm initialData={transformedOrder} />
       </div>
     </div>
   );
