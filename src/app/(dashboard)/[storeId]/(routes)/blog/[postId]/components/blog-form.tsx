@@ -242,19 +242,22 @@ export const BlogForm: React.FC<BlogFormProps> = ({ initialData }) => {
             <FormField
               control={form.control}
               name="content"
-              render={({ field }) => (
-                <FormItem className="col-span-3">
-                  <FormLabel>{t("forms.blog.content")}</FormLabel>
-                  <FormControl>
-                    <Editor
-                      value={(field.value ?? "") as string}
-                      onChange={field.onChange}
-                      disabled={loading}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const editorValue = field.value ?? "";
+                return (
+                  <FormItem className="col-span-3">
+                    <FormLabel>{t("forms.blog.content")}</FormLabel>
+                    <FormControl>
+                      <Editor
+                        value={editorValue}
+                        onChange={field.onChange}
+                        disabled={loading}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField

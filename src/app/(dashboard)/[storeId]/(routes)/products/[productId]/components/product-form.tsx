@@ -613,15 +613,22 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             <FormField
               control={form.control}
               name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("forms.product.descriptionField")}</FormLabel>
-                  <FormControl>
-                    <Editor {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const editorValue = field.value ?? "";
+                return (
+                  <FormItem>
+                    <FormLabel>{t("forms.product.descriptionField")}</FormLabel>
+                    <FormControl>
+                      <Editor
+                        value={editorValue}
+                        onChange={field.onChange}
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
