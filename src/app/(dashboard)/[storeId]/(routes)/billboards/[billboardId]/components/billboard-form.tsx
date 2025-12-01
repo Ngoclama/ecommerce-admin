@@ -20,6 +20,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
+import { handleError } from "@/lib/error-handler";
 import { AlertModal } from "@/components/modals/alert-modal";
 import { BillboardViewModal } from "@/components/modals/billboard-view";
 import ImageUpload from "@/components/ui/image-upload";
@@ -77,18 +78,21 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
         body: JSON.stringify(data),
       });
 
-      if (!res.ok)
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
         throw new Error(
-          initialData
-            ? t("forms.billboard.updated")
-            : t("forms.billboard.created")
+          (errorData as { message?: string })?.message ||
+            (initialData
+              ? t("forms.billboard.updated")
+              : t("forms.billboard.created"))
         );
+      }
 
       toast.success(initialData ? t("forms.billboard.updated") : t("forms.billboard.created"));
       router.refresh();
       router.push(`/${params.storeId}/billboards`);
     } catch (error) {
-      toast.error(t("actions.somethingWentWrong"));
+      handleError(error, t("actions.somethingWentWrong") || "Có lỗi xảy ra.");
     } finally {
       setIsLoading(false);
     }

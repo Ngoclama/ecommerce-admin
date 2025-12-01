@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
+import { handleError } from "@/lib/error-handler";
 import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
@@ -104,9 +105,9 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
       toast.success(result.message || "All categories deleted successfully!");
       router.refresh();
     } catch (error) {
-      console.error("[CLIENT ERROR]", error);
-      toast.error(
-        "Unable to delete categories. Remove related products first."
+      handleError(
+        error,
+        "Không thể xóa danh mục. Vui lòng xóa các sản phẩm liên quan trước."
       );
     } finally {
       setIsLoading(false);
@@ -146,11 +147,10 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
       setSelectedRows([]);
       router.refresh();
     } catch (error: any) {
-      console.error("[DELETE_SELECTED_ERROR]", error);
-      toast.error(
-        error.message ||
-          t("actions.deleteSelectedError") ||
-          "Unable to delete selected categories. Remove related products first."
+      handleError(
+        error,
+        t("actions.deleteSelectedError") ||
+          "Không thể xóa danh mục đã chọn. Vui lòng xóa các sản phẩm liên quan trước."
       );
     } finally {
       setIsLoading(false);

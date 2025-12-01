@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
+import { handleError } from "@/lib/error-handler";
 import { Plus, MoreHorizontal, Trash } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -55,10 +56,7 @@ export const ReturnClient: React.FC<ReturnClientProps> = ({ data }) => {
       toast.success(result.message || "All returns deleted successfully.");
       router.refresh();
     } catch (error: any) {
-      console.error("[RETURNS_DELETE_ALL_ERROR]", error);
-      toast.error(
-        error.message || "Failed to delete returns. Please try again."
-      );
+      handleError(error, "Không thể xóa đơn trả hàng. Vui lòng thử lại.");
     } finally {
       setIsLoading(false);
       setDeleteAllOpen(false);
@@ -95,11 +93,10 @@ export const ReturnClient: React.FC<ReturnClientProps> = ({ data }) => {
       setSelectedRows([]);
       router.refresh();
     } catch (error: any) {
-      console.error("[DELETE_SELECTED_ERROR]", error);
-      toast.error(
-        error.message ||
-          t("actions.deleteSelectedError") ||
-          "Unable to delete selected returns."
+      handleError(
+        error,
+        t("actions.deleteSelectedError") ||
+          "Không thể xóa đơn trả hàng đã chọn."
       );
     } finally {
       setIsLoading(false);

@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "dev": "next dev",
+    "dev:turbo": "next dev --turbopack",
+    "build": "next build",
+    "build:turbo": "next build --turbopack",
     "start": "next start",
     "reset-db": "ts-node scripts/reset-db.ts",
     "postinstall": "prisma generate"
@@ -32,6 +34,7 @@
     "@types/axios": "^0.9.36",
     "@types/bson": "^4.0.5",
     "@types/date-fns": "^2.5.3",
+    "@types/papaparse": "^5.3.14",
     "@uploadthing/react": "^7.3.3",
     "axios": "^1.13.2",
     "browser-image-compression": "^2.0.2",
@@ -49,6 +52,7 @@
     "next-cloudinary": "^6.17.0",
     "next-themes": "^0.4.6",
     "openai": "^6.8.0",
+    "papaparse": "^5.4.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-dropzone": "^14.3.8",
@@ -66,6 +70,7 @@
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
     "uploadthing": "^7.7.4",
+    "xlsx": "^0.18.5",
     "zod": "^4.1.12",
     "zustand": "^5.0.8"
   },

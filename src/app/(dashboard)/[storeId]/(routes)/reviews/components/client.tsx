@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { handleError } from "@/lib/error-handler";
 import { MoreHorizontal, Trash } from "lucide-react";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
@@ -51,8 +52,7 @@ export const ReviewsClient: React.FC<ReviewsClientProps> = ({ data }) => {
       );
       router.refresh();
     } catch (error: any) {
-      console.error("[REVIEWS_DELETE_ALL_ERROR]", error);
-      toast.error(error.message || "Failed to delete reviews.");
+      handleError(error, "Không thể xóa đánh giá.");
     } finally {
       setIsLoading(false);
       setDeleteAllOpen(false);
@@ -89,11 +89,10 @@ export const ReviewsClient: React.FC<ReviewsClientProps> = ({ data }) => {
       setSelectedRows([]);
       router.refresh();
     } catch (error: any) {
-      console.error("[DELETE_SELECTED_ERROR]", error);
-      toast.error(
-        error.message ||
-          t("actions.deleteSelectedError") ||
-          "Unable to delete selected reviews."
+      handleError(
+        error,
+        t("actions.deleteSelectedError") ||
+          "Không thể xóa đánh giá đã chọn."
       );
     } finally {
       setIsLoading(false);

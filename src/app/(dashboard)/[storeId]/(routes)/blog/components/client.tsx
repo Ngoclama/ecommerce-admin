@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Plus, MoreHorizontal, Trash } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
+import { handleError } from "@/lib/error-handler";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -43,7 +44,7 @@ export const BlogClient: React.FC<BlogClientProps> = ({ data }) => {
       router.refresh();
       toast.success("All blog posts deleted successfully.");
     } catch (error) {
-      toast.error("Something went wrong.");
+      handleError(error, "Có lỗi xảy ra khi xóa bài viết.");
     } finally {
       setIsLoading(false);
       setDeleteAllOpen(false);
@@ -81,11 +82,10 @@ export const BlogClient: React.FC<BlogClientProps> = ({ data }) => {
       setSelectedRows([]);
       router.refresh();
     } catch (error: any) {
-      console.error("[DELETE_SELECTED_ERROR]", error);
-      toast.error(
-        error.message ||
-          t("actions.deleteSelectedError") ||
-          "Unable to delete selected blog posts."
+      handleError(
+        error,
+        t("actions.deleteSelectedError") ||
+          "Không thể xóa bài viết đã chọn."
       );
     } finally {
       setIsLoading(false);

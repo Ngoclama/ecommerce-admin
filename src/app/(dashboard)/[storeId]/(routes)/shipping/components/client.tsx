@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
+import { handleError } from "@/lib/error-handler";
 import { MoreHorizontal, Trash } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -65,8 +66,7 @@ export const ShippingClient: React.FC<ShippingClientProps> = ({ data }) => {
       );
       router.refresh();
     } catch (error: any) {
-      console.error("[SHIPPING_DELETE_ALL_ERROR]", error);
-      toast.error(error.message || "Failed to delete shipping orders.");
+      handleError(error, "Không thể xóa đơn vận chuyển.");
     } finally {
       setIsLoading(false);
       setDeleteAllOpen(false);
@@ -106,11 +106,10 @@ export const ShippingClient: React.FC<ShippingClientProps> = ({ data }) => {
       setSelectedRows([]);
       router.refresh();
     } catch (error: any) {
-      console.error("[DELETE_SELECTED_ERROR]", error);
-      toast.error(
-        error.message ||
-          t("actions.deleteSelectedError") ||
-          "Unable to delete selected shipping orders."
+      handleError(
+        error,
+        t("actions.deleteSelectedError") ||
+          "Không thể xóa đơn vận chuyển đã chọn."
       );
     } finally {
       setIsLoading(false);

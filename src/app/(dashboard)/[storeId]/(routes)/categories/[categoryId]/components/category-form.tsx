@@ -20,6 +20,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
+import { handleError } from "@/lib/error-handler";
 import { AlertModal } from "@/components/modals/alert-modal";
 import { CategoryViewModal } from "@/components/modals/category-view";
 import {
@@ -89,11 +90,20 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
         : `/api/${params.storeId}/categories`;
       const method = initialData ? "PATCH" : "POST";
 
-      await fetch(endpoint, {
+      const res = await fetch(endpoint, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(
+          (errorData as { message?: string })?.message ||
+            t("actions.somethingWentWrong") ||
+            "Có lỗi xảy ra."
+        );
+      }
 
       toast.success(
         initialData ? t("forms.category.updated") : t("forms.category.created")
@@ -101,7 +111,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       router.refresh();
       router.push(`/${params.storeId}/categories`);
     } catch (error) {
-      toast.error(t("actions.somethingWentWrong"));
+      handleError(error, t("actions.somethingWentWrong") || "Có lỗi xảy ra.");
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +127,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       router.refresh();
       router.push(`/${params.storeId}/categories`);
     } catch (error) {
-      toast.error(t("forms.category.errorDelete"));
+      handleError(error, t("forms.category.errorDelete") || "Không thể xóa danh mục. Vui lòng xóa các sản phẩm liên quan trước.");
     } finally {
       setIsLoading(false);
       setIsOpen(false);

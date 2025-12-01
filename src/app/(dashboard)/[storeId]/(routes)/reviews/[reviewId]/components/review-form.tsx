@@ -20,6 +20,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
+import { handleError } from "@/lib/error-handler";
 import { AlertModal } from "@/components/modals/alert-modal";
 import { motion } from "framer-motion";
 import {
@@ -88,21 +89,20 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       });
 
       if (!res.ok) {
-        const errorBody = await res.json();
-        console.error("[onSubmit Category] API Error:", errorBody);
+        const errorBody = await res.json().catch(() => ({}));
         throw new Error(
-          initialData
-            ? "Failed to update category"
-            : "Failed to create category"
+          (errorBody as { message?: string })?.message ||
+            (initialData
+              ? "Failed to update review"
+              : "Failed to create review")
         );
       }
 
-      toast.success(initialData ? "Category updated!" : "Category created!");
+      toast.success(initialData ? "Review updated!" : "Review created!");
       router.refresh();
-      router.push(`/${params.storeId}/categories`);
+      router.push(`/${params.storeId}/reviews`);
     } catch (error) {
-      toast.error("Something went wrong!");
-      console.error("[onSubmit Category]", error);
+      handleError(error, "Có lỗi xảy ra khi cập nhật đánh giá.");
     } finally {
       setIsLoading(false);
     }
@@ -118,9 +118,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       router.push(`/${params.storeId}/categories`);
       router.refresh();
     } catch (error) {
-      toast.error(
-        "Make sure you removed all products using this category first."
-      );
+      handleError(error, "Không thể xóa đánh giá. Vui lòng thử lại.");
     } finally {
       setIsLoading(false);
       setIsOpen(false);

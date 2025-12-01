@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { toast } from "sonner";
+import { handleError } from "@/lib/error-handler";
 import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
 
@@ -60,13 +61,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
       router.refresh();
       toast.success("Store updated.");
     } catch (error: any) {
-      console.error("Settings update error:", error);
-
-      const errorMessage =
-        error.response?.data ||
-        error.message ||
-        "Something went wrong. Please try again.";
-      toast.error(errorMessage);
+      handleError(error, "Có lỗi xảy ra khi cập nhật cài đặt. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Trash, MoreHorizontal } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { handleError } from "@/lib/error-handler";
 
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
@@ -52,8 +53,7 @@ export const OrderClient: React.FC<OrderClientProps> = ({ data }) => {
       toast.success(result.message || t("actions.allOrdersDeleted"));
       router.refresh();
     } catch (error: any) {
-      console.error("[ORDER_DELETE_ALL_ERROR]", error);
-      toast.error(error.message || t("actions.failedToDeleteOrders"));
+      handleError(error, t("actions.failedToDeleteOrders") || "Không thể xóa đơn hàng.");
     } finally {
       setIsLoading(false);
       setDeleteAllOpen(false);
@@ -91,11 +91,11 @@ export const OrderClient: React.FC<OrderClientProps> = ({ data }) => {
       setSelectedRows([]);
       router.refresh();
     } catch (error: any) {
-      console.error("[DELETE_SELECTED_ERROR]", error);
-      toast.error(
-        error.message ||
-          t("actions.deleteSelectedError") ||
-          t("actions.unableToDeleteSelectedOrders")
+      handleError(
+        error,
+        t("actions.deleteSelectedError") ||
+          t("actions.unableToDeleteSelectedOrders") ||
+          "Không thể xóa đơn hàng đã chọn."
       );
     } finally {
       setIsLoading(false);

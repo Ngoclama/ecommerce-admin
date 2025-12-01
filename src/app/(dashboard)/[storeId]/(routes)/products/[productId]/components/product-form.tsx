@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Trash, Eye, Plus, X } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
+import { handleError } from "@/lib/error-handler";
 import { Editor } from "@/components/ui/editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -338,7 +339,13 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         body: JSON.stringify(data),
       });
 
-      if (!res.ok) throw new Error(t("forms.product.somethingWentWrong"));
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(
+          (errorData as { message?: string })?.message ||
+            t("forms.product.somethingWentWrong")
+        );
+      }
 
       toast.success(
         initialData ? t("forms.product.updated") : t("forms.product.created")
@@ -346,7 +353,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       router.refresh();
       router.push(`/${params.storeId}/products`);
     } catch (error) {
-      toast.error(t("forms.product.somethingWentWrong"));
+      handleError(error, t("forms.product.somethingWentWrong"));
     } finally {
       setIsLoading(false);
     }
@@ -362,7 +369,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       router.push(`/${params.storeId}/products`);
       router.refresh();
     } catch (error) {
-      toast.error(t("forms.product.somethingWentWrong"));
+      handleError(error, t("forms.product.somethingWentWrong"));
     } finally {
       setIsLoading(false);
       setIsOpen(false);

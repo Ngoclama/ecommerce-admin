@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { handleError } from "@/lib/error-handler";
 import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
@@ -49,7 +50,7 @@ export const SizeClient: React.FC<SizeClientProps> = ({ data }) => {
       toast.success("All Sizes deleted successfully");
       router.refresh();
     } catch (error) {
-      toast.error("Failed to delete Sizes. Check related items first.");
+      handleError(error, "Không thể xóa kích thước. Vui lòng kiểm tra các mục liên quan trước.");
     } finally {
       setIsLoading(false);
       setDeleteAllOpen(false);
@@ -86,11 +87,10 @@ export const SizeClient: React.FC<SizeClientProps> = ({ data }) => {
       setSelectedRows([]);
       router.refresh();
     } catch (error: any) {
-      console.error("[DELETE_SELECTED_ERROR]", error);
-      toast.error(
-        error.message ||
-          t("actions.deleteSelectedError") ||
-          "Unable to delete selected sizes. Check related items first."
+      handleError(
+        error,
+        t("actions.deleteSelectedError") ||
+          "Không thể xóa kích thước đã chọn. Vui lòng kiểm tra các mục liên quan trước."
       );
     } finally {
       setIsLoading(false);

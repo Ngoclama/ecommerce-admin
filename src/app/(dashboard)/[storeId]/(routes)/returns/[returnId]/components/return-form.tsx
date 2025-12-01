@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import axios from "axios";
 import { toast } from "sonner";
+import { handleError } from "@/lib/error-handler";
 import { Trash, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -82,8 +83,7 @@ export const ReturnForm: React.FC<ReturnFormProps> = ({ initialData }) => {
       router.refresh();
       router.push(`/${params.storeId}/returns`);
     } catch (error) {
-      toast.error(t("forms.return.error"));
-      console.error("[RETURN_FORM]", error);
+      handleError(error, t("forms.return.error") || "Có lỗi xảy ra khi cập nhật đơn trả hàng.");
     } finally {
       setIsLoading(false);
     }
@@ -97,7 +97,7 @@ export const ReturnForm: React.FC<ReturnFormProps> = ({ initialData }) => {
       router.push(`/${params.storeId}/returns`);
       router.refresh();
     } catch (error) {
-      toast.error(t("forms.return.errorDelete"));
+      handleError(error, t("forms.return.errorDelete") || "Không thể xóa đơn trả hàng.");
     } finally {
       setIsLoading(false);
       setIsOpen(false);

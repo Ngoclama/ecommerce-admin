@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { handleError } from "@/lib/error-handler";
 import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
@@ -60,7 +61,7 @@ export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
       toast.success("All billboards deleted successfully");
       router.refresh();
     } catch (error) {
-      toast.error("Failed to delete billboards. Check related items first.");
+      handleError(error, "Không thể xóa billboard. Vui lòng kiểm tra các mục liên quan trước.");
     } finally {
       setIsLoading(false);
       setDeleteAllOpen(false);
@@ -96,11 +97,10 @@ export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
       setSelectedRows([]);
       router.refresh();
     } catch (error: any) {
-      console.error("[DELETE_SELECTED_ERROR]", error);
-      toast.error(
-        error.message ||
-          t("actions.deleteSelectedError") ||
-          "Unable to delete selected billboards. Check related items first."
+      handleError(
+        error,
+        t("actions.deleteSelectedError") ||
+          "Không thể xóa billboard đã chọn. Vui lòng kiểm tra các mục liên quan trước."
       );
     } finally {
       setIsLoading(false);

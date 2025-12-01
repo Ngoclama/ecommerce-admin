@@ -99,7 +99,7 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error("Export PDF error:", error);
+      handleError(error, "Có lỗi xảy ra khi xuất PDF.");
     } finally {
       setIsExporting(false);
     }
@@ -122,7 +122,7 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error("Export Excel error:", error);
+      handleError(error, "Có lỗi xảy ra khi xuất Excel.");
     } finally {
       setIsExporting(false);
     }

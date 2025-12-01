@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { handleError } from "@/lib/error-handler";
 import { useParams } from "next/navigation";
 
 export function CategoryToolbar() {
@@ -23,10 +24,16 @@ export function CategoryToolbar() {
         }),
       });
 
-      if (!response.ok) throw new Error("Tạo thất bại");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          (errorData as { message?: string })?.message || "Tạo thất bại"
+        );
+      }
 
       toast.success("✅ Tạo danh mục hàng loạt thành công!");
     } catch (error) {
+      handleError(error, "Có lỗi xảy ra khi tạo danh mục hàng loạt.");
       toast.error("❌ Lỗi khi tạo danh mục hàng loạt");
     }
   };

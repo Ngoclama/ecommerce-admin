@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { handleError } from "@/lib/error-handler";
 import { Coupon } from "@prisma/client";
 import { Trash, CalendarIcon } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
@@ -146,8 +147,6 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
       toast.success(toastMessage);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      console.error("Coupon form error:", error);
-
       // Xử lý lỗi 409 (Conflict - trùng tên)
       if (error.response?.status === 409 || error.code === "ERR_BAD_REQUEST") {
         let errorMessage = t("forms.coupon.codeExists");
@@ -182,44 +181,14 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
             }
           }
         } catch (parseError) {
-          console.error("Error parsing error response:", parseError);
+          // Ignore parse errors, use default message
         }
 
         toast.error(errorMessage, {
           duration: 6000,
         });
       } else {
-        let errorMessage = t("actions.somethingWentWrong");
-
-        try {
-          const errorData = error.response?.data;
-
-          if (errorData) {
-            if (typeof errorData === "string" && errorData.trim()) {
-              errorMessage = errorData;
-            } else if (
-              typeof errorData === "object" &&
-              Object.keys(errorData).length > 0
-            ) {
-              if (errorData.error) {
-                errorMessage = errorData.error;
-              } else {
-                const stringified = JSON.stringify(errorData);
-                if (stringified !== "{}") {
-                  errorMessage = stringified;
-                }
-              }
-            } else if (errorData !== null && errorData !== undefined) {
-              errorMessage = String(errorData);
-            }
-          }
-        } catch (parseError) {
-          console.error("Error parsing error response:", parseError);
-        }
-
-        toast.error(errorMessage, {
-          duration: 5000,
-        });
+        handleError(error, t("actions.somethingWentWrong") || "Có lỗi xảy ra.");
       }
     } finally {
       setLoading(false);
@@ -234,7 +203,7 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
       router.push(`/${params.storeId}/coupons`);
       toast.success(t("forms.coupon.deleted"));
     } catch (error) {
-      toast.error(t("forms.coupon.errorDelete"));
+      handleError(error, t("forms.coupon.errorDelete") || "Không thể xóa mã giảm giá.");
     } finally {
       setLoading(false);
       setOpen(false);

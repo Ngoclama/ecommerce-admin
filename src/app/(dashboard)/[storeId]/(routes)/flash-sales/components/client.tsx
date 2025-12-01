@@ -20,6 +20,7 @@ import { AlertModal } from "@/components/modals/alert-modal";
 import { FlashSaleColumn, columns } from "./columns";
 import axios from "axios";
 import { toast } from "sonner";
+import { handleError } from "@/lib/error-handler";
 
 interface FlashSaleClientProps {
   data: FlashSaleColumn[];
@@ -40,7 +41,7 @@ export const FlashSaleClient: React.FC<FlashSaleClientProps> = ({ data }) => {
       router.refresh();
       toast.success("All flash sales deleted successfully.");
     } catch (error) {
-      toast.error("Something went wrong.");
+      handleError(error, "Có lỗi xảy ra khi xóa flash sale.");
     } finally {
       setIsLoading(false);
       setDeleteAllOpen(false);
@@ -73,8 +74,7 @@ export const FlashSaleClient: React.FC<FlashSaleClientProps> = ({ data }) => {
       setSelectedRows([]);
       router.refresh();
     } catch (error: any) {
-      console.error("[DELETE_SELECTED_ERROR]", error);
-      toast.error(error.message || "Unable to delete selected flash sales.");
+      handleError(error, "Không thể xóa flash sale đã chọn.");
     } finally {
       setIsLoading(false);
       setDeleteSelectedOpen(false);

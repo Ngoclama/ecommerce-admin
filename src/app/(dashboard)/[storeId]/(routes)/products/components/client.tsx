@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
-import { MoreHorizontal, Plus, Trash } from "lucide-react";
+import { handleError } from "@/lib/error-handler";
+import { MoreHorizontal, Plus, Trash, FileSpreadsheet } from "lucide-react";
 import { ProductColumn, useProductColumns } from "./columns";
 import { useTranslation } from "@/hooks/use-translation";
 import { DataTable } from "@/components/ui/data-table";
@@ -47,7 +48,10 @@ export const ProductClient: React.FC<ProductClientProps> = ({ data }) => {
       toast.success("All products deleted successfully");
       router.refresh();
     } catch (error) {
-      toast.error("Failed to delete products. Check related items first.");
+      handleError(
+        error,
+        "Không thể xóa sản phẩm. Vui lòng kiểm tra các mục liên quan trước."
+      );
     } finally {
       setIsLoading(false);
       setDeleteAllOpen(false);
@@ -82,11 +86,10 @@ export const ProductClient: React.FC<ProductClientProps> = ({ data }) => {
       setSelectedRows([]);
       router.refresh();
     } catch (error: any) {
-      console.error("[DELETE_SELECTED_ERROR]", error);
-      toast.error(
-        error.message ||
-          t("actions.deleteSelectedError") ||
-          "Unable to delete selected products. Check related items first."
+      handleError(
+        error,
+        t("actions.deleteSelectedError") ||
+          "Không thể xóa sản phẩm đã chọn. Vui lòng kiểm tra các mục liên quan trước."
       );
     } finally {
       setIsLoading(false);
@@ -150,6 +153,14 @@ export const ProductClient: React.FC<ProductClientProps> = ({ data }) => {
             >
               <Plus className="h-4 w-4 " />
               {t("actions.addNew")}
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => router.push(`/${params.storeId}/products/import`)}
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Import CSV/Excel
             </DropdownMenuItem>
 
             <DropdownMenuItem
