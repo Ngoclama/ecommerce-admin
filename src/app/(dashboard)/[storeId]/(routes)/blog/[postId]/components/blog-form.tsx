@@ -247,7 +247,7 @@ export const BlogForm: React.FC<BlogFormProps> = ({ initialData }) => {
                   <FormLabel>{t("forms.blog.content")}</FormLabel>
                   <FormControl>
                     <Editor
-                      value={field.value || ""}
+                      value={(field.value ?? "") as string}
                       onChange={field.onChange}
                       disabled={loading}
                     />
