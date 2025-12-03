@@ -26,29 +26,30 @@ export async function GET(req: Request) {
     );
     const skip = (page - 1) * limit;
 
-    // Xây dựng điều kiện tìm kiếm cho MongoDB (Prisma MongoDB sử dụng contains không phân biệt hoa thường)
-    // Sử dụng Prisma.ProductWhereInput để type-safe với Prisma queries
+    // Xây dựng điều kiện tìm kiếm cho MongoDB với case-insensitive và mode "insensitive"
+    // Prisma MongoDB hỗ trợ mode: 'insensitive' cho text search không phân biệt hoa thường
     let searchConditions: Prisma.ProductWhereInput | undefined = undefined;
     if (searchQuery && searchQuery.trim()) {
       const searchTerm = searchQuery.trim();
-      // Escape special regex characters
-      const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
       searchConditions = {
         OR: [
           {
             name: {
-              contains: escapedTerm,
+              contains: searchTerm,
+              mode: "insensitive",
             },
           },
           {
             description: {
-              contains: escapedTerm,
+              contains: searchTerm,
+              mode: "insensitive",
             },
           },
           {
             slug: {
-              contains: escapedTerm,
+              contains: searchTerm,
+              mode: "insensitive",
             },
           },
           {
@@ -57,39 +58,32 @@ export async function GET(req: Request) {
                 OR: [
                   {
                     sku: {
-                      contains: escapedTerm,
+                      contains: searchTerm,
+                      mode: "insensitive",
                     },
                   },
                   {
                     size: {
-                      OR: [
-                        {
-                          name: {
-                            contains: escapedTerm,
-                          },
-                        },
-                        {
-                          value: {
-                            contains: escapedTerm,
-                          },
-                        },
-                      ],
+                      name: {
+                        contains: searchTerm,
+                        mode: "insensitive",
+                      },
                     },
                   },
                   {
                     color: {
-                      OR: [
-                        {
-                          name: {
-                            contains: escapedTerm,
-                          },
-                        },
-                        {
-                          value: {
-                            contains: escapedTerm,
-                          },
-                        },
-                      ],
+                      name: {
+                        contains: searchTerm,
+                        mode: "insensitive",
+                      },
+                    },
+                  },
+                  {
+                    material: {
+                      name: {
+                        contains: searchTerm,
+                        mode: "insensitive",
+                      },
                     },
                   },
                 ],
@@ -98,18 +92,10 @@ export async function GET(req: Request) {
           },
           {
             category: {
-              OR: [
-                {
-                  name: {
-                    contains: escapedTerm,
-                  },
-                },
-                {
-                  slug: {
-                    contains: escapedTerm,
-                  },
-                },
-              ],
+              name: {
+                contains: searchTerm,
+                mode: "insensitive",
+              },
             },
           },
         ],
@@ -142,24 +128,42 @@ export async function GET(req: Request) {
         });
       });
 
-      // Get all products first
+      // Build where clause for bestseller
+      const bestsellerWhere: any = {
+        isArchived: false,
+        isPublished: true,
+      };
+
+      // Add search conditions if exists
+      if (searchConditions) {
+        Object.assign(bestsellerWhere, searchConditions);
+      }
+
+      // Add optional filters
+      if (categoryId) bestsellerWhere.categoryId = categoryId;
+      if (isFeatured) bestsellerWhere.isFeatured = true;
+
+      // Build variants filter
+      if (sizeId || colorId) {
+        const variantConditions: any = {};
+        if (sizeId) variantConditions.sizeId = sizeId;
+        if (colorId) variantConditions.colorId = colorId;
+
+        // Merge with existing variants condition from search if exists
+        if (bestsellerWhere.variants) {
+          bestsellerWhere.variants = {
+            some: {
+              AND: [bestsellerWhere.variants.some || {}, variantConditions],
+            },
+          };
+        } else {
+          bestsellerWhere.variants = { some: variantConditions };
+        }
+      }
+
+      // Get all products for bestseller sorting
       const allProducts = await prisma.product.findMany({
-        where: {
-          ...(searchConditions && searchConditions),
-          categoryId,
-          isFeatured: isFeatured ? true : undefined,
-          isArchived: false,
-          isPublished: true,
-          variants:
-            sizeId || colorId
-              ? {
-                  some: {
-                    sizeId: sizeId || undefined,
-                    colorId: colorId || undefined,
-                  },
-                }
-              : undefined,
-        },
+        where: bestsellerWhere,
         select: {
           id: true,
           name: true,
@@ -255,24 +259,42 @@ export async function GET(req: Request) {
       });
     }
 
+    // Build where clause for main query
+    const mainWhere: any = {
+      isArchived: false,
+      isPublished: true,
+    };
+
+    // Add search conditions if exists
+    if (searchConditions) {
+      Object.assign(mainWhere, searchConditions);
+    }
+
+    // Add optional filters
+    if (categoryId) mainWhere.categoryId = categoryId;
+    if (isFeatured) mainWhere.isFeatured = true;
+
+    // Build variants filter
+    if (sizeId || colorId) {
+      const variantConditions: any = {};
+      if (sizeId) variantConditions.sizeId = sizeId;
+      if (colorId) variantConditions.colorId = colorId;
+
+      // Merge with existing variants condition from search if exists
+      if (mainWhere.variants) {
+        mainWhere.variants = {
+          some: {
+            AND: [mainWhere.variants.some || {}, variantConditions],
+          },
+        };
+      } else {
+        mainWhere.variants = { some: variantConditions };
+      }
+    }
+
     // Tối ưu: chỉ select các field cần thiết
     const products = await prisma.product.findMany({
-      where: {
-        ...(searchConditions && searchConditions),
-        categoryId,
-        isFeatured: isFeatured ? true : undefined,
-        isArchived: false,
-        isPublished: true, // Chỉ lấy sản phẩm đã publish
-        variants:
-          sizeId || colorId
-            ? {
-                some: {
-                  sizeId: sizeId || undefined,
-                  colorId: colorId || undefined,
-                },
-              }
-            : undefined,
-      },
+      where: mainWhere,
       select: {
         id: true,
         name: true,
@@ -345,22 +367,7 @@ export async function GET(req: Request) {
 
     // Get total count for pagination
     const totalCount = await prisma.product.count({
-      where: {
-        ...(searchConditions && searchConditions),
-        categoryId,
-        isFeatured: isFeatured ? true : undefined,
-        isArchived: false,
-        isPublished: true,
-        variants:
-          sizeId || colorId
-            ? {
-                some: {
-                  sizeId: sizeId || undefined,
-                  colorId: colorId || undefined,
-                },
-              }
-            : undefined,
-      },
+      where: mainWhere,
     });
 
     const totalPages = Math.ceil(totalCount / limit);

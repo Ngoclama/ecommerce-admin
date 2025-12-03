@@ -19,6 +19,7 @@ import {
   Link as LinkIcon,
   Store as StoreIcon,
   FolderTree,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "@/hooks/use-translation";
@@ -34,6 +35,7 @@ type CategoryDetails = {
   id: string;
   name: string;
   slug: string;
+  imageUrl?: string | null;
   billboardId: string;
   parentId?: string | null;
   billboard?: {
@@ -84,7 +86,7 @@ export const CategoryViewModal: React.FC<CategoryViewModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+      <DialogContent className="max-w-[90vw] lg:max-w-3xl max-h-[85vh] overflow-y-auto bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
         <DialogHeader>
           <DialogTitle>{t("modals.categoryDetails")}</DialogTitle>
           <DialogDescription>
@@ -98,6 +100,24 @@ export const CategoryViewModal: React.FC<CategoryViewModalProps> = ({
           </div>
         ) : categoryData ? (
           <div className="space-y-6">
+            {/* Image Preview - Only show if imageUrl exists */}
+            {categoryData.imageUrl && (
+              <div className="grid grid-cols-1 gap-2">
+                <Label className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 flex items-center gap-1">
+                  <ImageIcon className="h-4 w-4 opacity-70" />{" "}
+                  {t("columns.image")}
+                </Label>
+                <div className="relative w-full h-48 rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-800">
+                  <img
+                    src={categoryData.imageUrl}
+                    alt={categoryData.name}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Name & Basic Info */}
             <div className="grid grid-cols-1 gap-2">
               <Label className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 flex items-center gap-1">
@@ -141,7 +161,9 @@ export const CategoryViewModal: React.FC<CategoryViewModalProps> = ({
               <div className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-800 text-sm font-medium border">
                 {categoryData.parent ? (
                   <div className="flex flex-col gap-1">
-                    <span className="font-semibold">{categoryData.parent.name}</span>
+                    <span className="font-semibold">
+                      {categoryData.parent.name}
+                    </span>
                     <code className="text-xs text-neutral-500 dark:text-neutral-400">
                       {categoryData.parent.slug}
                     </code>

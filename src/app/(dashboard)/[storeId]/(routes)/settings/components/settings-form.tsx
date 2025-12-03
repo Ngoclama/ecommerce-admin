@@ -59,9 +59,12 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
       setLoading(true);
       await axios.patch(`/api/stores/${params.storeId}`, data);
       router.refresh();
-      toast.success("Store updated.");
+      toast.success(t("storeModal.createSuccess"));
     } catch (error: any) {
-      handleError(error, "Có lỗi xảy ra khi cập nhật cài đặt. Vui lòng thử lại.");
+      handleError(
+        error,
+        "Có lỗi xảy ra khi cập nhật cài đặt. Vui lòng thử lại."
+      );
     } finally {
       setLoading(false);
     }
@@ -73,9 +76,9 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
       await axios.delete(`/api/stores/${params.storeId}`);
       router.refresh();
       router.push("/");
-      toast.success("Store deleted.");
+      toast.success(t("actions.deleteSelectedSuccess").replace("{count}", "1"));
     } catch (error) {
-      toast.error("Make sure you removed all products and categories first.");
+      toast.error(t("bulk.category.createError"));
     } finally {
       setLoading(false);
       setOpen(false);
@@ -138,7 +141,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
 
       <Separator />
       <ApiAlert
-        title="NEXT_PUBLIC_API_URL"
+        title={"NEXT_PUBLIC_API_URL"}
         description={`${origin}/api/${params.storeId}`}
         variant="public"
       />

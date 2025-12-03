@@ -32,11 +32,13 @@ import {
 } from "@/components/ui/select";
 import { motion } from "framer-motion";
 import { useTranslation } from "@/hooks/use-translation";
+import ImageUpload from "@/components/ui/image-upload";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   billboardId: z.string().min(1, "Billboard is required"),
   parentId: z.string().nullable().optional(),
+  imageUrl: z.string().url().optional().or(z.literal("")).optional(),
 });
 
 type CategoryFormValues = z.infer<typeof formSchema>;
@@ -74,11 +76,13 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
           name: initialData.name || "",
           billboardId: initialData.billboardId || "",
           parentId: initialData.parentId || null,
+          imageUrl: (initialData as any).imageUrl || "",
         }
       : {
           name: "",
           billboardId: "",
           parentId: null,
+          imageUrl: "",
         },
   });
 
@@ -127,7 +131,11 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       router.refresh();
       router.push(`/${params.storeId}/categories`);
     } catch (error) {
-      handleError(error, t("forms.category.errorDelete") || "Không thể xóa danh mục. Vui lòng xóa các sản phẩm liên quan trước.");
+      handleError(
+        error,
+        t("forms.category.errorDelete") ||
+          "Không thể xóa danh mục. Vui lòng xóa các sản phẩm liên quan trước."
+      );
     } finally {
       setIsLoading(false);
       setIsOpen(false);
@@ -257,10 +265,14 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                 name="parentId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("forms.category.parentCategory") || "Parent Category"}</FormLabel>
+                    <FormLabel>
+                      {t("forms.category.parentCategory") || "Parent Category"}
+                    </FormLabel>
                     <Select
                       disabled={isLoading}
-                      onValueChange={(value) => field.onChange(value === "__none__" ? null : value)}
+                      onValueChange={(value) =>
+                        field.onChange(value === "__none__" ? null : value)
+                      }
                       value={field.value || "__none__"}
                       defaultValue={field.value || "__none__"}
                     >
@@ -268,13 +280,17 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                         <SelectTrigger className="rounded-xl border-neutral-300 dark:border-neutral-700">
                           <SelectValue
                             defaultValue={field.value || "__none__"}
-                            placeholder={t("forms.category.parentCategoryPlaceholder") || "Select parent category (optional)"}
+                            placeholder={
+                              t("forms.category.parentCategoryPlaceholder") ||
+                              "Select parent category (optional)"
+                            }
                           />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="__none__">
-                          {t("forms.category.noParent") || "No Parent (Top Level)"}
+                          {t("forms.category.noParent") ||
+                            "No Parent (Top Level)"}
                         </SelectItem>
                         {categories.map((category) => (
                           <SelectItem key={category.id} value={category.id}>
@@ -287,6 +303,46 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                   </FormItem>
                 )}
               />
+
+              {/* Image Upload for Top-Level Category (optional) */}
+              {!form.watch("parentId") && (
+                <FormField
+                  control={form.control}
+                  name="imageUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        {t("forms.category.image") ||
+                          "Category Image (optional for parent category)"}
+                      </FormLabel>
+                      <FormControl>
+                        <div className="space-y-2">
+                          <ImageUpload
+                            disabled={isLoading}
+                            value={field.value ? [field.value] : []}
+                            onChange={(urls) => {
+                              const first = urls[0] ?? "";
+                              form.setValue("imageUrl", first, {
+                                shouldDirty: true,
+                                shouldValidate: true,
+                              });
+                            }}
+                            onRemove={(url) => {
+                              if (field.value === url) {
+                                form.setValue("imageUrl", "", {
+                                  shouldDirty: true,
+                                  shouldValidate: true,
+                                });
+                              }
+                            }}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
 
             <div className="flex justify-end pt-4">

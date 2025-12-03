@@ -38,13 +38,14 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
   const router = useRouter();
   const params = useParams();
   const { t } = useTranslation();
-  
+
   // Extract original data (without level/hasChildren) for rebuilding tree
   const originalData = useMemo(() => {
     return data.map((item) => ({
       id: item.id,
       name: item.name,
       slug: item.slug,
+      imageUrl: item.imageUrl || null,
       billboardLabel: item.billboardLabel,
       parentName: item.parentName,
       parentId: item.parentId || null,

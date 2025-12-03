@@ -14,17 +14,19 @@ export async function GET(
     }
 
     const category = await prisma.category.findUnique({
-      where: {
-        id: categoryId,
-      },
-      include: {
+      where: { id: categoryId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        imageUrl: true,
+        billboardId: true,
+        parentId: true,
+        createdAt: true,
+        updatedAt: true,
         billboard: true,
         parent: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
+          select: { id: true, name: true, slug: true },
         },
       },
     });
@@ -44,7 +46,7 @@ export async function PATCH(
     const { storeId, categoryId } = await params;
     const { userId } = await auth();
     const body = await req.json();
-    const { name, billboardId, slug, parentId } = body;
+    const { name, billboardId, slug, parentId, imageUrl } = body;
 
     if (!userId) return new NextResponse("Unauthorized", { status: 401 });
     if (!name) return new NextResponse("Name is required", { status: 400 });
@@ -149,6 +151,14 @@ export async function PATCH(
       }
     }
 
+    // Disallow imageUrl for child categories (only allow for top-level)
+    if (parentId && imageUrl) {
+      return NextResponse.json(
+        { message: "Danh mục con không thể có ảnh riêng (imageUrl)." },
+        { status: 400 }
+      );
+    }
+
     const category = await prisma.category.update({
       where: { id: categoryId },
       data: {
@@ -156,6 +166,7 @@ export async function PATCH(
         billboardId,
         slug: finalSlug,
         parentId: parentId === null || parentId === undefined ? null : parentId,
+        imageUrl: imageUrl === undefined ? undefined : imageUrl || null,
       },
     });
 

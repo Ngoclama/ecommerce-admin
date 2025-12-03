@@ -427,12 +427,18 @@ export async function GET(req: Request) {
         createdAt: true,
       },
       orderBy: { createdAt: "desc" },
+      distinct: ["productId"], // Ensure unique productIds
     });
+
+    // Additional safety: Remove any remaining duplicates
+    const uniqueProductIds = Array.from(
+      new Set(wishlist.map((item) => item.productId))
+    );
 
     return NextResponse.json(
       {
         success: true,
-        data: wishlist.map((item) => item.productId),
+        data: uniqueProductIds,
       },
       { headers: corsHeaders }
     );

@@ -15,6 +15,7 @@ export async function GET(req: Request) {
         id: true,
         name: true,
         slug: true,
+        imageUrl: true,
         billboardId: true,
         parentId: true,
         billboard: {
@@ -40,7 +41,10 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ success: true, data: categories });
   } catch (error) {
-    devError("[CATEGORIES_PUBLIC_GET] Lỗi khi lấy danh sách categories:", error);
+    devError(
+      "[CATEGORIES_PUBLIC_GET] Lỗi khi lấy danh sách categories:",
+      error
+    );
     return NextResponse.json(
       { success: false, message: API_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }

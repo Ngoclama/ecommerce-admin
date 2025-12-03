@@ -13,7 +13,7 @@ export async function POST(
     const { storeId } = await params;
     const { userId } = await auth();
     const body = await req.json();
-    const { name, billboardId, slug, parentId } = body;
+    const { name, billboardId, slug, parentId, imageUrl } = body;
 
     if (!userId) {
       return NextResponse.json(
@@ -100,6 +100,19 @@ export async function POST(
       // (This check is mainly for updates, but we include it here for safety)
     }
 
+    // Disallow imageUrl for child categories (only allow for top-level)
+    if (parentId) {
+      if (imageUrl) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Danh mục con không thể có ảnh riêng (imageUrl).",
+          },
+          { status: HTTP_STATUS.BAD_REQUEST }
+        );
+      }
+    }
+
     const category = await prisma.category.create({
       data: {
         name,
@@ -107,6 +120,7 @@ export async function POST(
         billboardId,
         storeId: storeId,
         parentId: parentId || null,
+        imageUrl: imageUrl || null,
       },
     });
 
@@ -148,6 +162,7 @@ export async function GET(
         id: true,
         name: true,
         slug: true,
+        imageUrl: true,
         billboardId: true,
         parentId: true,
         createdAt: true,

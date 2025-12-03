@@ -2,6 +2,7 @@ import { stripe } from "@/lib/stripe";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import prisma from "@/lib/prisma";
+import { createMoMoPayment } from "@/lib/momo";
 
 // Helper function to get CORS headers based on request origin
 const getCorsHeaders = (req: Request) => {
@@ -406,6 +407,102 @@ export async function POST(req: Request) {
           success: true,
           orderId: order.id,
           message: "Đặt hàng thành công! Bạn sẽ thanh toán khi nhận hàng.",
+        },
+        {
+          headers: corsHeaders,
+        }
+      );
+    }
+
+    // Nếu là MoMo, tạo payment và redirect đến MoMo
+    if (paymentMethod === "MOMO") {
+      // MoMo không chấp nhận số tiền = 0, chuyển sang COD nếu đơn hàng miễn phí
+      if (total <= 0) {
+        // Cập nhật order thành COD và isPaid = true
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            paymentMethod: "COD",
+            isPaid: true,
+            status: "PROCESSING",
+          },
+        });
+
+        return NextResponse.json(
+          {
+            success: true,
+            orderId: order.id,
+            message:
+              "Đơn hàng của bạn được miễn phí hoàn toàn! Đơn hàng đã được xác nhận.",
+          },
+          {
+            headers: corsHeaders,
+          }
+        );
+      }
+
+      try {
+        const orderInfo = `Đơn hàng #${order.id.slice(-8)}`;
+        const momoResponse = await createMoMoPayment(
+          order.id,
+          Math.round(total),
+          orderInfo
+        );
+
+        return NextResponse.json(
+          {
+            success: true,
+            orderId: order.id,
+            payUrl: momoResponse.payUrl,
+            deeplink: momoResponse.deeplink,
+            qrCodeUrl: momoResponse.qrCodeUrl,
+            message: "Vui lòng thanh toán qua MoMo để hoàn tất đơn hàng.",
+          },
+          {
+            headers: corsHeaders,
+          }
+        );
+      } catch (momoError) {
+        console.error("[MOMO_CHECKOUT_ERROR]", momoError);
+        // Fallback to order created but payment failed
+        return NextResponse.json(
+          {
+            success: false,
+            orderId: order.id,
+            error:
+              momoError instanceof Error
+                ? momoError.message
+                : "Không thể tạo thanh toán MoMo",
+            message:
+              "Đơn hàng đã được tạo nhưng thanh toán MoMo thất bại. Vui lòng liên hệ hỗ trợ.",
+          },
+          {
+            status: 500,
+            headers: corsHeaders,
+          }
+        );
+      }
+    }
+
+    // Stripe - Xử lý thanh toán qua thẻ
+    // Stripe cũng không chấp nhận số tiền = 0
+    if (total <= 0) {
+      // Cập nhật order thành COD và isPaid = true
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          paymentMethod: "COD",
+          isPaid: true,
+          status: "PROCESSING",
+        },
+      });
+
+      return NextResponse.json(
+        {
+          success: true,
+          orderId: order.id,
+          message:
+            "Đơn hàng của bạn được miễn phí hoàn toàn! Đơn hàng đã được xác nhận.",
         },
         {
           headers: corsHeaders,

@@ -75,6 +75,7 @@ model Category {
   store       Store      @relation(fields: [storeId], references: [id])
   name        String
   slug        String
+  imageUrl    String?
   products    Product[]
   blogPosts   BlogPost[] // Blog posts sử dụng category này
   createdAt   DateTime   @default(now())

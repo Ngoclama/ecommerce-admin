@@ -4,6 +4,7 @@ interface CategoryWithParent {
   id: string;
   name: string;
   slug: string;
+  imageUrl?: string | null;
   billboardLabel: string;
   parentName?: string | null;
   parentId?: string | null | undefined;
@@ -71,6 +72,7 @@ export function flattenCategoryTree(
         id: node.id,
         name: node.name,
         slug: node.slug,
+        imageUrl: node.imageUrl || null,
         billboardLabel: node.billboardLabel,
         parentName: node.parentName,
         parentId: node.parentId || undefined,

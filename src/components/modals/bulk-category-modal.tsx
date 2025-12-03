@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import ImageUpload from "@/components/ui/image-upload";
 
 type Billboard = {
   id: string;
@@ -48,13 +49,14 @@ type Row = {
   name: string;
   billboardId: string;
   parentId: string | null;
+  imageUrl: string;
 };
 
 export const BulkCreateCategoryModal: React.FC = () => {
   const { isOpen, onClose } = useBulkCategoryModal();
   const { t } = useTranslation();
   const [rows, setRows] = useState<Row[]>([
-    { name: "", billboardId: "", parentId: null },
+    { name: "", billboardId: "", parentId: null, imageUrl: "" },
   ]);
   const [billboards, setBillboards] = useState<Billboard[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -108,13 +110,16 @@ export const BulkCreateCategoryModal: React.FC = () => {
   useEffect(() => {
     if (!isOpen) {
       setTimeout(() => {
-        setRows([{ name: "", billboardId: "", parentId: null }]);
+        setRows([{ name: "", billboardId: "", parentId: null, imageUrl: "" }]);
       }, 300);
     }
   }, [isOpen]);
 
   const handleAddRow = () => {
-    setRows([...rows, { name: "", billboardId: "", parentId: null }]);
+    setRows([
+      ...rows,
+      { name: "", billboardId: "", parentId: null, imageUrl: "" },
+    ]);
   };
 
   const handleRemoveRow = (index: number) => {
@@ -156,6 +161,7 @@ export const BulkCreateCategoryModal: React.FC = () => {
           name: r.name,
           billboardId: r.billboardId,
           parentId: r.parentId || null,
+          imageUrl: r.parentId ? "" : r.imageUrl, // Only include imageUrl for parent categories
         })),
       });
 
@@ -177,7 +183,7 @@ export const BulkCreateCategoryModal: React.FC = () => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] w-full lg:max-w-6xl max-h-[90vh] flex flex-col p-0 gap-0 bg-white dark:bg-neutral-900 overflow-hidden border-none shadow-2xl">
+      <DialogContent className="max-w-[98vw] w-full lg:max-w-[1400px] max-h-[90vh] flex flex-col p-0 gap-0 bg-white dark:bg-neutral-900 overflow-hidden border-none shadow-2xl">
         {/* Header */}
         <div className="p-6 pb-4 border-b dark:border-neutral-800">
           <DialogHeader>
@@ -195,15 +201,12 @@ export const BulkCreateCategoryModal: React.FC = () => {
         <div className="flex-1 overflow-hidden bg-neutral-50/50 dark:bg-neutral-950/50 relative">
           <ScrollArea className="h-full w-full p-6">
             {/* Table Header (Desktop only) */}
-            <div className="hidden md:grid grid-cols-12 gap-4 mb-4 px-4 font-medium text-sm text-neutral-500 uppercase tracking-wider">
-              <div className="col-span-4">{t("bulk.category.name")}</div>
-              <div className="col-span-4">{t("bulk.category.billboard")}</div>
-              <div className="col-span-3">
-                {t("bulk.category.parentCategory")}
-              </div>
-              <div className="col-span-1 text-center">
-                {t("columns.actions")}
-              </div>
+            <div className="hidden md:grid grid-cols-[2fr_2fr_1.5fr_2.5fr_auto] gap-4 mb-4 px-4 font-medium text-sm text-neutral-500 uppercase tracking-wider">
+              <div>{t("bulk.category.name")}</div>
+              <div>{t("bulk.category.billboard")}</div>
+              <div>{t("bulk.category.parentCategory")}</div>
+              <div>{t("columns.image")}</div>
+              <div className="text-center w-12">{t("columns.actions")}</div>
             </div>
 
             {/* Rows */}
@@ -219,9 +222,9 @@ export const BulkCreateCategoryModal: React.FC = () => {
                     transition={{ duration: 0.2 }}
                     className="group relative bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-all"
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start md:items-center">
+                    <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_1.5fr_2.5fr_auto] gap-4 items-start">
                       {/* Name Input */}
-                      <div className="col-span-1 md:col-span-4">
+                      <div>
                         <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
                           {t("bulk.category.name")}
                         </label>
@@ -248,7 +251,7 @@ export const BulkCreateCategoryModal: React.FC = () => {
                       </div>
 
                       {/* Billboard Select */}
-                      <div className="col-span-1 md:col-span-4">
+                      <div>
                         <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
                           {t("bulk.category.billboard")}
                         </label>
@@ -293,7 +296,7 @@ export const BulkCreateCategoryModal: React.FC = () => {
                       </div>
 
                       {/* Parent Category Select */}
-                      <div className="col-span-1 md:col-span-3">
+                      <div>
                         <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
                           {t("bulk.category.parentCategory")}
                         </label>
@@ -330,8 +333,29 @@ export const BulkCreateCategoryModal: React.FC = () => {
                         </Select>
                       </div>
 
+                      {/* Image Upload - Only for parent categories */}
+                      <div>
+                        <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
+                          {t("columns.image")}
+                        </label>
+                        {!row.parentId ? (
+                          <ImageUpload
+                            disabled={isLoading}
+                            value={row.imageUrl ? [row.imageUrl] : []}
+                            onChange={(urls) =>
+                              handleChange(index, "imageUrl", urls[0] || "")
+                            }
+                            onRemove={() => handleChange(index, "imageUrl", "")}
+                          />
+                        ) : (
+                          <div className="min-h-[100px] flex items-center justify-center text-xs text-muted-foreground italic bg-neutral-50 dark:bg-neutral-900 rounded-md border border-neutral-200 dark:border-neutral-800">
+                            {t("bulk.category.noImageForChild")}
+                          </div>
+                        )}
+                      </div>
+
                       {/* Action */}
-                      <div className="col-span-1 md:col-span-1 flex justify-center mt-2 md:mt-0">
+                      <div className="flex justify-center items-start pt-8 md:pt-0">
                         <Button
                           variant="ghost"
                           size="icon"

@@ -297,6 +297,28 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     name: "variants",
   });
 
+  // Helper function to check for duplicate variants
+  const checkDuplicateVariant = (
+    sizeId: string,
+    colorId: string,
+    materialId: string | null,
+    excludeIndex?: number
+  ): boolean => {
+    const variants = form.getValues("variants");
+    return variants.some((variant, index) => {
+      // Skip the variant at excludeIndex (useful when editing)
+      if (excludeIndex !== undefined && index === excludeIndex) {
+        return false;
+      }
+      // Check if sizeId and colorId match (materialId is optional)
+      return (
+        variant.sizeId === sizeId &&
+        variant.colorId === colorId &&
+        (variant.materialId || null) === (materialId || null)
+      );
+    });
+  };
+
   // Lấy giá sản phẩm chính từ form
   const mainPrice = form.watch("price");
 
@@ -328,6 +350,35 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   const onSubmit = async (data: ProductFormValues) => {
     try {
       setIsLoading(true);
+
+      // Validate for duplicate variants
+      const variantMap = new Map<string, number>();
+      for (let i = 0; i < data.variants.length; i++) {
+        const variant = data.variants[i];
+        // Create a unique key from sizeId + colorId + materialId
+        const key = `${variant.sizeId}-${variant.colorId}-${
+          variant.materialId || "null"
+        }`;
+
+        if (variantMap.has(key)) {
+          const duplicateIndex = variantMap.get(key)!;
+          const size = sizes.find((s) => s.id === variant.sizeId);
+          const color = colors.find((c) => c.id === variant.colorId);
+
+          toast.error(
+            t("forms.product.duplicateVariant") ||
+              `Biến thể trùng lặp: ${size?.name || "Size"} + ${
+                color?.name || "Màu"
+              }. Không thể có 2 biến thể giống nhau (Biến thể #${
+                duplicateIndex + 1
+              } và #${i + 1})`
+          );
+          setIsLoading(false);
+          return;
+        }
+        variantMap.set(key, i);
+      }
+
       const endpoint = initialData
         ? `/api/${params.storeId}/products/${params.productId}`
         : `/api/${params.storeId}/products`;
@@ -723,7 +774,37 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                             </FormLabel>
                             <Select
                               disabled={isLoading}
-                              onValueChange={field.onChange}
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                                // Check for duplicates after size change
+                                const variant = form.getValues(
+                                  `variants.${index}`
+                                );
+                                if (value && variant.colorId) {
+                                  const isDuplicate = checkDuplicateVariant(
+                                    value,
+                                    variant.colorId,
+                                    variant.materialId || null,
+                                    index
+                                  );
+                                  if (isDuplicate) {
+                                    const size = sizes.find(
+                                      (s) => s.id === value
+                                    );
+                                    const color = colors.find(
+                                      (c) => c.id === variant.colorId
+                                    );
+                                    toast.error(
+                                      t(
+                                        "forms.product.duplicateVariantWarning"
+                                      ) ||
+                                        `Biến thể ${size?.name || "Size"} + ${
+                                          color?.name || "Màu"
+                                        } đã tồn tại! Vui lòng chọn kết hợp khác.`
+                                    );
+                                  }
+                                }
+                              }}
                               value={field.value}
                             >
                               <FormControl>
@@ -761,7 +842,37 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                             </FormLabel>
                             <Select
                               disabled={isLoading}
-                              onValueChange={field.onChange}
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                                // Check for duplicates after color change
+                                const variant = form.getValues(
+                                  `variants.${index}`
+                                );
+                                if (value && variant.sizeId) {
+                                  const isDuplicate = checkDuplicateVariant(
+                                    variant.sizeId,
+                                    value,
+                                    variant.materialId || null,
+                                    index
+                                  );
+                                  if (isDuplicate) {
+                                    const size = sizes.find(
+                                      (s) => s.id === variant.sizeId
+                                    );
+                                    const color = colors.find(
+                                      (c) => c.id === value
+                                    );
+                                    toast.error(
+                                      t(
+                                        "forms.product.duplicateVariantWarning"
+                                      ) ||
+                                        `Biến thể ${size?.name || "Size"} + ${
+                                          color?.name || "Màu"
+                                        } đã tồn tại! Vui lòng chọn kết hợp khác.`
+                                    );
+                                  }
+                                }
+                              }}
                               value={field.value}
                             >
                               <FormControl>

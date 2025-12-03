@@ -152,6 +152,7 @@ export function useCategory(storeId: string, categoryId: string | null) {
     id: string;
     name: string;
     slug: string;
+    imageUrl?: string | null;
     billboardId: string;
     parentId?: string | null;
     billboard?: {
@@ -172,6 +173,7 @@ export function useCategory(storeId: string, categoryId: string | null) {
       id: string;
       name: string;
       slug: string;
+      imageUrl?: string | null;
       billboardId: string;
       parentId?: string | null;
       billboard?: {
@@ -190,6 +192,7 @@ export function useCategory(storeId: string, categoryId: string | null) {
         id: string;
         name: string;
         slug: string;
+        imageUrl?: string | null;
         billboardId: string;
         parentId?: string | null;
         billboard?: {

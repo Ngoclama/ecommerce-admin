@@ -11,6 +11,7 @@ export type CategoryColumn = {
   id: string;
   name: string;
   slug: string;
+  imageUrl?: string | null;
   billboardLabel: string;
   parentName?: string | null;
   parentId?: string;
@@ -48,6 +49,23 @@ export const useCategoryColumns = (
       ),
       enableSorting: false,
       enableHiding: false,
+    },
+    {
+      accessorKey: "imageUrl",
+      header: t("columns.image") || "Ảnh",
+      cell: ({ row }) => {
+        const url = row.original.imageUrl;
+        return url ? (
+          <img
+            src={url}
+            alt={row.original.name}
+            className="h-10 w-10 rounded object-cover border border-neutral-200 dark:border-neutral-800"
+            loading="lazy"
+          />
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        );
+      },
     },
     {
       accessorKey: "name",

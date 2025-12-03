@@ -88,9 +88,10 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             }
 
             // Lấy danh sách URL mới từ response, lọc bỏ các giá trị null/undefined
+            // Ưu tiên ufsUrl (UploadThing v9) trước file.url (deprecated)
             const newUrls = res
-              .filter((file) => file && (file.ufsUrl || file.url))
-              .map((file) => file.ufsUrl || file.url || "")
+              .filter((file) => file && file.ufsUrl)
+              .map((file) => file.ufsUrl || "")
               .filter((url) => url && url.trim() !== "");
 
             if (newUrls.length > 0) {
@@ -98,12 +99,12 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             }
           } catch (error) {
             // Lỗi khi xử lý phản hồi upload
-            alert("Error processing uploaded images. Please try again.");
+            alert("Lỗi khi xử lý ảnh đã tải lên. Vui lòng thử lại.");
           }
         }}
         onUploadError={(error: Error) => {
           // Lỗi khi upload
-          alert(`Upload failed: ${error.message || "Unknown error"}`);
+          alert(`Tải lên thất bại: ${error.message || "Lỗi không xác định"}`);
         }}
         appearance={{
           button:
@@ -115,10 +116,10 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             if (ready)
               return (
                 <div className="flex flex-col items-center gap-2 text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                  <ImagePlus className="h-6 w-6" /> Upload Images
+                  <ImagePlus className="h-6 w-6" /> Tải lên hình ảnh
                 </div>
               );
-            return "Getting ready...";
+            return "Đang chuẩn bị...";
           },
         }}
       />

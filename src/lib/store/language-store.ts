@@ -14,7 +14,7 @@ interface LanguageState {
 export const useLanguageStore = create<LanguageState>()(
   persist(
     (set) => ({
-      language: "en", // Mặc định là tiếng Anh
+      language: "vi", // Mặc định là Tiếng Việt
       setLanguage: (lang: Language) => set({ language: lang }),
     }),
     {
@@ -23,4 +23,3 @@ export const useLanguageStore = create<LanguageState>()(
     }
   )
 );
-
