@@ -63,10 +63,15 @@ export interface MoMoIPNRequest {
 /**
  * Get MoMo configuration from environment variables
  */
-export function getMoMoConfig(): MoMoConfig {
+export function getMoMoConfig(orderId?: string): MoMoConfig {
   // Use FRONTEND_STORE_URL for returnUrl (customer-facing), NEXT_PUBLIC_APP_URL for notifyUrl (API)
   const storeUrl = process.env.FRONTEND_STORE_URL || "http://localhost:3001";
   const apiUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+  // Build return URL with orderId if provided
+  const returnUrl = orderId
+    ? `${storeUrl}/payment/success?orderId=${orderId}&method=momo`
+    : `${storeUrl}/payment/success?method=momo`;
 
   return {
     partnerCode: process.env.MOMO_PARTNER_CODE || "",
@@ -75,7 +80,7 @@ export function getMoMoConfig(): MoMoConfig {
     endpoint:
       process.env.MOMO_ENDPOINT ||
       "https://test-payment.momo.vn/v2/gateway/api/create",
-    returnUrl: `${storeUrl}/checkout?momo=success`, // Redirect to store frontend
+    returnUrl: returnUrl,
     notifyUrl: `${apiUrl}/api/momo/ipn`, // IPN callback to admin API
   };
 }
@@ -156,7 +161,7 @@ export async function createMoMoPayment(
   amount: number,
   orderInfo: string
 ): Promise<MoMoPaymentResponse> {
-  const config = getMoMoConfig();
+  const config = getMoMoConfig(orderId);
 
   // Validate config
   if (!config.partnerCode || !config.accessKey || !config.secretKey) {
@@ -230,4 +235,12 @@ export async function createMoMoPayment(
 export function isMoMoConfigured(): boolean {
   const config = getMoMoConfig();
   return !!(config.partnerCode && config.accessKey && config.secretKey);
+}
+
+/**
+ * Get MoMo return URL for a specific order
+ */
+export function getMoMoReturnUrl(orderId: string): string {
+  const storeUrl = process.env.FRONTEND_STORE_URL || "http://localhost:3001";
+  return `${storeUrl}/payment/success?orderId=${orderId}&method=momo`;
 }

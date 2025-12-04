@@ -155,10 +155,12 @@ export async function POST(
     let discount = 0;
     if (coupon) {
       if (coupon.type === "PERCENT") {
-        discount = (subtotal * coupon.value) / 100;
+        discount = Math.round((subtotal * coupon.value) / 100);
       } else if (coupon.type === "FIXED") {
         discount = coupon.value;
       }
+      // Đảm bảo discount không vượt quá subtotal
+      discount = Math.min(discount, subtotal);
     }
 
     // Calculate shipping fee
@@ -166,7 +168,8 @@ export async function POST(
       subtotal >= 500000 ? 0 : shippingMethod === "express" ? 50000 : 30000;
 
     const tax = 0;
-    const total = Math.max(0, subtotal - discount + shippingCost + tax);
+    // Tính total: subtotal - discount + shipping + tax
+    const total = Math.max(0, Math.round(subtotal - discount + shippingCost + tax));
 
     // Create Order in database
     const order = await prisma.order.create({
@@ -234,12 +237,17 @@ export async function POST(
       },
     });
 
+    // Determine VNPay host - use production URL if in production mode
+    const isProduction = process.env.NODE_ENV === "production";
+    const vnpayHost = process.env.VNPAY_HOST || 
+      (isProduction ? "https://www.vnpayment.vn" : "https://sandbox.vnpayment.vn");
+
     // Initialize VNPay
     const vnpay = new VNPay({
       tmnCode: process.env.VNPAY_TMN_CODE,
       secureSecret: process.env.VNPAY_SECURE_SECRET,
-      vnpayHost: process.env.VNPAY_HOST || "https://sandbox.vnpayment.vn",
-      testMode: process.env.NODE_ENV !== "production",
+      vnpayHost: vnpayHost,
+      testMode: !isProduction,
     });
 
     // Get client IP address
@@ -248,16 +256,43 @@ export async function POST(
       req.headers.get("x-real-ip") ||
       "127.0.0.1";
 
+    // VNPay SDK automatically multiplies by 100 internally
+    // Pass the amount directly in VND (do NOT multiply by 100)
+    const vnpAmount = Math.round(total);
+
+    // Build return URL - ensure it's a public URL
+    const returnUrlBase = process.env.FRONTEND_STORE_URL || 
+      process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ||
+      "http://localhost:3001";
+    
+    const returnUrl = `${returnUrlBase}/payment/success?orderId=${order.id}&method=vnpay`;
+
     // Build VNPay payment URL
     const paymentUrl = vnpay.buildPaymentUrl({
-      vnp_Amount: total,
+      vnp_Amount: vnpAmount,
       vnp_IpAddr: ipAddr,
       vnp_TxnRef: order.id,
-      vnp_OrderInfo: `Thanh toan don hang ${order.id}`,
+      vnp_OrderInfo: `Thanh toan don hang ${order.id.slice(-8)}`,
       vnp_OrderType: ProductCode.Other,
-      vnp_ReturnUrl: `${process.env.FRONTEND_STORE_URL}/account/orders?payment=success&method=vnpay`,
+      vnp_ReturnUrl: returnUrl,
       vnp_Locale: VnpLocale.VN,
     });
+
+    if (process.env.NODE_ENV === "development") {
+      console.log("[VNPAY] Payment URL created:", {
+        orderId: order.id,
+        subtotal,
+        discount,
+        shippingCost,
+        tax,
+        total,
+        vnpAmount,
+        calculation: `${total} * 100 = ${vnpAmount}`,
+        returnUrl,
+        vnpayHost,
+        isProduction,
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -265,12 +300,30 @@ export async function POST(
       orderId: order.id,
     });
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("[VNPAY_CHECKOUT_ERROR]", error);
-    }
+    console.error("[VNPAY_CHECKOUT_ERROR]", {
+      error,
+      vnpayConfig: {
+        hasTmnCode: !!process.env.VNPAY_TMN_CODE,
+        hasSecureSecret: !!process.env.VNPAY_SECURE_SECRET,
+        vnpayHost: process.env.VNPAY_HOST || (process.env.NODE_ENV === "production" ? "https://www.vnpayment.vn" : "https://sandbox.vnpayment.vn"),
+        isProduction: process.env.NODE_ENV === "production",
+      },
+    });
+
+    const errorMessage = error instanceof Error
+      ? error.message
+      : "Internal Server Error: VNPay checkout processing failed.";
+
     return new NextResponse(
-      "Internal Server Error: VNPay checkout processing failed.",
-      { status: 500 }
+      JSON.stringify({
+        success: false,
+        error: errorMessage,
+        message: "Không thể tạo thanh toán VNPay. Vui lòng thử lại hoặc chọn phương thức thanh toán khác.",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
     );
   }
 }
