@@ -73,6 +73,7 @@
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
     "uploadthing": "^7.7.4",
+    "vnpay": "^2.4.4",
     "xlsx": "^0.18.5",
     "zod": "^4.1.12",
     "zustand": "^5.0.8"

@@ -138,13 +138,22 @@ export async function PATCH(
       country: country !== undefined ? country : null,
     };
 
-    // Logic: Chỉ cập nhật isPaid cho COD khi status = DELIVERED
-    // Với thanh toán trực tuyến, isPaid đã được set = true khi tạo order
-    if (
-      status === "DELIVERED" &&
-      existingOrder.paymentMethod === "COD" &&
+    // Logic thanh toán:
+    // 1. Nếu đơn hàng đã thanh toán qua ví điện tử (Stripe, MoMo) -> isPaid luôn = true, không được thay đổi
+    // 2. Nếu đơn COD và status = DELIVERED -> tự động set isPaid = true
+    const isOnlinePayment =
+      existingOrder.paymentMethod === PAYMENT_METHODS.STRIPE ||
+      existingOrder.paymentMethod === PAYMENT_METHODS.MOMO;
+
+    if (isOnlinePayment) {
+      // Đơn hàng thanh toán online luôn giữ isPaid = true
+      updateData.isPaid = true;
+    } else if (
+      status === ORDER_STATUS.DELIVERED &&
+      existingOrder.paymentMethod === PAYMENT_METHODS.COD &&
       !existingOrder.isPaid
     ) {
+      // Đơn COD khi giao hàng thành công -> set isPaid = true
       updateData.isPaid = true;
     }
 

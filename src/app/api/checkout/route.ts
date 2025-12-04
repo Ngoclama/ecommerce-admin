@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import prisma from "@/lib/prisma";
 import { createMoMoPayment } from "@/lib/momo";
+import { VNPay, ProductCode, VnpLocale } from "vnpay";
 
 // Helper function to get CORS headers based on request origin
 const getCorsHeaders = (req: Request) => {
@@ -484,6 +485,109 @@ export async function POST(req: Request) {
       }
     }
 
+    // Nếu là VNPay, tạo payment URL và redirect
+    if (paymentMethod === "VNPAY") {
+      // VNPay không chấp nhận số tiền = 0, chuyển sang COD nếu đơn hàng miễn phí
+      if (total <= 0) {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            paymentMethod: "COD",
+            isPaid: true,
+            status: "PROCESSING",
+          },
+        });
+
+        return NextResponse.json(
+          {
+            success: true,
+            orderId: order.id,
+            message:
+              "Đơn hàng của bạn được miễn phí hoàn toàn! Đơn hàng đã được xác nhận.",
+          },
+          {
+            headers: corsHeaders,
+          }
+        );
+      }
+
+      // Validate VNPay configuration
+      if (!process.env.VNPAY_TMN_CODE || !process.env.VNPAY_SECURE_SECRET) {
+        console.error("[VNPAY] Missing configuration");
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "Thanh toán VNPay chưa được cấu hình. Vui lòng chọn phương thức khác.",
+          },
+          {
+            status: 500,
+            headers: corsHeaders,
+          }
+        );
+      }
+
+      try {
+        // Initialize VNPay
+        const vnpay = new VNPay({
+          tmnCode: process.env.VNPAY_TMN_CODE,
+          secureSecret: process.env.VNPAY_SECURE_SECRET,
+          vnpayHost: process.env.VNPAY_HOST || "https://sandbox.vnpayment.vn",
+          testMode: process.env.NODE_ENV !== "production",
+        });
+
+        // Get client IP address
+        const ipAddr =
+          req.headers.get("x-forwarded-for")?.split(",")[0] ||
+          req.headers.get("x-real-ip") ||
+          "127.0.0.1";
+
+        // Build VNPay payment URL
+        const paymentUrl = vnpay.buildPaymentUrl({
+          vnp_Amount: total,
+          vnp_IpAddr: ipAddr,
+          vnp_TxnRef: order.id,
+          vnp_OrderInfo: `Thanh toan don hang ${order.id.slice(-8)}`,
+          vnp_OrderType: ProductCode.Other,
+          vnp_ReturnUrl: `${
+            process.env.FRONTEND_STORE_URL ||
+            process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")
+          }/account/orders?payment=success&method=vnpay`,
+          vnp_Locale: VnpLocale.VN,
+        });
+
+        return NextResponse.json(
+          {
+            success: true,
+            orderId: order.id,
+            paymentUrl,
+            message: "Vui lòng thanh toán qua VNPay để hoàn tất đơn hàng.",
+          },
+          {
+            headers: corsHeaders,
+          }
+        );
+      } catch (vnpayError) {
+        console.error("[VNPAY_CHECKOUT_ERROR]", vnpayError);
+        return NextResponse.json(
+          {
+            success: false,
+            orderId: order.id,
+            error:
+              vnpayError instanceof Error
+                ? vnpayError.message
+                : "Không thể tạo thanh toán VNPay",
+            message:
+              "Đơn hàng đã được tạo nhưng thanh toán VNPay thất bại. Vui lòng liên hệ hỗ trợ.",
+          },
+          {
+            status: 500,
+            headers: corsHeaders,
+          }
+        );
+      }
+    }
+
     // Stripe - Xử lý thanh toán qua thẻ
     // Stripe cũng không chấp nhận số tiền = 0
     if (total <= 0) {
@@ -524,7 +628,7 @@ export async function POST(req: Request) {
       success_url: `${
         process.env.FRONTEND_STORE_URL ||
         process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")
-      }/checkout?success=1`,
+      }/account/orders?payment=success`,
       cancel_url: `${
         process.env.FRONTEND_STORE_URL ||
         process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")
