@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
-
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ModalProvider } from "@/providers/modal-provider";
@@ -58,6 +58,7 @@ export default function RootLayout({
             </ThemeProvider>
           </QueryProvider>
         </ClerkProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
