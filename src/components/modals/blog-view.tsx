@@ -10,7 +10,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Calendar, FileText, Tag, Eye, EyeOff } from "lucide-react";
+import { Loader2, Calendar, FileText, Tag, Eye, EyeOff, Hash, Link as LinkIcon, Image as ImageIcon } from "lucide-react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -31,8 +31,10 @@ interface BlogPost {
   content: string;
   featuredImage: string | null;
   isPublished: boolean;
+  publishedAt: string | null;
   metaTitle: string | null;
   metaDescription: string | null;
+  tags: string[];
   category: {
     id: string;
     name: string;
@@ -83,7 +85,7 @@ export const BlogViewModal: React.FC<BlogViewModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden bg-white dark:bg-neutral-900">
+      <DialogContent className="max-w-7xl w-[95vw] h-[95vh] flex flex-col p-0 overflow-hidden bg-white dark:bg-neutral-900">
         <div className="p-6 pb-2">
           <DialogHeader>
             <DialogTitle>{t("modals.blogDetails")}</DialogTitle>
@@ -106,85 +108,128 @@ export const BlogViewModal: React.FC<BlogViewModalProps> = ({
             <p className="text-muted-foreground">{t("modals.noDataFound")}</p>
           </div>
         ) : (
-          <ScrollArea className="flex-1 px-6 py-4">
-            <div className="space-y-6">
-              {/* Featured Image */}
-              {data.featuredImage && (
-                <div className="relative w-full h-64 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800">
-                  <img
-                    src={data.featuredImage}
-                    alt={data.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-
-              {/* Title */}
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  {data.title}
-                </h2>
-                {data.slug && (
-                  <p className="text-sm text-muted-foreground">/{data.slug}</p>
-                )}
-              </div>
-
-              {/* Status and Meta Info */}
-              <div className="flex flex-wrap items-center gap-4">
-                <Badge
-                  variant={data.isPublished ? "default" : "secondary"}
-                  className="flex items-center gap-1"
-                >
-                  {data.isPublished ? (
-                    <>
-                      <Eye className="h-3 w-3" />
-                      {t("columns.published")}
-                    </>
-                  ) : (
-                    <>
-                      <EyeOff className="h-3 w-3" />
-                      {t("columns.draft")}
-                    </>
+          <ScrollArea className="flex-1 px-8 py-6">
+            <div className="space-y-8 max-w-6xl mx-auto">
+              {/* Header Section */}
+              <div className="space-y-4">
+                {/* Title */}
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
+                    {data.title}
+                  </h2>
+                  {data.slug && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <LinkIcon className="h-4 w-4" />
+                      <span className="font-mono">/{data.slug}</span>
+                    </div>
                   )}
-                </Badge>
+                </div>
 
-                {data.category && (
-                  <div className="flex items-center gap-2">
-                    <Tag className="h-4 w-4 text-muted-foreground" />
-                    <Badge variant="outline">{data.category.name}</Badge>
+                {/* Status and Meta Info */}
+                <div className="flex flex-wrap items-center gap-4">
+                  <Badge
+                    variant={data.isPublished ? "default" : "secondary"}
+                    className="flex items-center gap-1.5 px-3 py-1"
+                  >
+                    {data.isPublished ? (
+                      <>
+                        <Eye className="h-4 w-4" />
+                        {t("columns.published")}
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff className="h-4 w-4" />
+                        {t("columns.draft")}
+                      </>
+                    )}
+                  </Badge>
+
+                  {data.category && (
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4 text-muted-foreground" />
+                      <Badge variant="outline" className="px-3 py-1">
+                        {data.category.name}
+                      </Badge>
+                    </div>
+                  )}
+
+                  {data.publishedAt && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                      <span>
+                        Published: {format(new Date(data.publishedAt), "PPp")}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>
+                      {t("modals.created")}{" "}
+                      {format(new Date(data.createdAt), "PPp")}
+                    </span>
                   </div>
-                )}
-
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>
-                    {t("modals.created")}{" "}
-                    {format(new Date(data.createdAt), "PPp")}
-                  </span>
                 </div>
               </div>
 
               <Separator />
 
+              {/* Featured Image */}
+              {data.featuredImage && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <ImageIcon className="h-4 w-4" />
+                    Featured Image
+                  </div>
+                  <div className="relative w-full h-96 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800">
+                    <img
+                      src={data.featuredImage}
+                      alt={data.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Tags */}
+              {data.tags && data.tags.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <Hash className="h-4 w-4" />
+                    Tags
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {data.tags.map((tag, index) => (
+                      <Badge key={index} variant="outline" className="px-3 py-1">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Excerpt */}
               {data.excerpt && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <div className="space-y-2">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
                     {t("columns.excerpt")}
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-base text-gray-700 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                     {data.excerpt}
                   </p>
                 </div>
               )}
 
+              <Separator />
+
               {/* Content */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <div className="space-y-3">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">
                   {t("columns.content")}
                 </h3>
                 <div
-                  className="prose dark:prose-invert max-w-none text-sm text-gray-600 dark:text-gray-400"
+                  className="prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 blog-content-view"
                   dangerouslySetInnerHTML={{ __html: data.content }}
                 />
               </div>
@@ -193,53 +238,80 @@ export const BlogViewModal: React.FC<BlogViewModalProps> = ({
               {(data.metaTitle || data.metaDescription) && (
                 <>
                   <Separator />
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <div className="space-y-4 bg-gray-50 dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-base font-semibold text-gray-900 dark:text-white">
                       SEO Information
                     </h3>
-                    {data.metaTitle && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">
-                          {t("forms.blog.metaTitle")}
-                        </p>
-                        <p className="text-sm">{data.metaTitle}</p>
-                      </div>
-                    )}
-                    {data.metaDescription && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">
-                          {t("forms.blog.metaDescription")}
-                        </p>
-                        <p className="text-sm">{data.metaDescription}</p>
-                      </div>
-                    )}
+                    <div className="space-y-4">
+                      {data.metaTitle && (
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+                            {t("forms.blog.metaTitle")}
+                          </p>
+                          <p className="text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 p-3 rounded border border-gray-200 dark:border-gray-700">
+                            {data.metaTitle}
+                          </p>
+                        </div>
+                      )}
+                      {data.metaDescription && (
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+                            {t("forms.blog.metaDescription")}
+                          </p>
+                          <p className="text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 p-3 rounded border border-gray-200 dark:border-gray-700">
+                            {data.metaDescription}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </>
               )}
 
               {/* System Info */}
               <Separator />
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">
-                    {t("modals.systemId")}
-                  </span>
-                  <span className="font-mono text-xs">{data.id}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">
-                    {t("modals.createdAt")}
-                  </span>
-                  <span>{format(new Date(data.createdAt), "PPp")}</span>
-                </div>
-                {data.updatedAt && (
+              <div className="space-y-3 text-sm bg-gray-50 dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
+                  System Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">
-                      {t("modals.lastUpdated")}
+                    <span className="text-muted-foreground font-medium">
+                      {t("modals.systemId")}
                     </span>
-                    <span>{format(new Date(data.updatedAt), "PPp")}</span>
+                    <span className="font-mono text-xs bg-white dark:bg-gray-900 px-2 py-1 rounded border border-gray-200 dark:border-gray-700">
+                      {data.id}
+                    </span>
                   </div>
-                )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground font-medium">
+                      {t("modals.createdAt")}
+                    </span>
+                    <span className="text-gray-900 dark:text-white">
+                      {format(new Date(data.createdAt), "PPp")}
+                    </span>
+                  </div>
+                  {data.updatedAt && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground font-medium">
+                        {t("modals.lastUpdated")}
+                      </span>
+                      <span className="text-gray-900 dark:text-white">
+                        {format(new Date(data.updatedAt), "PPp")}
+                      </span>
+                    </div>
+                  )}
+                  {data.publishedAt && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground font-medium">
+                        Published At
+                      </span>
+                      <span className="text-gray-900 dark:text-white">
+                        {format(new Date(data.publishedAt), "PPp")}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </ScrollArea>

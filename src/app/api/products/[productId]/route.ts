@@ -15,9 +15,17 @@ export async function GET(
       return new NextResponse("Product ID is required", { status: 400 });
     }
 
+    if (process.env.NODE_ENV === "development") {
+      console.log("[PRODUCT_PUBLIC_GET] Fetching product:", productId);
+    }
+
+    // Hỗ trợ tìm kiếm bằng cả id (ObjectId) hoặc slug
+    // ObjectId có độ dài 24 ký tự, slug thường ngắn hơn
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(productId);
+
     const product = await prisma.product.findFirst({
       where: {
-        id: productId,
+        ...(isObjectId ? { id: productId } : { slug: productId }),
         isArchived: false,
         isPublished: true, // Chỉ lấy sản phẩm đã publish
       },
@@ -98,10 +106,21 @@ export async function GET(
 
     return NextResponse.json(product);
   } catch (error) {
+    console.error("[PRODUCT_PUBLIC_GET] Error:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     if (process.env.NODE_ENV === "development") {
-      console.log("[PRODUCT_PUBLIC_GET]", error);
+      console.error("[PRODUCT_PUBLIC_GET] Full error:", error);
     }
-    return new NextResponse("Internal Server Error", { status: 500 });
+    return new NextResponse(
+      JSON.stringify({
+        error: "Internal Server Error",
+        message: errorMessage,
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 }
-

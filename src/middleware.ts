@@ -19,6 +19,7 @@ const isAdminRoute = createRouteMatcher([
   "/api/profile(.*)",
   "/api/webhook(.*)",
   "/api/uploadthing(.*)",
+  "/api/upload(.*)",
 ]);
 
 // Routes public API (không cần check role)

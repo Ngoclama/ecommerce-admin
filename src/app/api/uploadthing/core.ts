@@ -29,6 +29,22 @@ export const ourFileRouter = {
         return { uploadedBy: metadata.userId };
       }
     }),
+  videoUploader: f({
+    video: {
+      maxFileSize: "64MB", // UploadThing chỉ hỗ trợ các giá trị cụ thể: 1MB, 2MB, 4MB, 8MB, 16MB, 32MB, 64MB, etc.
+      maxFileCount: 5,
+    },
+  })
+    .middleware(() => handleAuth())
+    .onUploadComplete(async ({ metadata, file }) => {
+      try {
+        console.log("Video upload complete:", file.url);
+        return { uploadedBy: metadata.userId };
+      } catch (error) {
+        console.error("Error in onUploadComplete:", error);
+        return { uploadedBy: metadata.userId };
+      }
+    }),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;

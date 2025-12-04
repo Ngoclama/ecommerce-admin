@@ -399,6 +399,7 @@ model Review {
   rating        Int
   content       String?
   imageUrls     String[]
+  videoUrls     String[]
   isArchived    Boolean  @default(false)
   adminResponse String?
   createdAt     DateTime @default(now())

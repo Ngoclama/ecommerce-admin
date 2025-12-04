@@ -120,7 +120,7 @@ export async function POST(
     }
 
     const body = await req.json();
-    const { productId, rating, content, imageUrls } = body;
+    const { productId, rating, content, imageUrls, videoUrls } = body;
 
     if (process.env.NODE_ENV === "development") {
       console.log("[REVIEW_POST] Request body:", { productId, rating, hasContent: !!content });
@@ -246,6 +246,7 @@ export async function POST(
         rating,
         content: content || null,
         imageUrls: imageUrls || [],
+        videoUrls: videoUrls || [],
       },
     });
 
