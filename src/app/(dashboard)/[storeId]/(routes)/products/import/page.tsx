@@ -8,9 +8,17 @@ const ProductImportPage = async ({
 }) => {
   const { storeId } = await params;
 
-  // Fetch categories, sizes, colors, materials for mapping
+  // Fetch categories with parent info for mapping
   const categories = await prisma.category.findMany({
     where: { storeId },
+    include: {
+      parent: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
     orderBy: { name: "asc" },
   });
 
@@ -44,4 +52,3 @@ const ProductImportPage = async ({
 };
 
 export default ProductImportPage;
-
