@@ -20,8 +20,13 @@ Khi deploy lên Vercel, thanh toán VNPAY có thể bị lỗi do:
 ```
 VNPAY_TMN_CODE=your_tmn_code
 VNPAY_SECURE_SECRET=your_secure_secret
-VNPAY_HOST=https://www.vnpayment.vn  (cho production)
+VNPAY_HOST=https://www.vnpayment.vn  (QUAN TRỌNG: Phải set cho production)
 ```
+
+**⚠️ LƯU Ý QUAN TRỌNG:**
+- `VNPAY_HOST` **PHẢI** được set là `https://www.vnpayment.vn` cho production
+- Nếu không set, hệ thống có thể tự động dùng sandbox (`sandbox.vnpayment.vn`) và gây lỗi
+- Sandbox có thể có lỗi JavaScript như `timer is not defined` và không hoạt động đúng
 
 #### **Quan trọng - Return URL:**
 ```
@@ -66,13 +71,20 @@ Sau khi deploy, check logs trong Vercel:
 **Nguyên nhân có thể:**
 1. Return URL không đúng hoặc không accessible
 2. VNPAY_TMN_CODE hoặc VNPAY_SECURE_SECRET sai
-3. VNPAY Host không đúng (đang dùng sandbox thay vì production)
+3. VNPAY Host không đúng (đang dùng sandbox thay vì production) ⚠️ **QUAN TRỌNG**
+4. JavaScript errors từ VNPAY sandbox (như `timer is not defined`)
 
 **Cách fix:**
-1. Kiểm tra `FRONTEND_STORE_URL` có đúng không
-2. Kiểm tra VNPAY credentials trong Vercel environment variables
-3. Đảm bảo `VNPAY_HOST=https://www.vnpayment.vn` cho production
-4. Bật `VNPAY_DEBUG=true` để xem logs chi tiết
+1. **QUAN TRỌNG**: Đảm bảo `VNPAY_HOST=https://www.vnpayment.vn` được set trên Vercel
+   - Vào Vercel Dashboard → Project → Settings → Environment Variables
+   - Thêm: `VNPAY_HOST=https://www.vnpayment.vn` (cho Production environment)
+   - **Redeploy** sau khi thêm
+2. Kiểm tra `FRONTEND_STORE_URL` có đúng không
+3. Kiểm tra VNPAY credentials trong Vercel environment variables
+4. Check logs trong Vercel để xem `vnpayHost` có đúng không:
+   - Vào Deployments → Click vào deployment → Functions → Tìm function checkout/vnpay
+   - Tìm log `[VNPAY] Configuration:` và kiểm tra `vnpayHost` phải là `https://www.vnpayment.vn`
+5. Nếu vẫn dùng sandbox, có thể do `VERCEL_ENV` không được set. Thêm `VNPAY_HOST` để force production
 
 ### Lỗi: Invalid signature
 **Nguyên nhân:**

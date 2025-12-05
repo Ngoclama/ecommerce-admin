@@ -241,10 +241,19 @@ export async function POST(
     });
 
     // Determine VNPay host - use production URL if in production mode
-    // Check VERCEL_ENV or NODE_ENV to determine environment
+    // Priority: VNPAY_HOST env var > VERCEL_ENV check > NODE_ENV check > default to production on Vercel
+    const isVercel = !!process.env.VERCEL;
+    const isVercelProduction = process.env.VERCEL_ENV === "production";
+    const isNodeProduction = process.env.NODE_ENV === "production";
+
+    // If VNPAY_HOST is explicitly set, use it
+    // Otherwise, use production if on Vercel production or if NODE_ENV is production
+    // Default to production for safety (better to fail with production than accidentally use sandbox)
     const isProduction =
-      process.env.VERCEL_ENV === "production" ||
-      (process.env.NODE_ENV === "production" && !process.env.VERCEL_ENV);
+      process.env.VNPAY_HOST?.includes("www.vnpayment.vn") || // Explicitly production
+      (isVercel && isVercelProduction) || // Vercel production
+      (isNodeProduction && !isVercel) || // Node production (not Vercel)
+      (isVercel && !process.env.VNPAY_HOST); // Vercel but no explicit host = assume production
 
     const vnpayHost =
       process.env.VNPAY_HOST ||
@@ -252,27 +261,31 @@ export async function POST(
         ? "https://www.vnpayment.vn"
         : "https://sandbox.vnpayment.vn");
 
-    // Log VNPay configuration for debugging
-    if (
-      process.env.NODE_ENV === "development" ||
-      process.env.VNPAY_DEBUG === "true"
-    ) {
-      console.log("[VNPAY] Configuration:", {
-        isProduction,
-        vnpayHost,
-        hasTmnCode: !!process.env.VNPAY_TMN_CODE,
-        hasSecureSecret: !!process.env.VNPAY_SECURE_SECRET,
-        nodeEnv: process.env.NODE_ENV,
-        vercelEnv: process.env.VERCEL_ENV,
-      });
-    }
+    // Always log VNPay configuration for production debugging
+    // This helps identify issues in production
+    console.log("[VNPAY] Configuration:", {
+      isProduction,
+      vnpayHost,
+      testMode,
+      isVercel,
+      isVercelProduction,
+      isNodeProduction,
+      hasTmnCode: !!process.env.VNPAY_TMN_CODE,
+      hasSecureSecret: !!process.env.VNPAY_SECURE_SECRET,
+      nodeEnv: process.env.NODE_ENV,
+      vercelEnv: process.env.VERCEL_ENV,
+      vercel: process.env.VERCEL,
+    });
 
     // Initialize VNPay
+    // testMode should be false for production, true for sandbox
+    const testMode = vnpayHost.includes("sandbox");
+
     const vnpay = new VNPay({
       tmnCode: process.env.VNPAY_TMN_CODE,
       secureSecret: process.env.VNPAY_SECURE_SECRET,
       vnpayHost: vnpayHost,
-      testMode: !isProduction,
+      testMode: testMode,
     });
 
     // Get client IP address
