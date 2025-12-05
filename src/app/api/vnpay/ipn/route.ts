@@ -38,9 +38,16 @@ export async function POST(req: Request) {
     }
 
     // Initialize VNPay for verification
-    const isProduction = process.env.NODE_ENV === "production";
-    const vnpayHost = process.env.VNPAY_HOST || 
-      (isProduction ? "https://www.vnpayment.vn" : "https://sandbox.vnpayment.vn");
+    // Check VERCEL_ENV or NODE_ENV to determine environment
+    const isProduction =
+      process.env.VERCEL_ENV === "production" ||
+      (process.env.NODE_ENV === "production" && !process.env.VERCEL_ENV);
+
+    const vnpayHost =
+      process.env.VNPAY_HOST ||
+      (isProduction
+        ? "https://www.vnpayment.vn"
+        : "https://sandbox.vnpayment.vn");
 
     const vnpay = new VNPay({
       tmnCode: process.env.VNPAY_TMN_CODE,
@@ -199,4 +206,3 @@ export async function GET(req: Request) {
   // This endpoint can be used for verification if needed
   return NextResponse.json({ message: "Use POST for IPN" }, { status: 200 });
 }
-

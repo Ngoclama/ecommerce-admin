@@ -607,12 +607,31 @@ export async function POST(req: Request) {
 
       try {
         // Determine VNPay host - use production URL if in production mode
-        const isProduction = process.env.NODE_ENV === "production";
+        // Check VERCEL_ENV or NODE_ENV to determine environment
+        const isProduction =
+          process.env.VERCEL_ENV === "production" ||
+          (process.env.NODE_ENV === "production" && !process.env.VERCEL_ENV);
+
         const vnpayHost =
           process.env.VNPAY_HOST ||
           (isProduction
             ? "https://www.vnpayment.vn"
             : "https://sandbox.vnpayment.vn");
+
+        // Log VNPay configuration for debugging
+        if (
+          process.env.NODE_ENV === "development" ||
+          process.env.VNPAY_DEBUG === "true"
+        ) {
+          console.log("[VNPAY] Configuration:", {
+            isProduction,
+            vnpayHost,
+            hasTmnCode: !!process.env.VNPAY_TMN_CODE,
+            hasSecureSecret: !!process.env.VNPAY_SECURE_SECRET,
+            nodeEnv: process.env.NODE_ENV,
+            vercelEnv: process.env.VERCEL_ENV,
+          });
+        }
 
         // Initialize VNPay
         const vnpay = new VNPay({
@@ -623,22 +642,67 @@ export async function POST(req: Request) {
         });
 
         // Get client IP address
-        const ipAddr =
-          req.headers.get("x-forwarded-for")?.split(",")[0] ||
-          req.headers.get("x-real-ip") ||
-          "127.0.0.1";
+        // On Vercel, x-forwarded-for contains the real client IP
+        // Format: "client-ip, proxy1-ip, proxy2-ip"
+        const forwardedFor = req.headers.get("x-forwarded-for");
+        const ipAddr = forwardedFor
+          ? forwardedFor.split(",")[0].trim()
+          : req.headers.get("x-real-ip") ||
+            req.headers.get("cf-connecting-ip") || // Cloudflare
+            "127.0.0.1";
+
+        // Log IP for debugging
+        if (
+          process.env.NODE_ENV === "development" ||
+          process.env.VNPAY_DEBUG === "true"
+        ) {
+          console.log("[VNPAY] Client IP:", {
+            ipAddr,
+            xForwardedFor: req.headers.get("x-forwarded-for"),
+            xRealIp: req.headers.get("x-real-ip"),
+            cfConnectingIp: req.headers.get("cf-connecting-ip"),
+          });
+        }
 
         // VNPay SDK automatically multiplies by 100 internally
         // Pass the amount directly in VND (do NOT multiply by 100)
         const vnpAmount = Math.round(total);
 
         // Build return URL - ensure it's a public URL
-        const returnUrlBase =
-          process.env.FRONTEND_STORE_URL ||
-          process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ||
-          "http://localhost:3001";
+        // Priority: FRONTEND_STORE_URL > VERCEL_URL (for Vercel) > NEXT_PUBLIC_API_URL > localhost
+        let returnUrlBase = process.env.FRONTEND_STORE_URL;
+
+        if (!returnUrlBase) {
+          // On Vercel, use VERCEL_URL if available
+          if (process.env.VERCEL_URL) {
+            returnUrlBase = `https://${process.env.VERCEL_URL}`;
+          } else if (process.env.NEXT_PUBLIC_API_URL) {
+            returnUrlBase = process.env.NEXT_PUBLIC_API_URL.replace("/api", "");
+          } else {
+            returnUrlBase = "http://localhost:3001";
+          }
+        }
+
+        // Ensure returnUrlBase doesn't have trailing slash
+        returnUrlBase = returnUrlBase.replace(/\/$/, "");
 
         const returnUrl = `${returnUrlBase}/payment/success?orderId=${order.id}&method=vnpay`;
+
+        // Log return URL for debugging (only in development or if explicitly enabled)
+        if (
+          process.env.NODE_ENV === "development" ||
+          process.env.VNPAY_DEBUG === "true"
+        ) {
+          console.log("[VNPAY] Return URL:", {
+            returnUrl,
+            returnUrlBase,
+            envVars: {
+              FRONTEND_STORE_URL: process.env.FRONTEND_STORE_URL,
+              VERCEL_URL: process.env.VERCEL_URL,
+              NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+            },
+          });
+        }
 
         // Build VNPay payment URL
         const paymentUrl = vnpay.buildPaymentUrl({

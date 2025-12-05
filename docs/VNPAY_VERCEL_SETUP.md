@@ -1,0 +1,113 @@
+# Hướng dẫn cấu hình VNPAY trên Vercel
+
+## Vấn đề thường gặp
+
+Khi deploy lên Vercel, thanh toán VNPAY có thể bị lỗi do:
+1. **Return URL không đúng**: VNPAY cần URL công khai để redirect về sau khi thanh toán
+2. **Environment variables chưa được cấu hình**: Các biến môi trường cần được set trên Vercel
+3. **VNPAY Host**: Cần đảm bảo dùng production host khi deploy
+
+## Cấu hình Environment Variables trên Vercel
+
+### 1. Truy cập Vercel Dashboard
+- Vào https://vercel.com/dashboard
+- Chọn project **admin** (ecommerce-admin)
+- Vào **Settings** → **Environment Variables**
+
+### 2. Thêm các biến môi trường sau:
+
+#### **Bắt buộc cho VNPAY:**
+```
+VNPAY_TMN_CODE=your_tmn_code
+VNPAY_SECURE_SECRET=your_secure_secret
+VNPAY_HOST=https://www.vnpayment.vn  (cho production)
+```
+
+#### **Quan trọng - Return URL:**
+```
+FRONTEND_STORE_URL=https://ecommerce-store-henna-nine.vercel.app
+```
+
+**Lưu ý:** 
+- `FRONTEND_STORE_URL` phải là URL công khai của store frontend
+- Không có trailing slash (`/`)
+- Phải là HTTPS
+
+#### **Tùy chọn - Debug:**
+```
+VNPAY_DEBUG=true  (chỉ bật khi cần debug, tắt trong production)
+```
+
+### 3. Cấu hình cho cả 3 môi trường:
+- **Production**: Set cho production environment
+- **Preview**: Set cho preview branches (nếu cần test)
+- **Development**: Set cho local development
+
+### 4. Sau khi thêm biến môi trường:
+- **Redeploy** project để áp dụng thay đổi
+- Vào **Deployments** → Click **"..."** → **Redeploy**
+
+## Kiểm tra cấu hình
+
+### 1. Kiểm tra Return URL
+Sau khi deploy, check logs trong Vercel:
+- Vào **Deployments** → Click vào deployment mới nhất → **Functions** → Tìm function `/api/[storeId]/checkout/vnpay`
+- Nếu có log `[VNPAY] Return URL:`, kiểm tra xem URL có đúng không
+
+### 2. Test thanh toán
+1. Tạo đơn hàng test trên store
+2. Chọn thanh toán VNPAY
+3. Kiểm tra xem có redirect đến VNPAY không
+4. Sau khi thanh toán, kiểm tra xem có redirect về `/payment/success` không
+
+## Troubleshooting
+
+### Lỗi: "An error occurred during the processing"
+**Nguyên nhân có thể:**
+1. Return URL không đúng hoặc không accessible
+2. VNPAY_TMN_CODE hoặc VNPAY_SECURE_SECRET sai
+3. VNPAY Host không đúng (đang dùng sandbox thay vì production)
+
+**Cách fix:**
+1. Kiểm tra `FRONTEND_STORE_URL` có đúng không
+2. Kiểm tra VNPAY credentials trong Vercel environment variables
+3. Đảm bảo `VNPAY_HOST=https://www.vnpayment.vn` cho production
+4. Bật `VNPAY_DEBUG=true` để xem logs chi tiết
+
+### Lỗi: Invalid signature
+**Nguyên nhân:**
+- `VNPAY_SECURE_SECRET` không khớp với VNPAY dashboard
+
+**Cách fix:**
+- Kiểm tra lại `VNPAY_SECURE_SECRET` trong Vercel
+- Đảm bảo không có khoảng trắng thừa
+- Redeploy sau khi sửa
+
+### Return URL không hoạt động
+**Nguyên nhân:**
+- URL không công khai hoặc không accessible từ VNPAY servers
+
+**Cách fix:**
+1. Đảm bảo `FRONTEND_STORE_URL` là URL công khai (không phải localhost)
+2. Test URL: `https://ecommerce-store-henna-nine.vercel.app/payment/success` có accessible không
+3. Kiểm tra CORS settings nếu có
+
+## Checklist trước khi deploy
+
+- [ ] `VNPAY_TMN_CODE` đã được set trên Vercel
+- [ ] `VNPAY_SECURE_SECRET` đã được set trên Vercel
+- [ ] `FRONTEND_STORE_URL` đã được set với URL production đúng
+- [ ] `VNPAY_HOST` đã được set cho production (nếu cần)
+- [ ] Đã redeploy sau khi thêm environment variables
+- [ ] Đã test thanh toán trên production
+
+## Liên hệ VNPAY Support
+
+Nếu vẫn gặp lỗi, liên hệ VNPAY với:
+- **Mã tra cứu** (từ error page)
+- **Thời gian giao dịch**
+- **Order ID**
+- **Return URL** đang sử dụng
+
+Hotline: **1900 55 55 77**
+Email: **hotrovnpay@vnpay.vn**
