@@ -261,7 +261,7 @@ export async function POST(
         ? "https://www.vnpayment.vn"
         : "https://sandbox.vnpayment.vn");
 
-    // Always log VNPay configuration for production debugging
+    // Always log VNPay configuration for debugging
     // This helps identify issues in production
     console.log("[VNPAY] Configuration:", {
       isProduction,
@@ -275,6 +275,9 @@ export async function POST(
       nodeEnv: process.env.NODE_ENV,
       vercelEnv: process.env.VERCEL_ENV,
       vercel: process.env.VERCEL,
+      warning: testMode
+        ? "⚠️ Using SANDBOX mode - may have JavaScript errors. Use production for production environment."
+        : "✅ Using PRODUCTION mode",
     });
 
     // Initialize VNPay

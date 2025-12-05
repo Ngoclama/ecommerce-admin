@@ -20,13 +20,16 @@ Khi deploy lên Vercel, thanh toán VNPAY có thể bị lỗi do:
 ```
 VNPAY_TMN_CODE=your_tmn_code
 VNPAY_SECURE_SECRET=your_secure_secret
-VNPAY_HOST=https://www.vnpayment.vn  (QUAN TRỌNG: Phải set cho production)
+VNPAY_HOST=https://www.vnpayment.vn  (Cho production)
 ```
 
 **⚠️ LƯU Ý QUAN TRỌNG:**
-- `VNPAY_HOST` **PHẢI** được set là `https://www.vnpayment.vn` cho production
-- Nếu không set, hệ thống có thể tự động dùng sandbox (`sandbox.vnpayment.vn`) và gây lỗi
-- Sandbox có thể có lỗi JavaScript như `timer is not defined` và không hoạt động đúng
+- **Production**: `VNPAY_HOST=https://www.vnpayment.vn` (khuyến nghị cho production)
+- **Sandbox (Test)**: `VNPAY_HOST=https://sandbox.vnpayment.vn` (chỉ dùng để test)
+- Nếu không set `VNPAY_HOST`, hệ thống sẽ tự động detect:
+  - Production trên Vercel → dùng `https://www.vnpayment.vn`
+  - Localhost/Development → dùng `https://sandbox.vnpayment.vn`
+- **Lưu ý về Sandbox**: Sandbox có thể có lỗi JavaScript (như `timer is not defined`) nhưng vẫn có thể test được. Nếu gặp lỗi, thử refresh lại trang hoặc dùng production.
 
 #### **Quan trọng - Return URL:**
 ```
@@ -44,9 +47,27 @@ VNPAY_DEBUG=true  (chỉ bật khi cần debug, tắt trong production)
 ```
 
 ### 3. Cấu hình cho cả 3 môi trường:
-- **Production**: Set cho production environment
-- **Preview**: Set cho preview branches (nếu cần test)
-- **Development**: Set cho local development
+
+#### **Production Environment:**
+```
+VNPAY_TMN_CODE=your_production_tmn_code
+VNPAY_SECURE_SECRET=your_production_secure_secret
+VNPAY_HOST=https://www.vnpayment.vn
+FRONTEND_STORE_URL=https://ecommerce-store-henna-nine.vercel.app
+```
+
+#### **Preview/Development (nếu muốn test với sandbox):**
+```
+VNPAY_TMN_CODE=your_sandbox_tmn_code
+VNPAY_SECURE_SECRET=your_sandbox_secure_secret
+VNPAY_HOST=https://sandbox.vnpayment.vn  (Tùy chọn - để test)
+FRONTEND_STORE_URL=https://your-preview-url.vercel.app
+```
+
+**Lưu ý:**
+- Sandbox và Production có credentials khác nhau
+- Sandbox có thể có lỗi JavaScript nhưng vẫn test được
+- Khuyến nghị: Dùng production cho production environment
 
 ### 4. Sau khi thêm biến môi trường:
 - **Redeploy** project để áp dụng thay đổi

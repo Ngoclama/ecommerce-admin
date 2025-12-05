@@ -76,6 +76,9 @@ export async function POST(req: Request) {
       isVercel,
       isVercelProduction,
       vercelEnv: process.env.VERCEL_ENV,
+      warning: testMode
+        ? "⚠️ Using SANDBOX mode for IPN verification"
+        : "✅ Using PRODUCTION mode for IPN verification",
     });
 
     // Verify signature
