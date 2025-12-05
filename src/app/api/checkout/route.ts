@@ -650,8 +650,6 @@ export async function POST(req: Request) {
         });
 
         // Initialize VNPay
-        // testMode should be false for production, true for sandbox
-        const testMode = vnpayHost.includes("sandbox");
 
         const vnpay = new VNPay({
           tmnCode: process.env.VNPAY_TMN_CODE,
