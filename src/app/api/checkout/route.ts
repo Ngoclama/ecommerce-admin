@@ -4,6 +4,8 @@ import Stripe from "stripe";
 import prisma from "@/lib/prisma";
 import { createMoMoPayment } from "@/lib/momo";
 import { VNPay, ProductCode, VnpLocale } from "vnpay";
+import { auth } from "@clerk/nextjs/server";
+import { getUserFromDb } from "@/lib/permissions";
 
 // Helper function to get CORS headers based on request origin
 const getCorsHeaders = (req: Request) => {
@@ -313,44 +315,104 @@ export async function POST(req: Request) {
       });
     }
 
+    // Lấy userId từ Clerk authentication
+    let userId: string | null = null;
+    let userEmail: string | null = null;
+    try {
+      const { userId: clerkUserId } = await auth();
+      if (clerkUserId) {
+        const user = await getUserFromDb(clerkUserId);
+        if (user) {
+          userId = user.id;
+          userEmail = user.email || null;
+          console.log("[CHECKOUT] User authenticated:", {
+            clerkUserId,
+            userId: user.id,
+            email: user.email,
+          });
+        } else {
+          console.warn(
+            "[CHECKOUT] User not found in database for clerkId:",
+            clerkUserId,
+            "- Order will be created as guest. User should be created via webhook."
+          );
+          // Không tạo user ở đây, để webhook xử lý
+          // Đơn hàng sẽ được tạo nhưng không có userId
+        }
+      } else {
+        console.warn(
+          "[CHECKOUT] No Clerk userId found in auth - guest checkout"
+        );
+      }
+    } catch (authError: any) {
+      // Nếu không có auth, vẫn cho phép tạo đơn hàng (guest checkout)
+      console.warn("[CHECKOUT] Auth error, creating guest order:", {
+        error: authError?.message,
+        name: authError?.name,
+      });
+    }
+
+    if (!userId) {
+      console.warn("[CHECKOUT] Creating order without userId (guest checkout)");
+    }
+
+    // Tạo Order với đầy đủ thông tin
+    const orderData: any = {
+      storeId: storeId,
+      isPaid: false,
+      status: "PENDING",
+      subtotal,
+      tax,
+      discount,
+      shippingCost,
+      total,
+      // Lưu shipping address nếu có - ĐẢM BẢO LUÔN LƯU
+      // Ưu tiên email từ user đã đăng nhập, sau đó mới dùng email từ shippingAddress
+      ...(shippingAddress && shippingAddress.phone && shippingAddress.address
+        ? {
+            phone: shippingAddress.phone,
+            email: userEmail || shippingAddress.email || null, // Ưu tiên email từ user đã đăng nhập
+            receiverName: shippingAddress.fullName || null,
+            receiverPhone: shippingAddress.phone || null,
+            address: `${shippingAddress.address}, ${
+              shippingAddress.ward || ""
+            }, ${shippingAddress.district || ""}, ${
+              shippingAddress.province || ""
+            }`.trim(),
+            shippingAddress: `${shippingAddress.address}, ${
+              shippingAddress.ward || ""
+            }, ${shippingAddress.district || ""}, ${
+              shippingAddress.province || ""
+            }`.trim(),
+            city: shippingAddress.province || null,
+            postalCode: shippingAddress.ward || null,
+            country: "Vietnam",
+          }
+        : {}),
+      // Lưu shipping method
+      ...(shippingMethod && {
+        shippingMethod: shippingMethod,
+      }),
+      // Lưu payment method
+      ...(paymentMethod && {
+        paymentMethod: paymentMethod,
+      }),
+      // Lưu customer note
+      ...(customerNote && {
+        customerNote: customerNote,
+      }),
+    };
+
+    // Thêm userId nếu có
+    if (userId) {
+      orderData.userId = userId;
+      console.log("[CHECKOUT] Linking order to user:", userId);
+    }
+
     // Tạo Order với đầy đủ thông tin
     const order = await prisma.order.create({
       data: {
-        storeId: storeId,
-        isPaid: false,
-        status: "PENDING",
-        subtotal,
-        tax,
-        discount,
-        shippingCost,
-        total,
-        // Lưu shipping address nếu có - ĐẢM BẢO LUÔN LƯU
-        ...(shippingAddress && shippingAddress.phone && shippingAddress.address
-          ? {
-              phone: shippingAddress.phone,
-              email: shippingAddress.email || null,
-              address: `${shippingAddress.address}, ${
-                shippingAddress.ward || ""
-              }, ${shippingAddress.district || ""}, ${
-                shippingAddress.province || ""
-              }`.trim(),
-              city: shippingAddress.province || null,
-              postalCode: shippingAddress.ward || null,
-              country: "Vietnam",
-            }
-          : {}),
-        // Lưu shipping method
-        ...(shippingMethod && {
-          shippingMethod: shippingMethod,
-        }),
-        // Lưu payment method
-        ...(paymentMethod && {
-          paymentMethod: paymentMethod,
-        }),
-        // Lưu customer note
-        ...(customerNote && {
-          customerNote: customerNote,
-        }),
+        ...orderData,
         orderItems: {
           create: items.map((checkoutItem) => {
             const product = products.find(
@@ -395,10 +457,26 @@ export async function POST(req: Request) {
               price: itemPrice,
               productName: product.name,
               quantity: checkoutItem.quantity,
+              // Lưu image URL từ product images
+              imageUrl: product.images?.[0]?.url || null,
             };
           }),
         },
       },
+      include: {
+        orderItems: true,
+      },
+    });
+
+    // Log order creation
+    console.log("[CHECKOUT] Order created:", {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      userId: order.userId || "GUEST",
+      storeId: order.storeId,
+      total: order.total,
+      paymentMethod: order.paymentMethod,
+      itemCount: order.orderItems?.length || items.length || 0,
     });
 
     // Nếu là COD, trả về success ngay lập tức
@@ -530,8 +608,11 @@ export async function POST(req: Request) {
       try {
         // Determine VNPay host - use production URL if in production mode
         const isProduction = process.env.NODE_ENV === "production";
-        const vnpayHost = process.env.VNPAY_HOST || 
-          (isProduction ? "https://www.vnpayment.vn" : "https://sandbox.vnpayment.vn");
+        const vnpayHost =
+          process.env.VNPAY_HOST ||
+          (isProduction
+            ? "https://www.vnpayment.vn"
+            : "https://sandbox.vnpayment.vn");
 
         // Initialize VNPay
         const vnpay = new VNPay({
@@ -552,10 +633,11 @@ export async function POST(req: Request) {
         const vnpAmount = Math.round(total);
 
         // Build return URL - ensure it's a public URL
-        const returnUrlBase = process.env.FRONTEND_STORE_URL || 
+        const returnUrlBase =
+          process.env.FRONTEND_STORE_URL ||
           process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ||
           "http://localhost:3001";
-        
+
         const returnUrl = `${returnUrlBase}/payment/success?orderId=${order.id}&method=vnpay`;
 
         // Build VNPay payment URL
@@ -604,14 +686,19 @@ export async function POST(req: Request) {
           vnpayConfig: {
             hasTmnCode: !!process.env.VNPAY_TMN_CODE,
             hasSecureSecret: !!process.env.VNPAY_SECURE_SECRET,
-            vnpayHost: process.env.VNPAY_HOST || (process.env.NODE_ENV === "production" ? "https://www.vnpayment.vn" : "https://sandbox.vnpayment.vn"),
+            vnpayHost:
+              process.env.VNPAY_HOST ||
+              (process.env.NODE_ENV === "production"
+                ? "https://www.vnpayment.vn"
+                : "https://sandbox.vnpayment.vn"),
             isProduction: process.env.NODE_ENV === "production",
           },
         });
 
-        const errorMessage = vnpayError instanceof Error
-          ? vnpayError.message
-          : "Không thể tạo thanh toán VNPay";
+        const errorMessage =
+          vnpayError instanceof Error
+            ? vnpayError.message
+            : "Không thể tạo thanh toán VNPay";
 
         return NextResponse.json(
           {

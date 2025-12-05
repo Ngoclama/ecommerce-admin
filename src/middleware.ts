@@ -23,6 +23,8 @@ const isAdminRoute = createRouteMatcher([
 ]);
 
 // Routes public API (không cần check role)
+// Lưu ý: /api/orders/user và /api/orders/link-user được gọi từ store proxy
+// Store đã authenticate rồi, chỉ cần trust query param clerkUserId
 const isPublicApiRoute = createRouteMatcher([
   "/api/wishlist(.*)",
   "/api/products(.*)",
@@ -32,6 +34,8 @@ const isPublicApiRoute = createRouteMatcher([
   "/api/sizes(.*)",
   "/api/materials(.*)",
   "/api/user/role(.*)",
+  "/api/orders/user(.*)", // Store proxy đã authenticate
+  "/api/orders/link-user(.*)", // Store proxy đã authenticate
 ]);
 
 export default clerkMiddleware(async (auth, request) => {

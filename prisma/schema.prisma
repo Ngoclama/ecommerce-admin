@@ -22,12 +22,13 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  stores    Store[]
-  orders    Order[]
-  reviews   Review[]
-  addresses Address[]
-  wishlist  Wishlist[]
-  returns   Return[]
+  stores        Store[]
+  orders        Order[]
+  reviews       Review[]
+  addresses     Address[]
+  wishlist      Wishlist[]
+  returns       Return[]
+  notifications Notification[]
 }
 
 // ─── 2. STORE MANAGEMENT ──────────────────────────────────────
@@ -254,20 +255,25 @@ enum OrderStatus {
 
 // ─── 5. ORDER & CHECKOUT ──────────────────────────────────────
 model Order {
-  id         String      @id @default(auto()) @map("_id") @db.ObjectId
-  storeId    String      @db.ObjectId
-  store      Store       @relation(fields: [storeId], references: [id])
-  orderItems OrderItem[]
-  isPaid     Boolean     @default(false)
-  status     OrderStatus @default(PENDING)
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  orderNumber   String      @unique @default(cuid())
+  storeId       String      @db.ObjectId
+  store         Store       @relation(fields: [storeId], references: [id])
+  orderItems    OrderItem[]
+  isPaid        Boolean     @default(false)
+  status        OrderStatus @default(PENDING)
+  statusHistory Json?
 
   // Thông tin khách hàng
-  phone      String  @default("")
-  email      String? // Email khách hàng
-  address    String  @default("")
-  city       String? // Thành phố
-  postalCode String? // Mã bưu điện
-  country    String? // Quốc gia
+  receiverName    String?
+  receiverPhone   String?
+  phone           String  @default("")
+  email           String? // Email khách hàng
+  address         String  @default("")
+  shippingAddress String?
+  city            String? // Thành phố
+  postalCode      String? // Mã bưu điện
+  country         String? // Quốc gia
 
   // Thông tin giao hàng
   shippingMethod String? // Phương thức giao hàng
@@ -276,13 +282,15 @@ model Order {
 
   // Thanh toán
   paymentMethod String? // Phương thức thanh toán
+  paymentStatus String? // PENDING | PAID | REFUNDED
   transactionId String? // ID giao dịch từ payment gateway
 
   // Giá trị đơn hàng
-  subtotal Float @default(0) // Tổng tiền sản phẩm
-  tax      Float @default(0) // Thuế
-  discount Float @default(0) // Giảm giá
-  total    Float @default(0) // Tổng cộng
+  subtotal   Float   @default(0) // Tổng tiền sản phẩm
+  tax        Float   @default(0) // Thuế
+  discount   Float   @default(0) // Giảm giá
+  couponCode String?
+  total      Float   @default(0) // Tổng cộng
 
   // Ghi chú
   customerNote String? // Ghi chú từ khách hàng
@@ -293,8 +301,9 @@ model Order {
   user      User?    @relation(fields: [userId], references: [id])
   userId    String?  @db.ObjectId
 
-  returns   Return[]
-  shippings Shipping[]
+  returns       Return[]
+  shippings     Shipping[]
+  notifications Notification[]
 
   @@index([storeId])
   @@index([status])
@@ -309,8 +318,9 @@ model OrderItem {
   productId String  @db.ObjectId
   product   Product @relation(fields: [productId], references: [id])
 
-  quantity Int    @default(1)
+  quantity Int     @default(1)
   price    Float? // Giá tại thời điểm đặt hàng (nullable để tương thích với dữ liệu cũ)
+  imageUrl String?
 
   // Snapshot thông tin lúc đặt hàng (để hiển thị khi sản phẩm bị xóa/thay đổi)
   sizeId       String? @db.ObjectId
@@ -647,4 +657,21 @@ model BlogPostCategory {
   @@unique([blogPostId, blogCategoryId])
   @@index([blogPostId])
   @@index([blogCategoryId])
+}
+
+model Notification {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String    @db.ObjectId
+  orderId   String    @db.ObjectId
+  message   String
+  type      String // ORDER_CONFIRMED | ORDER_SHIPPING | ORDER_DELIVERED | ORDER_CANCELLED
+  isRead    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+  user      User?     @relation(fields: [userId], references: [id])
+  order     Order     @relation(fields: [orderId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([orderId])
+  @@index([isRead])
 }

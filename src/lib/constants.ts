@@ -8,7 +8,7 @@ export const API_MESSAGES = {
   // Authentication
   UNAUTHENTICATED: "Chưa xác thực",
   UNAUTHORIZED: "Không có quyền truy cập",
-  
+
   // Validation
   STORE_ID_REQUIRED: "ID cửa hàng là bắt buộc",
   ID_REQUIRED: "ID là bắt buộc",
@@ -17,20 +17,29 @@ export const API_MESSAGES = {
   CATEGORY_ID_REQUIRED: "ID danh mục là bắt buộc",
   CODE_REQUIRED: "Mã là bắt buộc",
   INVALID_DATA: "Dữ liệu không hợp lệ",
-  
+
   // Product
   VARIANTS_REQUIRED: "Cần ít nhất một biến thể",
   IMAGES_REQUIRED: "Cần ít nhất một hình ảnh",
-  
+
   // Coupon
   DUPLICATE_CODE: "Mã đã tồn tại",
   EXPIRED_DATE_PAST: "Ngày hết hạn không thể là quá khứ",
-  
+
+  // Order
+  ORDER_ID_REQUIRED: "ID đơn hàng là bắt buộc",
+  ORDER_NOT_FOUND: "Không tìm thấy đơn hàng",
+  ORDER_CANNOT_CANCEL: "Không thể hủy đơn hàng ở trạng thái này",
+  ORDER_CANCELLED: "Đơn hàng đã được hủy",
+  ORDER_CANCELLED_SUCCESS: "Hủy đơn hàng thành công",
+  RATE_LIMIT_EXCEEDED:
+    "Bạn đang thực hiện quá nhiều yêu cầu. Vui lòng thử lại sau.",
+
   // Success
   CREATED: "Đã tạo thành công",
   UPDATED: "Đã cập nhật thành công",
   DELETED: "Đã xóa thành công",
-  
+
   // Error
   NOT_FOUND: "Không tìm thấy",
   SERVER_ERROR: "Lỗi máy chủ",
@@ -126,6 +135,21 @@ export const RETURN_STATUS = {
   CANCELLED: "CANCELLED",
 } as const;
 
+// ─── NOTIFICATION TYPES ──────────────────────────────────────────
+export const NOTIFICATION_TYPES = {
+  ORDER_CONFIRMED: "ORDER_CONFIRMED",
+  ORDER_SHIPPING: "ORDER_SHIPPING",
+  ORDER_DELIVERED: "ORDER_DELIVERED",
+  ORDER_CANCELLED: "ORDER_CANCELLED",
+} as const;
+
+// ─── PAYMENT STATUS ──────────────────────────────────────────────
+export const PAYMENT_STATUS = {
+  PENDING: "PENDING",
+  PAID: "PAID",
+  REFUNDED: "REFUNDED",
+} as const;
+
 // ─── PAGINATION ──────────────────────────────────────────────────
 export const PAGINATION = {
   DEFAULT_PAGE: 1,
@@ -149,7 +173,7 @@ export const CACHE = {
 // ─── TIMEOUT ──────────────────────────────────────────────────────
 export const TIMEOUT = {
   FETCH: 30000, // 30 seconds
-  API: 30000,   // 30 seconds
+  API: 30000, // 30 seconds
 } as const;
 
 // ─── ENVIRONMENT ─────────────────────────────────────────────────
@@ -179,4 +203,3 @@ export const DEFAULTS = {
   IS_FEATURED: false,
   IS_ARCHIVED: false,
 } as const;
-

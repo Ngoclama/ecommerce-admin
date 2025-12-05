@@ -46,30 +46,72 @@ export async function POST(req: Request) {
   // 1. KHI USER ĐĂNG KÝ MỚI TRÊN CLERK -> TẠO USER TRONG MONGO
   if (eventType === "user.created") {
     const { id, email_addresses, first_name, last_name, image_url } = evt.data;
+    const email = email_addresses[0]?.email_address;
 
-    await prisma.user.create({
+    const newUser = await prisma.user.create({
       data: {
         clerkId: id,
-        email: email_addresses[0].email_address,
+        email: email,
         name: `${first_name || ""} ${last_name || ""}`.trim(),
         imageUrl: image_url,
         role: "CUSTOMER", // Mặc định là khách hàng
       },
     });
+
+    // Link các đơn hàng chưa có userId nhưng có cùng email với user mới
+    if (email) {
+      const updatedOrders = await prisma.order.updateMany({
+        where: {
+          userId: null, // Chưa có userId
+          email: email, // Cùng email với user mới
+        },
+        data: {
+          userId: newUser.id, // Link với user mới
+        },
+      });
+
+      if (updatedOrders.count > 0) {
+        console.log(
+          `[WEBHOOK] Linked ${updatedOrders.count} orders to new user:`,
+          newUser.id
+        );
+      }
+    }
   }
 
   // 2. KHI USER UPDATE PROFILE TRÊN CLERK -> UPDATE MONGO
   if (eventType === "user.updated") {
     const { id, email_addresses, first_name, last_name, image_url } = evt.data;
+    const email = email_addresses[0]?.email_address;
 
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { clerkId: id },
       data: {
-        email: email_addresses[0].email_address,
+        email: email,
         name: `${first_name || ""} ${last_name || ""}`.trim(),
         imageUrl: image_url,
       },
     });
+
+    // Link các đơn hàng chưa có userId nhưng có cùng email với user
+    if (email && updatedUser) {
+      const updatedOrders = await prisma.order.updateMany({
+        where: {
+          userId: null, // Chưa có userId
+          email: email, // Cùng email với user
+        },
+        data: {
+          userId: updatedUser.id, // Link với user
+        },
+      });
+
+      if (updatedOrders.count > 0) {
+        console.log(
+          `[WEBHOOK] Linked ${updatedOrders.count} orders to updated user:`,
+          updatedUser.id
+        );
+      }
+    }
   }
 
   // 3. KHI USER BỊ XÓA
