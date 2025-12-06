@@ -126,7 +126,7 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public files with extensions
-     * 
+     *
      * Note: This single pattern covers all routes including API routes.
      * Upload routes are excluded and handled separately in the middleware logic.
      * Fixed: Removed invalid negative lookahead pattern for Next.js 15 compatibility.
