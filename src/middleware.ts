@@ -126,12 +126,10 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public files with extensions
+     * 
+     * Note: This single pattern covers all routes including API routes.
+     * Upload routes are excluded and handled separately in the middleware logic.
      */
     "/((?!_next|api/upload|api/uploadthing|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    /*
-     * Match API routes but exclude upload routes explicitly
-     * Upload routes are handled separately to avoid Edge Runtime limitations with FormData
-     */
-    "/(api|trpc)(?!/(upload|uploadthing))(.*)",
   ],
 };
