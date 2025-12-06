@@ -3,6 +3,10 @@ import { verifyToken } from "@clerk/backend";
 import { NextResponse } from "next/server";
 import { UTApi } from "uploadthing/server";
 
+// Force Node.js runtime for file uploads (Edge runtime has limitations with FormData)
+export const runtime = "nodejs";
+export const maxDuration = 60; // 60 seconds for large file uploads
+
 const utapi = new UTApi();
 
 // Helper function để lấy Clerk userId từ token hoặc cookies (giống reviews route)
