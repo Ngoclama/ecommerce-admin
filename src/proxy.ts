@@ -49,7 +49,10 @@ export default clerkMiddleware(async (auth, request) => {
   // This prevents Edge Runtime from trying to parse FormData in middleware
   // Upload routes are excluded from matcher, but double-check here for safety
   const pathname = request.nextUrl.pathname;
-  if (pathname.startsWith("/api/upload") || pathname.startsWith("/api/uploadthing")) {
+  if (
+    pathname.startsWith("/api/upload") ||
+    pathname.startsWith("/api/uploadthing")
+  ) {
     // For upload routes, bypass middleware completely
     // Route handlers use Node.js runtime and handle authentication internally
     // Don't call auth() or any async operations here to avoid FormData parsing issues
