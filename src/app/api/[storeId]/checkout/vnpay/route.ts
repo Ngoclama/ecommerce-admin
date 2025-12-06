@@ -261,8 +261,7 @@ export async function POST(
         ? "https://www.vnpayment.vn"
         : "https://sandbox.vnpayment.vn");
 
-    // Initialize VNPay
-    // testMode should be false for production, true for sandbox
+    // Determine test mode: false for production, true for sandbox
     const testMode = vnpayHost.includes("sandbox");
 
     // Always log VNPay configuration for debugging
