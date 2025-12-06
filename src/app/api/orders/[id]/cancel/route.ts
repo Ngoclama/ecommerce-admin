@@ -25,7 +25,19 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const { userId: clerkUserId } = await auth();
+
+    // Try to get userId from query params first (from store server proxy)
+    const { searchParams } = new URL(req.url);
+    const clerkUserIdFromQuery = searchParams.get("clerkUserId");
+
+    // Also try to get from auth (direct call - may not work if cookies aren't forwarded)
+    // NOTE: Nếu store và admin dùng 2 Clerk keys khác nhau, auth() sẽ không hoạt động
+    // Vì cookies từ Clerk instance A không hợp lệ với Clerk instance B
+    const { userId: clerkUserIdFromAuth } = await auth();
+
+    // Ưu tiên query param từ store proxy (store đã authenticate rồi)
+    // Chỉ dùng auth() nếu không có query param (direct call từ admin)
+    const clerkUserId = clerkUserIdFromQuery || clerkUserIdFromAuth;
 
     if (!clerkUserId) {
       return NextResponse.json(
