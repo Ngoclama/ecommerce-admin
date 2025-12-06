@@ -172,6 +172,7 @@ const ReportsPage = async ({
     topColors: stats.topColors,
     topSizes: stats.topSizes,
     dailyRevenue,
+    orders: undefined, // Optional field, not used in current implementation
     filters: {
       categories,
       products,

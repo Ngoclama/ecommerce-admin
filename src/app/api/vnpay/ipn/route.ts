@@ -239,13 +239,32 @@ export async function POST(req: Request) {
         order.id
       );
 
-      // Update order status to CANCELLED
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          status: "CANCELLED",
-        },
-      });
+      // Delete order if unpaid and PENDING (payment was cancelled)
+      if (!order.isPaid && order.status === "PENDING") {
+        try {
+          await prisma.order.delete({
+            where: { id: order.id },
+          });
+          console.log("[VNPAY_IPN] Order deleted after payment failure:", order.id);
+        } catch (deleteError) {
+          console.error("[VNPAY_IPN] Error deleting order:", deleteError);
+          // Fallback: update status to CANCELLED if delete fails
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              status: "CANCELLED",
+            },
+          });
+        }
+      } else {
+        // Update order status to CANCELLED if already paid or not PENDING
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            status: "CANCELLED",
+          },
+        });
+      }
 
       // Return response to VNPay
       return NextResponse.json({

@@ -124,13 +124,32 @@ export async function POST(req: Request) {
         order.id
       );
 
-      // Optionally update order status to CANCELLED or FAILED
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          status: "CANCELLED",
-        },
-      });
+      // Delete order if unpaid and PENDING (payment was cancelled)
+      if (!order.isPaid && order.status === "PENDING") {
+        try {
+          await prisma.order.delete({
+            where: { id: order.id },
+          });
+          console.log("[MOMO_IPN] Order deleted after payment failure:", order.id);
+        } catch (deleteError) {
+          console.error("[MOMO_IPN] Error deleting order:", deleteError);
+          // Fallback: update status to CANCELLED if delete fails
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              status: "CANCELLED",
+            },
+          });
+        }
+      } else {
+        // Update order status to CANCELLED if already paid or not PENDING
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            status: "CANCELLED",
+          },
+        });
+      }
     }
 
     // Always return 200 OK to MoMo to acknowledge receipt

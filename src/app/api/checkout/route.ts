@@ -927,7 +927,7 @@ export async function POST(req: Request) {
       cancel_url: `${
         process.env.FRONTEND_STORE_URL ||
         process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")
-      }/checkout?canceled=1`,
+      }/checkout?canceled=1&orderId=${order.id}`,
       metadata: {
         orderId: order.id,
         // Lưu shipping address vào metadata để backup

@@ -217,7 +217,7 @@ export async function POST(
       cancel_url: `${
         process.env.FRONTEND_STORE_URL ||
         process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")
-      }/checkout?canceled=1`,
+      }/checkout?canceled=1&orderId=${order.id}`,
       metadata: {
         orderId: order.id,
       },
