@@ -6,6 +6,7 @@ import { createMoMoPayment } from "@/lib/momo";
 import { VNPay, ProductCode, VnpLocale } from "vnpay";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { getUserFromDb } from "@/lib/permissions";
+import { userService } from "@/lib/services/user.service";
 
 // Helper function to get CORS headers based on request origin
 const getCorsHeaders = (req: Request) => {
@@ -316,80 +317,22 @@ export async function POST(req: Request) {
     try {
       const { userId: clerkUserId } = await auth();
       if (clerkUserId) {
-        let user = await getUserFromDb(clerkUserId);
-
-        // Nếu user chưa tồn tại trong database, tạo user mới
-        if (!user) {
-          try {
-            // Lấy thông tin user từ Clerk API
-            let realEmail = `user_${clerkUserId}@temp.com`;
-            let realName = "User";
-            let realImageUrl: string | null = null;
-
-            try {
-              const clerk = await clerkClient();
-              const clerkUser = await clerk.users.getUser(clerkUserId);
-              if (clerkUser && clerkUser.emailAddresses.length > 0) {
-                realEmail = clerkUser.emailAddresses[0].emailAddress;
-                realName =
-                  clerkUser.firstName && clerkUser.lastName
-                    ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
-                    : clerkUser.firstName || clerkUser.lastName || "User";
-                realImageUrl = clerkUser.imageUrl || null;
-              }
-            } catch (clerkError) {
-              console.warn(
-                "[CHECKOUT] Could not fetch user from Clerk:",
-                clerkError
-              );
-            }
-
-            // Normalize email (lowercase, trim) để đảm bảo matching chính xác
-            realEmail = realEmail.toLowerCase().trim();
-
-            console.log("[CHECKOUT] Creating user in database:", {
-              clerkUserId,
-              email: realEmail,
-              name: realName,
-            });
-
-            try {
-              user = await prisma.user.create({
-                data: {
-                  clerkId: clerkUserId,
-                  email: realEmail,
-                  name: realName,
-                  imageUrl: realImageUrl,
-                  role: "CUSTOMER",
-                },
-              });
-              console.log("[CHECKOUT] User created successfully:", user.id);
-            } catch (createError: any) {
-              // Nếu user đã tồn tại (race condition), lấy lại từ database
-              if (createError.code === "P2002") {
-                user = await getUserFromDb(clerkUserId);
-                if (user) {
-                  console.log(
-                    "[CHECKOUT] User already exists, using existing user:",
-                    user.id
-                  );
-                }
-              }
-
-              if (!user) {
-                console.error("[CHECKOUT] Failed to create user:", createError);
-                // Vẫn tiếp tục tạo order như guest nếu không thể tạo user
-              }
-            }
-          } catch (error) {
-            console.error("[CHECKOUT] Error creating user:", error);
-            // Vẫn tiếp tục tạo order như guest nếu không thể tạo user
-          }
-        }
+        // Use UserService to get or create user (with auto-sync)
+        const user = await userService.getOrCreateUser(
+          clerkUserId,
+          false,
+          true
+        );
 
         if (user) {
           userId = user.id;
           userEmail = user.email || null;
+
+          // Auto-link orders by email
+          if (userEmail) {
+            await userService.linkOrdersByEmail(user.id, userEmail);
+          }
+
           console.log("[CHECKOUT] User authenticated:", {
             clerkUserId,
             userId: user.id,
@@ -419,11 +362,19 @@ export async function POST(req: Request) {
       console.warn("[CHECKOUT] Creating order without userId (guest checkout)");
     }
 
+    // Determine payment status based on payment method
+    // Online payments (STRIPE, MOMO, VNPAY) = paid immediately
+    // COD = not paid until delivery
+    const isOnlinePayment =
+      paymentMethod && ["STRIPE", "MOMO", "VNPAY"].includes(paymentMethod);
+    const isPaid = isOnlinePayment; // Online payment = paid immediately, COD = not paid
+    const initialStatus = isPaid ? "PROCESSING" : "PENDING"; // Paid orders start as PROCESSING
+
     // Tạo Order với đầy đủ thông tin
     const orderData: any = {
       storeId: storeId,
-      isPaid: false,
-      status: "PENDING",
+      isPaid: isPaid, // Set based on payment method
+      status: initialStatus, // PROCESSING for online payment, PENDING for COD
       subtotal,
       tax,
       discount,
@@ -661,7 +612,7 @@ export async function POST(req: Request) {
       // Validate VNPay configuration
       const tmnCode = process.env.VNPAY_TMN_CODE?.trim();
       const secureSecret = process.env.VNPAY_SECURE_SECRET?.trim();
-      
+
       if (!tmnCode || !secureSecret) {
         console.error("[VNPAY] Missing configuration", {
           hasTmnCode: !!tmnCode,
@@ -681,7 +632,7 @@ export async function POST(req: Request) {
           }
         );
       }
-      
+
       // Log secure secret for debugging (only first and last 2 chars for security)
       console.log("[VNPAY] Secure Secret Info:", {
         length: secureSecret.length,
@@ -789,7 +740,8 @@ export async function POST(req: Request) {
         // Ensure returnUrlBase doesn't have trailing slash
         returnUrlBase = returnUrlBase.replace(/\/$/, "");
 
-        const returnUrl = `${returnUrlBase}/payment/success?orderId=${order.id}&method=vnpay`;
+        // VNPay return URL - sẽ được xử lý bởi route handler để kiểm tra responseCode
+        const returnUrl = `${returnUrlBase}/payment/vnpay/return?orderId=${order.id}`;
 
         // Log return URL for debugging (only in development or if explicitly enabled)
         if (
@@ -927,7 +879,7 @@ export async function POST(req: Request) {
       cancel_url: `${
         process.env.FRONTEND_STORE_URL ||
         process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")
-      }/checkout?canceled=1&orderId=${order.id}`,
+      }/payment/failure?orderId=${order.id}&method=stripe&reason=cancelled`,
       metadata: {
         orderId: order.id,
         // Lưu shipping address vào metadata để backup

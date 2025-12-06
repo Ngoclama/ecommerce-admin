@@ -12,6 +12,7 @@ import {
   triggerNotificationCreated,
 } from "@/lib/pusher";
 import { getUserFromDb } from "@/lib/permissions";
+import { userService } from "@/lib/services/user.service";
 
 /**
  * POST /api/orders/[id]/cancel
@@ -27,17 +28,23 @@ export async function POST(
     const { userId: clerkUserId } = await auth();
 
     if (!clerkUserId) {
-      return new NextResponse(API_MESSAGES.UNAUTHENTICATED, {
-        status: HTTP_STATUS.UNAUTHORIZED,
-      });
+      return NextResponse.json(
+        { success: false, message: API_MESSAGES.UNAUTHENTICATED },
+        {
+          status: HTTP_STATUS.UNAUTHORIZED,
+        }
+      );
     }
 
-    // Get user from database
-    const user = await getUserFromDb(clerkUserId);
+    // Get or create user using UserService (with auto-sync)
+    const user = await userService.getOrCreateUser(clerkUserId, false, true);
     if (!user) {
-      return new NextResponse("User not found", {
-        status: HTTP_STATUS.NOT_FOUND,
-      });
+      return NextResponse.json(
+        { success: false, message: "User not found" },
+        {
+          status: HTTP_STATUS.NOT_FOUND,
+        }
+      );
     }
 
     // Get order and verify ownership
@@ -55,9 +62,12 @@ export async function POST(
     });
 
     if (!order) {
-      return new NextResponse(API_MESSAGES.ORDER_NOT_FOUND, {
-        status: HTTP_STATUS.NOT_FOUND,
-      });
+      return NextResponse.json(
+        { success: false, message: API_MESSAGES.ORDER_NOT_FOUND },
+        {
+          status: HTTP_STATUS.NOT_FOUND,
+        }
+      );
     }
 
     // Verify ownership: user must own the order
@@ -66,9 +76,15 @@ export async function POST(
       (order.email && order.email.toLowerCase() === user.email?.toLowerCase());
 
     if (!ownsOrder) {
-      return new NextResponse("You don't have permission to cancel this order", {
-        status: HTTP_STATUS.FORBIDDEN,
-      });
+      return NextResponse.json(
+        {
+          success: false,
+          message: "You don't have permission to cancel this order",
+        },
+        {
+          status: HTTP_STATUS.FORBIDDEN,
+        }
+      );
     }
 
     // Check if order can be cancelled
@@ -77,8 +93,11 @@ export async function POST(
       order.status === ORDER_STATUS.PROCESSING;
 
     if (!canCancel) {
-      return new NextResponse(
-        `Order cannot be cancelled. Current status: ${order.status}`,
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Order cannot be cancelled. Current status: ${order.status}`,
+        },
         {
           status: HTTP_STATUS.BAD_REQUEST,
         }
@@ -135,14 +154,22 @@ export async function POST(
     });
 
     return NextResponse.json({
+      success: true,
       message: "Order cancelled successfully",
       order: updatedOrder,
     });
   } catch (error) {
     console.error("[POST /api/orders/[id]/cancel]", error);
-    return new NextResponse(API_MESSAGES.SERVER_ERROR, {
-      status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-    });
+    return NextResponse.json(
+      {
+        success: false,
+        message:
+          error instanceof Error ? error.message : API_MESSAGES.SERVER_ERROR,
+      },
+      {
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      }
+    );
   }
 }
 
@@ -154,4 +181,3 @@ export async function OPTIONS() {
   response.headers.set("Access-Control-Allow-Headers", "Content-Type");
   return response;
 }
-

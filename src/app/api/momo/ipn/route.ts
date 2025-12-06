@@ -49,28 +49,59 @@ export async function POST(req: Request) {
       console.log("[MOMO_IPN] Payment successful for order:", order.id);
 
       // Link order với user dựa trên email (nếu chưa có userId)
+      // Note: isPaid should already be true for MOMO orders (set when order created)
+      // But we verify and ensure it's true here as well
       const updateData: any = {
-        isPaid: true,
-        status: "PROCESSING",
+        isPaid: true, // Ensure isPaid = true (should already be set for MOMO orders)
+        status: order.isPaid ? "PROCESSING" : "PROCESSING", // Already PROCESSING if paid
       };
+
+      // If order was not paid before (shouldn't happen for MOMO, but safety check)
+      // Decrement inventory now
+      if (!order.isPaid) {
+        // Decrement inventory for order items
+        for (const item of order.orderItems) {
+          if (item.sizeId && item.colorId) {
+            const variant = await prisma.productVariant.findFirst({
+              where: {
+                productId: item.productId,
+                sizeId: item.sizeId,
+                colorId: item.colorId,
+                materialId: item.materialId || null,
+              },
+            });
+
+            if (variant) {
+              await prisma.productVariant.update({
+                where: { id: variant.id },
+                data: {
+                  inventory: {
+                    decrement: item.quantity,
+                  },
+                },
+              });
+            }
+          }
+        }
+        console.log("[MOMO_IPN] Inventory decremented for order:", order.id);
+      }
 
       if (!order.userId && order.email) {
         try {
           const normalizedEmail = order.email.toLowerCase().trim();
-          
+
           // Tìm user theo email (exact match hoặc normalized)
           const user = await prisma.user.findFirst({
             where: {
-              OR: [
-                { email: order.email },
-                { email: normalizedEmail },
-              ],
+              OR: [{ email: order.email }, { email: normalizedEmail }],
             },
           });
 
           if (user) {
             updateData.userId = user.id;
-            console.log(`[MOMO_IPN] Linking order ${order.id} to user ${user.id} via email ${order.email}`);
+            console.log(
+              `[MOMO_IPN] Linking order ${order.id} to user ${user.id} via email ${order.email}`
+            );
           }
         } catch (linkError) {
           console.error("[MOMO_IPN] Error linking order to user:", linkError);
@@ -130,7 +161,10 @@ export async function POST(req: Request) {
           await prisma.order.delete({
             where: { id: order.id },
           });
-          console.log("[MOMO_IPN] Order deleted after payment failure:", order.id);
+          console.log(
+            "[MOMO_IPN] Order deleted after payment failure:",
+            order.id
+          );
         } catch (deleteError) {
           console.error("[MOMO_IPN] Error deleting order:", deleteError);
           // Fallback: update status to CANCELLED if delete fails

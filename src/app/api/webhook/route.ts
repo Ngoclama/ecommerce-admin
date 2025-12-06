@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { WebhookEvent } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { userService } from "@/lib/services/user.service";
 
 export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
@@ -48,31 +49,21 @@ export async function POST(req: Request) {
     const { id, email_addresses, first_name, last_name, image_url } = evt.data;
     const email = email_addresses[0]?.email_address;
 
-    const newUser = await prisma.user.create({
-      data: {
-        clerkId: id,
-        email: email,
-        name: `${first_name || ""} ${last_name || ""}`.trim(),
-        imageUrl: image_url,
-        role: "CUSTOMER", // Mặc định là khách hàng
-      },
-    });
+    // Use UserService to create user (handles race conditions)
+    const clerkData = {
+      email: email || `user_${id}@temp.com`,
+      name: `${first_name || ""} ${last_name || ""}`.trim() || "User",
+      imageUrl: image_url || null,
+    };
+
+    const newUser = await userService.createUser(id, clerkData, false);
 
     // Link các đơn hàng chưa có userId nhưng có cùng email với user mới
-    if (email) {
-      const updatedOrders = await prisma.order.updateMany({
-        where: {
-          userId: null, // Chưa có userId
-          email: email, // Cùng email với user mới
-        },
-        data: {
-          userId: newUser.id, // Link với user mới
-        },
-      });
-
-      if (updatedOrders.count > 0) {
+    if (newUser && email) {
+      const linkResult = await userService.linkOrdersByEmail(newUser.id, email);
+      if (linkResult.linked > 0) {
         console.log(
-          `[WEBHOOK] Linked ${updatedOrders.count} orders to new user:`,
+          `[WEBHOOK] Linked ${linkResult.linked} orders to new user:`,
           newUser.id
         );
       }
@@ -82,32 +73,19 @@ export async function POST(req: Request) {
   // 2. KHI USER UPDATE PROFILE TRÊN CLERK -> UPDATE MONGO
   if (eventType === "user.updated") {
     const { id, email_addresses, first_name, last_name, image_url } = evt.data;
-    const email = email_addresses[0]?.email_address;
 
-    const updatedUser = await prisma.user.update({
-      where: { clerkId: id },
-      data: {
-        email: email,
-        name: `${first_name || ""} ${last_name || ""}`.trim(),
-        imageUrl: image_url,
-      },
-    });
+    // Use UserService to sync user from Clerk
+    const updatedUser = await userService.syncUserFromClerk(id, false);
 
     // Link các đơn hàng chưa có userId nhưng có cùng email với user
-    if (email && updatedUser) {
-      const updatedOrders = await prisma.order.updateMany({
-        where: {
-          userId: null, // Chưa có userId
-          email: email, // Cùng email với user
-        },
-        data: {
-          userId: updatedUser.id, // Link với user
-        },
-      });
-
-      if (updatedOrders.count > 0) {
+    if (updatedUser && updatedUser.email) {
+      const linkResult = await userService.linkOrdersByEmail(
+        updatedUser.id,
+        updatedUser.email
+      );
+      if (linkResult.linked > 0) {
         console.log(
-          `[WEBHOOK] Linked ${updatedOrders.count} orders to updated user:`,
+          `[WEBHOOK] Linked ${linkResult.linked} orders to updated user:`,
           updatedUser.id
         );
       }

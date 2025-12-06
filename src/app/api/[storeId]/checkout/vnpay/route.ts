@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { VNPay, ProductCode, VnpLocale } from "vnpay";
 import { auth } from "@clerk/nextjs/server";
 import { getUserFromDb } from "@/lib/permissions";
+import { userService } from "@/lib/services/user.service";
 
 interface CheckoutItem {
   productId: string;
@@ -199,10 +200,20 @@ export async function POST(
     try {
       const { userId: clerkUserId } = await auth();
       if (clerkUserId) {
-        const user = await getUserFromDb(clerkUserId);
+        // Use UserService to get or create user (with auto-sync)
+        const user = await userService.getOrCreateUser(
+          clerkUserId,
+          false,
+          true
+        );
         if (user) {
           userId = user.id;
           userEmail = user.email;
+
+          // Auto-link orders by email
+          if (userEmail) {
+            await userService.linkOrdersByEmail(user.id, userEmail);
+          }
         }
       }
     } catch (authError) {
@@ -218,12 +229,13 @@ export async function POST(
         : null;
 
     // Create Order in database
+    // VNPAY is online payment, so isPaid = true immediately
     const order = await prisma.order.create({
       data: {
         storeId: storeId,
         userId: userId || null,
-        isPaid: false,
-        status: "PENDING",
+        isPaid: true, // VNPAY = online payment = paid immediately
+        status: "PROCESSING", // Paid orders start as PROCESSING
         paymentMethod: "VNPAY",
         subtotal,
         tax,
@@ -379,7 +391,8 @@ export async function POST(
     // Ensure returnUrlBase doesn't have trailing slash
     returnUrlBase = returnUrlBase.replace(/\/$/, "");
 
-    const returnUrl = `${returnUrlBase}/payment/success?orderId=${order.id}&method=vnpay`;
+    // VNPay return URL - sẽ được xử lý bởi route handler để kiểm tra responseCode
+    const returnUrl = `${returnUrlBase}/payment/vnpay/return?orderId=${order.id}`;
 
     // Log return URL for debugging (only in development or if explicitly enabled)
     if (

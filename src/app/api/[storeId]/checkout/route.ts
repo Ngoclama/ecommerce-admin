@@ -142,12 +142,17 @@ export async function POST(
     const shippingCost = 0; // Có thể tính từ shipping method
     const total = subtotal + tax + shippingCost - discount;
 
+    // This route is for Stripe checkout, so payment method is always STRIPE
+    // STRIPE is online payment, so isPaid = true immediately
+    const isPaid = true; // STRIPE = online payment = paid immediately
+    const initialStatus = "PROCESSING"; // Paid orders start as PROCESSING
+
     // Tạo Order với đầy đủ thông tin
     const order = await prisma.order.create({
       data: {
         storeId: storeId,
-        isPaid: false,
-        status: "PENDING",
+        isPaid: isPaid, // Set based on payment method
+        status: initialStatus, // PROCESSING for online payment, PENDING for COD
         subtotal,
         tax,
         discount,
@@ -217,7 +222,7 @@ export async function POST(
       cancel_url: `${
         process.env.FRONTEND_STORE_URL ||
         process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")
-      }/checkout?canceled=1&orderId=${order.id}`,
+      }/payment/failure?orderId=${order.id}&method=stripe&reason=cancelled`,
       metadata: {
         orderId: order.id,
       },

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { getUserFromDb } from "@/lib/permissions";
+import { userService } from "@/lib/services/user.service";
 
 /**
  * API để link các đơn hàng chưa có userId với user hiện tại
@@ -48,8 +49,8 @@ export async function POST(req: Request) {
       // Không có cả hai → unauthenticated
     }
 
-    // Lấy user từ database
-    const user = await getUserFromDb(clerkUserId);
+    // Get or create user using UserService (with auto-sync)
+    const user = await userService.getOrCreateUser(clerkUserId, false, true);
     if (!user || !user.email) {
       return NextResponse.json(
         { success: false, message: "User not found or no email" },
@@ -57,27 +58,19 @@ export async function POST(req: Request) {
       );
     }
 
-    // Tìm và link các đơn hàng chưa có userId nhưng có cùng email
-    const result = await prisma.order.updateMany({
-      where: {
-        userId: null, // Chưa có userId
-        email: user.email, // Cùng email với user
-      },
-      data: {
-        userId: user.id, // Link với user
-      },
-    });
+    // Use UserService to link orders by email
+    const linkResult = await userService.linkOrdersByEmail(user.id, user.email);
 
     console.log("[LINK_ORDERS] Linked orders to user:", {
       userId: user.id,
       email: user.email,
-      linkedCount: result.count,
+      linkedCount: linkResult.linked,
     });
 
     return NextResponse.json({
       success: true,
-      linkedCount: result.count,
-      message: `Đã liên kết ${result.count} đơn hàng với tài khoản của bạn.`,
+      linkedCount: linkResult.linked,
+      message: `Đã liên kết ${linkResult.linked} đơn hàng với tài khoản của bạn.`,
     });
   } catch (error: any) {
     console.error("[LINK_ORDERS_ERROR]", error);

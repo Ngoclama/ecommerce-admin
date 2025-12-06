@@ -68,10 +68,11 @@ export function getMoMoConfig(orderId?: string): MoMoConfig {
   const storeUrl = process.env.FRONTEND_STORE_URL || "http://localhost:3001";
   const apiUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-  // Build return URL with orderId if provided
+  // Build return URL - MoMo will redirect here with resultCode in query params
+  // We'll handle success/failure in the return handler
   const returnUrl = orderId
-    ? `${storeUrl}/payment/success?orderId=${orderId}&method=momo`
-    : `${storeUrl}/payment/success?method=momo`;
+    ? `${storeUrl}/payment/momo/return?orderId=${orderId}`
+    : `${storeUrl}/payment/momo/return`;
 
   return {
     partnerCode: process.env.MOMO_PARTNER_CODE || "",

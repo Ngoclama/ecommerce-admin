@@ -160,10 +160,42 @@ export async function POST(req: Request) {
       console.log("[VNPAY_IPN] Payment successful for order:", orderId);
 
       // Link order với user dựa trên email (nếu chưa có userId)
+      // Note: isPaid should already be true for VNPAY orders (set when order created)
+      // But we verify and ensure it's true here as well
       const updateData: any = {
-        isPaid: true,
-        status: "PROCESSING",
+        isPaid: true, // Ensure isPaid = true (should already be set for VNPAY orders)
+        status: order.isPaid ? "PROCESSING" : "PROCESSING", // Already PROCESSING if paid
       };
+
+      // If order was not paid before (shouldn't happen for VNPAY, but safety check)
+      // Decrement inventory now
+      if (!order.isPaid) {
+        // Decrement inventory for order items
+        for (const item of order.orderItems) {
+          if (item.sizeId && item.colorId) {
+            const variant = await prisma.productVariant.findFirst({
+              where: {
+                productId: item.productId,
+                sizeId: item.sizeId,
+                colorId: item.colorId,
+                materialId: item.materialId || null,
+              },
+            });
+
+            if (variant) {
+              await prisma.productVariant.update({
+                where: { id: variant.id },
+                data: {
+                  inventory: {
+                    decrement: item.quantity,
+                  },
+                },
+              });
+            }
+          }
+        }
+        console.log("[VNPAY_IPN] Inventory decremented for order:", order.id);
+      }
 
       if (!order.userId && order.email) {
         try {
@@ -245,7 +277,10 @@ export async function POST(req: Request) {
           await prisma.order.delete({
             where: { id: order.id },
           });
-          console.log("[VNPAY_IPN] Order deleted after payment failure:", order.id);
+          console.log(
+            "[VNPAY_IPN] Order deleted after payment failure:",
+            order.id
+          );
         } catch (deleteError) {
           console.error("[VNPAY_IPN] Error deleting order:", deleteError);
           // Fallback: update status to CANCELLED if delete fails

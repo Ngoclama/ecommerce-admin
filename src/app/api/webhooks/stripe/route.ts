@@ -55,9 +55,11 @@ export async function POST(req: Request) {
       const metadata = fullSession.metadata || {};
 
       // Chuẩn bị data để cập nhật
+      // Note: isPaid should already be true for online payments (set when order created)
+      // But we verify and ensure it's true here as well
       const updateData: any = {
-        isPaid: true,
-        status: "PROCESSING",
+        isPaid: true, // Ensure isPaid = true (should already be set for STRIPE orders)
+        status: existingOrder.isPaid ? "PROCESSING" : "PROCESSING", // Already PROCESSING if paid
         paymentMethod: "STRIPE",
         transactionId: fullSession.payment_intent
           ? typeof fullSession.payment_intent === "string"
@@ -65,6 +67,40 @@ export async function POST(req: Request) {
             : fullSession.payment_intent.id
           : null,
       };
+
+      // If order was not paid before (shouldn't happen for STRIPE, but safety check)
+      // Decrement inventory now
+      if (!existingOrder.isPaid) {
+        // Decrement inventory for order items
+        const orderItems = await prisma.orderItem.findMany({
+          where: { orderId: orderId },
+        });
+
+        for (const item of orderItems) {
+          if (item.sizeId && item.colorId) {
+            const variant = await prisma.productVariant.findFirst({
+              where: {
+                productId: item.productId,
+                sizeId: item.sizeId,
+                colorId: item.colorId,
+                materialId: item.materialId || null,
+              },
+            });
+
+            if (variant) {
+              await prisma.productVariant.update({
+                where: { id: variant.id },
+                data: {
+                  inventory: {
+                    decrement: item.quantity,
+                  },
+                },
+              });
+            }
+          }
+        }
+        console.log("[STRIPE_WEBHOOK] Inventory decremented for order:", orderId);
+      }
 
       // Cập nhật email: ưu tiên từ Stripe, nếu không có thì giữ nguyên
       if (customerDetails?.email) {

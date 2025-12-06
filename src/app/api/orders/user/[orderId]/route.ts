@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { getUserFromDb } from "@/lib/permissions";
+import { userService } from "@/lib/services/user.service";
 
 export async function GET(
   req: Request,
@@ -37,46 +38,35 @@ export async function GET(
       );
     }
 
-    // Lấy user từ database
-    let user = await getUserFromDb(clerkUserId);
+    // Get or create user using UserService (with auto-sync)
+    const user = await userService.getOrCreateUser(clerkUserId, false, true);
 
     if (!user) {
-      // Try to create user from Clerk
-      try {
-        const clerk = await clerkClient();
-        const clerkUser = await clerk.users.getUser(clerkUserId);
-        const email = clerkUser.emailAddresses[0]?.emailAddress;
-        const name =
-          clerkUser.firstName && clerkUser.lastName
-            ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
-            : clerkUser.firstName || clerkUser.lastName || "User";
+      return new NextResponse(
+        JSON.stringify({
+          error: "User not found",
+          message: "Could not find or create user",
+        }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
-        user = await prisma.user.create({
-          data: {
-            clerkId: clerkUserId,
-            email: email || `user_${clerkUserId}@temp.com`,
-            name: name,
-            role: "CUSTOMER",
-          },
-        });
-      } catch (createError: any) {
-        if (createError.code === "P2002") {
-          // User already exists, try to fetch again
-          user = await getUserFromDb(clerkUserId);
-        }
-        if (!user) {
-          return new NextResponse(
-            JSON.stringify({
-              error: "User not found",
-              message: "Could not find or create user",
-            }),
-            {
-              status: 404,
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-        }
-      }
+    // Auto-link orders by email
+    if (user.email) {
+      await userService.linkOrdersByEmail(user.id, user.email);
+    }
+
+    // Get latest email from Clerk for comparison (may be newer than DB)
+    let clerkEmail: string | null = null;
+    try {
+      const clerk = await clerkClient();
+      const clerkUser = await clerk.users.getUser(clerkUserId);
+      clerkEmail = clerkUser.emailAddresses[0]?.emailAddress || null;
+    } catch (clerkError) {
+      console.warn("[ORDER_DETAIL] Could not fetch Clerk user:", clerkError);
     }
 
     // Lấy order
@@ -154,12 +144,46 @@ export async function GET(
 
     // Kiểm tra quyền truy cập:
     // 1. Order thuộc về user (userId khớp)
-    // 2. HOẶC email của order khớp với email của user (case-insensitive)
+    // 2. HOẶC email của order khớp với email của user (case-insensitive, normalized)
+
+    // Normalize emails for comparison
+    const normalizeEmail = (
+      email: string | null | undefined
+    ): string | null => {
+      if (!email) return null;
+      return email.toLowerCase().trim().replace(/\s+/g, "");
+    };
+
+    const orderEmailNormalized = normalizeEmail(order.email);
+    const userEmailNormalized = normalizeEmail(user.email);
+    const clerkEmailNormalized = normalizeEmail(clerkEmail);
+
+    // Check access: userId match OR email match (from DB or Clerk)
     const hasAccess =
       order.userId === user.id ||
-      (order.email &&
-        user.email &&
-        order.email.toLowerCase().trim() === user.email.toLowerCase().trim());
+      (orderEmailNormalized &&
+        ((userEmailNormalized &&
+          orderEmailNormalized === userEmailNormalized) ||
+          (clerkEmailNormalized &&
+            orderEmailNormalized === clerkEmailNormalized)));
+
+    // Log for debugging
+    if (!hasAccess) {
+      console.log("[ORDER_DETAIL] Access denied:", {
+        orderId,
+        orderUserId: order.userId,
+        userDbId: user.id,
+        orderEmail: order.email,
+        orderEmailNormalized,
+        userEmail: user.email,
+        userEmailNormalized,
+        clerkEmail: clerkEmail,
+        clerkEmailNormalized,
+        userIdMatch: order.userId === user.id,
+        emailMatchDb: orderEmailNormalized === userEmailNormalized,
+        emailMatchClerk: orderEmailNormalized === clerkEmailNormalized,
+      });
+    }
 
     if (!hasAccess) {
       return new NextResponse(
@@ -181,7 +205,9 @@ export async function GET(
           where: { id: orderId },
           data: { userId: user.id },
         });
-        console.log(`[ORDER_DETAIL] Auto-linked order ${orderId} to user ${user.id}`);
+        console.log(
+          `[ORDER_DETAIL] Auto-linked order ${orderId} to user ${user.id}`
+        );
       } catch (linkError) {
         console.error("[ORDER_DETAIL] Error auto-linking order:", linkError);
         // Không fail request nếu link lỗi
@@ -194,4 +220,3 @@ export async function GET(
     return new NextResponse("Internal error", { status: 500 });
   }
 }
-

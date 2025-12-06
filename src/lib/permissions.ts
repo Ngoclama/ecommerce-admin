@@ -1,28 +1,18 @@
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
+import { userService } from "@/lib/services/user.service";
 
 export type UserRole = "ADMIN" | "VENDOR" | "CUSTOMER";
 
 /**
  * Lấy user từ database dựa trên Clerk userId
+ * Uses UserService for consistency
  */
 export async function getUserFromDb(clerkUserId: string | null) {
   if (!clerkUserId) return null;
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { clerkId: clerkUserId },
-      select: {
-        id: true,
-        clerkId: true,
-        email: true,
-        name: true,
-        role: true,
-        isBanned: true,
-      },
-    });
-
-    return user;
+    return await userService.getUserByClerkId(clerkUserId);
   } catch (error) {
     console.error("[PERMISSIONS] Error fetching user:", error);
     return null;

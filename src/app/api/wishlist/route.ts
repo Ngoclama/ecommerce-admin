@@ -1,125 +1,23 @@
-import { NextResponse } from "next/server";
-import { clerkClient } from "@clerk/nextjs/server";
-import { verifyToken, createClerkClient } from "@clerk/backend";
-import prisma from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
+import { wishlistService } from "@/lib/services/wishlist.service";
+import { authenticateRequest, getOrCreateUser } from "@/lib/middleware/auth.middleware";
+import { getCorsHeaders } from "@/lib/utils/cors";
 
-// Helper function to get CORS headers based on request origin
-const getCorsHeaders = (req: Request) => {
-  const origin = req.headers.get("origin");
-  const allowedOrigins = [
-    process.env.FRONTEND_STORE_URL,
-    process.env.NEXT_PUBLIC_API_URL?.replace("/api", ""),
-    "https://ecommerce-store-henna-nine.vercel.app", // Store production URL
-    "http://localhost:3000",
-    "http://localhost:3001",
-  ].filter(Boolean) as string[];
+/**
+ * POST /api/wishlist
+ * Add, remove, or toggle product in wishlist
+ * 
+ * Body: {
+ *   productId: string (required)
+ *   action?: "add" | "remove" | "toggle" (default: "toggle")
+ * }
+ */
+export async function POST(req: NextRequest) {
+  const corsHeaders = getCorsHeaders(req);
 
-  // When using credentials, we MUST use a specific origin, not wildcard
-  // If origin matches any allowed origin, use it
-  // Otherwise, use the store URL from env (never use wildcard)
-  let allowedOrigin: string;
-
-  if (origin) {
-    // Check if origin exactly matches or starts with any allowed origin
-    const matchedOrigin = allowedOrigins.find(
-      (url) => origin === url || origin.startsWith(url)
-    );
-    allowedOrigin = matchedOrigin || origin; // Use origin if it's provided
-  } else {
-    // No origin header (e.g., same-origin request), use store URL
-    allowedOrigin =
-      allowedOrigins[0] || "https://ecommerce-store-henna-nine.vercel.app";
-  }
-
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Allow-Credentials": "true",
-  };
-};
-
-async function getClerkUserId(
-  req: Request
-): Promise<{ userId: string; isStoreUser: boolean } | null> {
-  const authHeader = req.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) return null;
-
-  const token = authHeader.substring(7);
-
-  // Thử verify với Admin Clerk instance trước
-  try {
-    const session = await verifyToken(token, {
-      secretKey: process.env.CLERK_SECRET_KEY!,
-    });
-    return { userId: session.sub ?? "", isStoreUser: false };
-  } catch (adminErr) {
-    // Nếu fail với Admin, thử với Store Clerk instance
-    if (process.env.CLERK_STORE_SECRET_KEY) {
-      try {
-        const session = await verifyToken(token, {
-          secretKey: process.env.CLERK_STORE_SECRET_KEY!,
-        });
-        return { userId: session.sub ?? "", isStoreUser: true };
-      } catch (storeErr) {
-        if (process.env.NODE_ENV === "development") {
-          console.log("[WISHLIST] Token verify failed for both instances");
-        }
-        return null;
-      }
-    } else {
-      if (process.env.NODE_ENV === "development") {
-        console.log(
-          "[WISHLIST] Admin verify failed, no CLERK_STORE_SECRET_KEY"
-        );
-      }
-      return null;
-    }
-  }
-}
-
-// Helper function để lấy user từ Clerk (thử cả 2 instances)
-async function getClerkUser(clerkUserId: string, isStoreUser: boolean) {
-  try {
-    if (isStoreUser && process.env.CLERK_STORE_SECRET_KEY) {
-      // Sử dụng Store Clerk client
-      const storeClerk = createClerkClient({
-        secretKey: process.env.CLERK_STORE_SECRET_KEY,
-      });
-      return await storeClerk.users.getUser(clerkUserId);
-    } else {
-      // Sử dụng Admin Clerk client (default)
-      const clerk = await clerkClient();
-      return await clerk.users.getUser(clerkUserId);
-    }
-  } catch (error) {
-    // Nếu fail với instance đầu tiên, thử instance còn lại
-    if (isStoreUser) {
-      try {
-        const clerk = await clerkClient();
-        return await clerk.users.getUser(clerkUserId);
-      } catch {
-        return null;
-      }
-    } else if (process.env.CLERK_STORE_SECRET_KEY) {
-      try {
-        const storeClerk = createClerkClient({
-          secretKey: process.env.CLERK_STORE_SECRET_KEY,
-        });
-        return await storeClerk.users.getUser(clerkUserId);
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  }
-}
-
-export async function POST(req: Request) {
   try {
     // Handle CORS preflight
     if (req.method === "OPTIONS") {
-      const corsHeaders = getCorsHeaders(req);
       return new NextResponse(null, {
         status: 200,
         headers: {
@@ -129,327 +27,405 @@ export async function POST(req: Request) {
       });
     }
 
-    const corsHeaders = getCorsHeaders(req);
-    const headers = req.headers;
-    const cookieHeader = headers.get("cookie");
-    const authHeader = headers.get("authorization");
-
-    if (process.env.NODE_ENV === "development") {
-      console.log(
-        "[WISHLIST_POST] Cookie header:",
-        cookieHeader ? "Present" : "Missing"
-      );
-      console.log(
-        "[WISHLIST_POST] Authorization header:",
-        authHeader ? "Present" : "Missing"
-      );
-    }
-
-    const clerkAuth = await getClerkUserId(req);
-    const clerkUserId = clerkAuth?.userId || null;
-    const isStoreUser = clerkAuth?.isStoreUser || false;
-
-    if (process.env.NODE_ENV === "development") {
-      console.log("[WISHLIST_POST] Clerk User ID:", clerkUserId || "Not found");
-      console.log("[WISHLIST_POST] Is Store User:", isStoreUser);
-      console.log("[WISHLIST_POST] Cookie header present:", !!cookieHeader);
-      console.log(
-        "[WISHLIST_POST] Authorization header present:",
-        !!authHeader
-      );
-      if (cookieHeader) {
-        console.log(
-          "[WISHLIST_POST] Cookie preview:",
-          cookieHeader.substring(0, 200)
-        );
-      }
-    }
-
-    const body = await req.json();
-    const { productId, action } = body;
-
-    if (!clerkUserId) {
-      if (process.env.NODE_ENV === "development") {
-        console.error(
-          "[WISHLIST_POST] No Clerk user ID found. Cookies:",
-          cookieHeader?.substring(0, 100)
-        );
-      }
-      return NextResponse.json(
-        { success: false, message: "Unauthorized - Please sign in" },
-        { status: 401, headers: corsHeaders }
-      );
-    }
-
-    if (!productId) {
-      return NextResponse.json(
-        { success: false, message: "Product ID required" },
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
-    // Tìm User Mongo ID từ Clerk ID
-    let user = await prisma.user.findUnique({
-      where: { clerkId: clerkUserId },
-    });
-
-    if (!user) {
-      try {
-        let realEmail = `user_${clerkUserId}@temp.com`;
-        let realName = "User";
-        let realImageUrl: string | null = null;
-
-        try {
-          const clerkUser = await getClerkUser(clerkUserId, isStoreUser);
-          if (clerkUser && clerkUser.emailAddresses.length > 0) {
-            realEmail = clerkUser.emailAddresses[0].emailAddress;
-            realName =
-              clerkUser.firstName && clerkUser.lastName
-                ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
-                : clerkUser.firstName || clerkUser.lastName || "User";
-            realImageUrl = clerkUser.imageUrl || null;
-          }
-        } catch (clerkError) {
-          console.warn(
-            "[WISHLIST] Could not fetch user from Clerk:",
-            clerkError
-          );
-        }
-
-        user = await prisma.user.create({
-          data: {
-            clerkId: clerkUserId,
-            email: realEmail,
-            name: realName,
-            imageUrl: realImageUrl,
-            role: "CUSTOMER",
-          },
-        });
-      } catch (createError: any) {
-        if (createError.code === "P2002") {
-          user = await prisma.user.findUnique({
-            where: { clerkId: clerkUserId },
-          });
-        }
-
-        if (!user) {
-          console.error("[WISHLIST_USER_CREATE_ERROR]", createError);
-          return NextResponse.json(
-            { success: false, message: "Failed to create user account" },
-            { status: 500, headers: corsHeaders }
-          );
-        }
-      }
-    } else {
-      if (user.email.includes("@temp.com")) {
-        try {
-          const clerkUser = await getClerkUser(clerkUserId, isStoreUser);
-          if (clerkUser && clerkUser.emailAddresses.length > 0) {
-            const realEmail = clerkUser.emailAddresses[0].emailAddress;
-            const realName =
-              clerkUser.firstName && clerkUser.lastName
-                ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
-                : clerkUser.firstName || clerkUser.lastName || user.name;
-
-            await prisma.user.update({
-              where: { id: user.id },
-              data: {
-                email: realEmail,
-                name: realName || user.name,
-                imageUrl: clerkUser.imageUrl || user.imageUrl,
-              },
-            });
-
-            const refreshedUser = await prisma.user.findUnique({
-              where: { id: user.id },
-            });
-            if (refreshedUser) {
-              user = refreshedUser;
-            }
-          }
-        } catch (syncError) {
-          console.warn(
-            "[WISHLIST] Could not sync email from Clerk:",
-            syncError
-          );
-        }
-      }
-    }
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, message: "User not found" },
-        { status: 404 }
-      );
-    }
-
-    // Kiểm tra xem item đã có trong wishlist chưa
-    const existingWishlist = await prisma.wishlist.findUnique({
-      where: {
-        userId_productId: {
-          userId: user.id,
-          productId,
-        },
-      },
-    });
-
-    // Nếu action là "toggle", kiểm tra trạng thái hiện tại và đảo ngược
-    if (action === "toggle") {
-      if (existingWishlist) {
-        // Đã có trong wishlist -> Xóa
-        await prisma.wishlist.delete({
-          where: { id: existingWishlist.id },
-        });
-        return NextResponse.json(
-          {
-            success: true,
-            isLiked: false,
-            message: "Removed from wishlist",
-          },
-          { headers: corsHeaders }
-        );
-      } else {
-        // Chưa có trong wishlist -> Thêm
-        await prisma.wishlist.create({
-          data: {
-            userId: user.id,
-            productId,
-          },
-        });
-        return NextResponse.json(
-          {
-            success: true,
-            isLiked: true,
-            message: "Added to wishlist",
-          },
-          { headers: corsHeaders }
-        );
-      }
-    }
-
-    // Xử lý các action khác (add, remove)
-    const shouldAdd = action !== "remove";
-
-    if (shouldAdd) {
-      if (existingWishlist) {
-        return NextResponse.json(
-          {
-            success: true,
-            isLiked: true,
-            message: "Product already in wishlist",
-          },
-          { headers: corsHeaders }
-        );
-      }
-
-      await prisma.wishlist.create({
-        data: {
-          userId: user.id,
-          productId,
-        },
-      });
-
+    // Authenticate request
+    const authResult = await authenticateRequest(req);
+    if (!authResult.success || !authResult.userId || !authResult.clerkUserId) {
       return NextResponse.json(
         {
-          success: true,
-          isLiked: true,
-          message: "Added to wishlist",
+          success: false,
+          message: authResult.error || "Unauthorized - Please sign in",
         },
-        { headers: corsHeaders }
+        {
+          status: authResult.statusCode || 401,
+          headers: corsHeaders,
+        }
       );
-    } else {
-      if (existingWishlist) {
-        await prisma.wishlist.delete({
-          where: { id: existingWishlist.id },
-        });
-      }
+    }
 
+    // Parse and validate request body
+    let body;
+    try {
+      body = await req.json();
+    } catch (parseError) {
       return NextResponse.json(
         {
-          success: true,
-          isLiked: false,
-          message: "Removed from wishlist",
+          success: false,
+          message: "Invalid request body",
         },
-        { headers: corsHeaders }
+        {
+          status: 400,
+          headers: corsHeaders,
+        }
       );
     }
-  } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("[WISHLIST_PUBLIC_POST]", error);
-    }
-    const corsHeaders = getCorsHeaders(req);
-    return NextResponse.json(
-      { success: false, message: "Internal Server Error" },
-      { status: 500, headers: corsHeaders }
-    );
-  }
-}
 
-export async function GET(req: Request) {
-  try {
-    // Handle CORS preflight
-    if (req.method === "OPTIONS") {
-      const corsHeaders = getCorsHeaders(req);
-      return new NextResponse(null, {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          "Access-Control-Max-Age": "86400",
-        },
-      });
-    }
+    const { productId, action = "toggle" } = body;
 
-    const corsHeaders = getCorsHeaders(req);
-    const clerkAuth = await getClerkUserId(req);
-    const clerkUserId = clerkAuth?.userId || null;
-    if (!clerkUserId) {
+    // Validate productId
+    if (!productId || typeof productId !== "string" || productId.trim() === "") {
       return NextResponse.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401, headers: corsHeaders }
+        {
+          success: false,
+          message: "Product ID is required and must be a non-empty string",
+        },
+        {
+          status: 400,
+          headers: corsHeaders,
+        }
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { clerkId: clerkUserId },
-    });
+    // Validate action
+    const validActions = ["add", "remove", "toggle"];
+    if (!validActions.includes(action)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Invalid action. Must be one of: ${validActions.join(", ")}`,
+        },
+        {
+          status: 400,
+          headers: corsHeaders,
+        }
+      );
+    }
+
+    // Get or create user (ensure user exists in DB)
+    const user = await getOrCreateUser(
+      authResult.clerkUserId!,
+      authResult.isStoreUser
+    );
 
     if (!user) {
       return NextResponse.json(
-        { success: false, message: "User not found" },
-        { status: 404, headers: corsHeaders }
+        {
+          success: false,
+          message: "Failed to get or create user account",
+        },
+        {
+          status: 500,
+          headers: corsHeaders,
+        }
       );
     }
 
-    const wishlist = await prisma.wishlist.findMany({
-      where: { userId: user.id },
-      select: {
-        productId: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: "desc" },
-      distinct: ["productId"], // Ensure unique productIds
-    });
-
-    // Additional safety: Remove any remaining duplicates
-    const uniqueProductIds = Array.from(
-      new Set(wishlist.map((item) => item.productId))
-    );
+    // Execute wishlist operation
+    let result;
+    switch (action) {
+      case "add":
+        result = await wishlistService.addToWishlist(user.id, productId);
+        break;
+      case "remove":
+        result = await wishlistService.removeFromWishlist(user.id, productId);
+        break;
+      case "toggle":
+      default:
+        result = await wishlistService.toggleWishlist(user.id, productId);
+        break;
+    }
 
     return NextResponse.json(
       {
-        success: true,
-        data: uniqueProductIds,
+        success: result.success,
+        isLiked: result.isLiked,
+        message: result.message,
       },
-      { headers: corsHeaders }
+      {
+        headers: corsHeaders,
+      }
     );
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("[WISHLIST_PUBLIC_GET]", error);
-    }
-    const corsHeaders = getCorsHeaders(req);
+    console.error("[WISHLIST_POST_ERROR]", error);
+
     return NextResponse.json(
-      { success: false, message: "Internal Server Error" },
-      { status: 500, headers: corsHeaders }
+      {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Internal Server Error",
+      },
+      {
+        status: 500,
+        headers: corsHeaders,
+      }
+    );
+  }
+}
+
+/**
+ * GET /api/wishlist
+ * Get user's wishlist product IDs
+ * 
+ * Query params:
+ *   - includeDetails?: boolean (default: false) - Include full product details
+ *   - limit?: number - Limit results
+ *   - offset?: number - Pagination offset
+ */
+export async function GET(req: NextRequest) {
+  const corsHeaders = getCorsHeaders(req);
+
+  try {
+    // Handle CORS preflight
+    if (req.method === "OPTIONS") {
+      return new NextResponse(null, {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Access-Control-Max-Age": "86400",
+        },
+      });
+    }
+
+    // Authenticate request
+    const authResult = await authenticateRequest(req);
+    if (!authResult.success || !authResult.userId || !authResult.clerkUserId) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: authResult.error || "Unauthorized",
+        },
+        {
+          status: authResult.statusCode || 401,
+          headers: corsHeaders,
+        }
+      );
+    }
+
+    // Get or create user
+    const user = await getOrCreateUser(
+      authResult.clerkUserId!,
+      authResult.isStoreUser
+    );
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "User not found",
+        },
+        {
+          status: 404,
+          headers: corsHeaders,
+        }
+      );
+    }
+
+    // Parse query parameters
+    const { searchParams } = new URL(req.url);
+    const includeDetails = searchParams.get("includeDetails") === "true";
+    const limit = searchParams.get("limit")
+      ? parseInt(searchParams.get("limit")!)
+      : undefined;
+    const offset = searchParams.get("offset")
+      ? parseInt(searchParams.get("offset")!)
+      : undefined;
+
+    // Validate pagination params
+    if (limit !== undefined && (isNaN(limit) || limit < 1 || limit > 100)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Limit must be between 1 and 100",
+        },
+        {
+          status: 400,
+          headers: corsHeaders,
+        }
+      );
+    }
+
+    if (offset !== undefined && (isNaN(offset) || offset < 0)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Offset must be >= 0",
+        },
+        {
+          status: 400,
+          headers: corsHeaders,
+        }
+      );
+    }
+
+    // Fetch wishlist
+    if (includeDetails) {
+      const wishlistItems = await wishlistService.getUserWishlist(user.id, {
+        includeProduct: true,
+        limit,
+        offset,
+      });
+
+      return NextResponse.json(
+        {
+          success: true,
+          data: wishlistItems,
+          count: wishlistItems.length,
+        },
+        {
+          headers: corsHeaders,
+        }
+      );
+    } else {
+      const productIds = await wishlistService.getUserWishlistProductIds(
+        user.id
+      );
+      const count = await wishlistService.getWishlistCount(user.id);
+
+      return NextResponse.json(
+        {
+          success: true,
+          data: productIds,
+          count,
+        },
+        {
+          headers: corsHeaders,
+        }
+      );
+    }
+  } catch (error) {
+    console.error("[WISHLIST_GET_ERROR]", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Internal Server Error",
+      },
+      {
+        status: 500,
+        headers: corsHeaders,
+      }
+    );
+  }
+}
+
+/**
+ * DELETE /api/wishlist
+ * Clear user's entire wishlist or remove specific products
+ * 
+ * Body (optional): {
+ *   productIds?: string[] - If provided, remove only these products
+ *   clearAll?: boolean - If true, clear entire wishlist
+ * }
+ */
+export async function DELETE(req: NextRequest) {
+  const corsHeaders = getCorsHeaders(req);
+
+  try {
+    // Authenticate request
+    const authResult = await authenticateRequest(req);
+    if (!authResult.success || !authResult.userId || !authResult.clerkUserId) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: authResult.error || "Unauthorized",
+        },
+        {
+          status: authResult.statusCode || 401,
+          headers: corsHeaders,
+        }
+      );
+    }
+
+    // Get or create user
+    const user = await getOrCreateUser(
+      authResult.clerkUserId!,
+      authResult.isStoreUser
+    );
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "User not found",
+        },
+        {
+          status: 404,
+          headers: corsHeaders,
+        }
+      );
+    }
+
+    // Parse request body
+    let body: { productIds?: string[]; clearAll?: boolean } = {};
+    try {
+      const text = await req.text();
+      if (text) {
+        body = JSON.parse(text);
+      }
+    } catch (parseError) {
+      // Body is optional for DELETE
+    }
+
+    const { productIds, clearAll } = body;
+
+    if (clearAll) {
+      // Clear entire wishlist
+      const result = await wishlistService.clearWishlist(user.id);
+      return NextResponse.json(
+        {
+          success: true,
+          message: `Cleared ${result.deleted} items from wishlist`,
+          deleted: result.deleted,
+        },
+        {
+          headers: corsHeaders,
+        }
+      );
+    } else if (productIds && Array.isArray(productIds) && productIds.length > 0) {
+      // Remove specific products
+      let removed = 0;
+      for (const productId of productIds) {
+        const result = await wishlistService.removeFromWishlist(
+          user.id,
+          productId
+        );
+        if (result.success && !result.isLiked) {
+          removed++;
+        }
+      }
+
+      return NextResponse.json(
+        {
+          success: true,
+          message: `Removed ${removed} products from wishlist`,
+          removed,
+        },
+        {
+          headers: corsHeaders,
+        }
+      );
+    } else {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Either 'clearAll: true' or 'productIds' array must be provided",
+        },
+        {
+          status: 400,
+          headers: corsHeaders,
+        }
+      );
+    }
+  } catch (error) {
+    console.error("[WISHLIST_DELETE_ERROR]", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Internal Server Error",
+      },
+      {
+        status: 500,
+        headers: corsHeaders,
+      }
     );
   }
 }

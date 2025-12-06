@@ -3,6 +3,7 @@ import { verifyToken, createClerkClient } from "@clerk/backend";
 import { clerkClient } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { userService } from "@/lib/services/user.service";
 
 // Helper function để lấy Clerk userId từ token hoặc cookies
 async function getClerkUserId(
@@ -98,9 +99,12 @@ export async function POST(
 ) {
   try {
     const { storeId } = await params;
-    
+
     if (process.env.NODE_ENV === "development") {
-      console.log("[REVIEW_POST] Starting review creation for storeId:", storeId);
+      console.log(
+        "[REVIEW_POST] Starting review creation for storeId:",
+        storeId
+      );
     }
 
     const clerkAuth = await getClerkUserId(req);
@@ -123,7 +127,11 @@ export async function POST(
     const { productId, rating, content, imageUrls, videoUrls } = body;
 
     if (process.env.NODE_ENV === "development") {
-      console.log("[REVIEW_POST] Request body:", { productId, rating, hasContent: !!content });
+      console.log("[REVIEW_POST] Request body:", {
+        productId,
+        rating,
+        hasContent: !!content,
+      });
     }
 
     if (!rating) {
@@ -144,65 +152,53 @@ export async function POST(
     }
 
     if (!user) {
+      // Use UserService to get or create user (with auto-sync)
       try {
-        let realEmail = `user_${clerkUserId}@temp.com`;
-        let realName = "User";
-        let realImageUrl: string | null = null;
+        const userData = await userService.getOrCreateUser(
+          clerkUserId,
+          isStoreUser,
+          true
+        );
 
-        try {
-          const clerkUser = await getClerkUser(clerkUserId, isStoreUser);
-          if (clerkUser && clerkUser.emailAddresses.length > 0) {
-            realEmail = clerkUser.emailAddresses[0].emailAddress;
-            realName =
-              clerkUser.firstName && clerkUser.lastName
-                ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
-                : clerkUser.firstName || clerkUser.lastName || "User";
-            realImageUrl = clerkUser.imageUrl || null;
-          }
-        } catch (clerkError) {
-          console.warn(
-            "[REVIEWS] Could not fetch user from Clerk:",
-            clerkError
-          );
-        }
-
-        if (process.env.NODE_ENV === "development") {
-          console.log("[REVIEW_POST] Creating user with:", { realEmail, realName });
-        }
-
-        user = await prisma.user.create({
-          data: {
-            clerkId: clerkUserId,
-            email: realEmail,
-            name: realName,
-            imageUrl: realImageUrl,
-            role: "CUSTOMER",
-          },
-        });
-
-        if (process.env.NODE_ENV === "development") {
-          console.log("[REVIEW_POST] User created:", user.id);
-        }
-      } catch (createError: any) {
-        if (createError.code === "P2002") {
-          user = await prisma.user.findUnique({
-            where: { clerkId: clerkUserId },
+        if (!userData) {
+          console.error("[REVIEWS_USER_CREATE_ERROR] Failed to create user");
+          return new NextResponse("Failed to create user account", {
+            status: 500,
           });
         }
 
+        // Fetch full user data from database
+        user = await prisma.user.findUnique({
+          where: { id: userData.id },
+        });
+
         if (!user) {
-          console.error("[REVIEWS_USER_CREATE_ERROR]", createError);
-          return new NextResponse(
-            `Failed to create user account: ${createError.message}`,
-            { status: 500 }
-          );
+          console.error("[REVIEWS_USER_CREATE_ERROR] Failed to create user");
+          return new NextResponse("Failed to create user account", {
+            status: 500,
+          });
         }
+
+        if (process.env.NODE_ENV === "development") {
+          console.log("[REVIEW_POST] User created/found:", user.id);
+        }
+      } catch (createError: any) {
+        console.error("[REVIEWS_USER_CREATE_ERROR]", createError);
+        return new NextResponse(
+          `Failed to create user account: ${createError.message}`,
+          { status: 500 }
+        );
       }
     }
 
     // Kiểm tra user đã mua sản phẩm chưa
     if (process.env.NODE_ENV === "development") {
-      console.log("[REVIEW_POST] Checking purchase for userId:", user.id, "productId:", productId);
+      console.log(
+        "[REVIEW_POST] Checking purchase for userId:",
+        user.id,
+        "productId:",
+        productId
+      );
     }
 
     const hasPurchased = await prisma.order.findFirst({
