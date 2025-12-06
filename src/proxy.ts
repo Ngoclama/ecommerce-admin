@@ -49,9 +49,11 @@ export default clerkMiddleware(async (auth, request) => {
   // They handle authentication internally and may have large payloads
   // Edge Runtime has limitations with FormData/file uploads, so we skip middleware for uploads
   // This prevents "Failed to run middleware" errors on Vercel
+  // IMPORTANT: Check this FIRST before any async operations to avoid Edge Runtime issues
   if (isUploadRoute(request)) {
     // For upload routes, just pass through without any processing
     // The route handlers will handle authentication and file processing
+    // Don't call auth() or any async operations here to avoid FormData parsing issues
     return NextResponse.next();
   }
 
@@ -127,9 +129,15 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public files with extensions
      *
-     * Note: This single pattern covers all routes including API routes.
-     * Upload routes are excluded and handled separately in the middleware logic.
-     * Fixed: Removed invalid negative lookahead pattern for Next.js 15+ compatibility.
+     * IMPORTANT: Upload routes (api/upload and api/uploadthing) are EXCLUDED
+     * from this matcher to prevent Edge Runtime issues with FormData.
+     * They are handled directly by route handlers with Node.js runtime.
+     * 
+     * Pattern breakdown:
+     * - (?!...) = negative lookahead to exclude patterns
+     * - _next = Next.js internal routes
+     * - api/upload|api/uploadthing = upload routes (EXCLUDED)
+     * - [^?]*\\.(?:...) = static file extensions
      */
     "/((?!_next|api/upload|api/uploadthing|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
   ],
