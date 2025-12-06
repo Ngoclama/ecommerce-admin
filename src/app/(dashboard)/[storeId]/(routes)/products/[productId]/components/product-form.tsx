@@ -1143,7 +1143,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                                   field.value !== null &&
                                   field.value !== undefined
                                     ? field.value
-                                    : mainPrice || 0
+                                    : mainPrice || ""
                                 }
                                 thousandSeparator="."
                                 decimalSeparator=","
@@ -1155,7 +1155,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                                         "forms.product.variantPricePlaceholder"
                                       )} (Mặc định: ${mainPrice.toLocaleString(
                                         "vi-VN"
-                                      )})`
+                                      )} ₫)`
                                     : t("forms.product.variantPricePlaceholder")
                                 }
                                 disabled={isLoading}
@@ -1164,7 +1164,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                                   const numValue = values.floatValue;
                                   if (
                                     numValue === undefined ||
-                                    numValue === null
+                                    numValue === null ||
+                                    values.value === ""
                                   ) {
                                     // Nếu xóa hết, set về null để tự động lấy giá từ sản phẩm chính
                                     field.onChange(null);
