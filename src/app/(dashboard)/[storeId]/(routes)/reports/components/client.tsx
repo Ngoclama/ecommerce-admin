@@ -135,7 +135,7 @@ interface ReportData {
     percentage: number;
   }>;
   dailyRevenue?: Array<{ name: string; date: string; total: number }>;
-  orders: Array<{
+  orders?: Array<{
     id: string;
     date: string;
     total: number;
