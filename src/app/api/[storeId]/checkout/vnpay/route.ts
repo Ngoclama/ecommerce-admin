@@ -261,6 +261,10 @@ export async function POST(
         ? "https://www.vnpayment.vn"
         : "https://sandbox.vnpayment.vn");
 
+    // Initialize VNPay
+    // testMode should be false for production, true for sandbox
+    const testMode = vnpayHost.includes("sandbox");
+
     // Always log VNPay configuration for debugging
     // This helps identify issues in production
     console.log("[VNPAY] Configuration:", {
@@ -279,10 +283,6 @@ export async function POST(
         ? "⚠️ Using SANDBOX mode - may have JavaScript errors. Use production for production environment."
         : "✅ Using PRODUCTION mode",
     });
-
-    // Initialize VNPay
-    // testMode should be false for production, true for sandbox
-    const testMode = vnpayHost.includes("sandbox");
 
     const vnpay = new VNPay({
       tmnCode: process.env.VNPAY_TMN_CODE,
