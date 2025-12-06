@@ -50,12 +50,8 @@ const nextConfig: NextConfig = {
     // your project has type errors.
     // ignoreBuildErrors: true,
   },
-  eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
-    // You should fix these ESLint errors for better code quality.
-    ignoreDuringBuilds: true,
-  },
+  // Note: ESLint configuration is no longer supported in next.config.ts in Next.js 16+
+  // ESLint is now configured via .eslintrc or eslint.config.js files
 };
 
 export default nextConfig;

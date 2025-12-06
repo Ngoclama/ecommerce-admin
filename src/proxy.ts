@@ -108,7 +108,7 @@ export default clerkMiddleware(async (auth, request) => {
         }
       }
     } catch (error) {
-      console.error("[MIDDLEWARE] Error checking email:", error);
+      console.error("[PROXY] Error checking email:", error);
       // Không block request nếu có lỗi, để route handlers xử lý
     }
   }
@@ -129,8 +129,9 @@ export const config = {
      *
      * Note: This single pattern covers all routes including API routes.
      * Upload routes are excluded and handled separately in the middleware logic.
-     * Fixed: Removed invalid negative lookahead pattern for Next.js 15 compatibility.
+     * Fixed: Removed invalid negative lookahead pattern for Next.js 15+ compatibility.
      */
     "/((?!_next|api/upload|api/uploadthing|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
   ],
 };
+
