@@ -45,20 +45,7 @@ const isPublicApiRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
-  // CRITICAL: Check upload routes FIRST, before any async operations
-  // This prevents Edge Runtime from trying to parse FormData in middleware
-  // Upload routes are excluded from matcher, but double-check here for safety
   const pathname = request.nextUrl.pathname;
-  if (
-    pathname.startsWith("/api/upload") ||
-    pathname.startsWith("/api/uploadthing")
-  ) {
-    // For upload routes, bypass middleware completely
-    // Route handlers use Node.js runtime and handle authentication internally
-    // Don't call auth() or any async operations here to avoid FormData parsing issues
-    return NextResponse.next();
-  }
-
   const origin = request.headers.get("origin");
   const response = NextResponse.next();
 
@@ -124,23 +111,16 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api/upload (excluded - handled separately, may have large payloads)
-     * - api/uploadthing (excluded - handled separately)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public files with extensions
      *
-     * IMPORTANT: Upload routes (api/upload and api/uploadthing) are EXCLUDED
-     * from this matcher to prevent Edge Runtime issues with FormData.
-     * They are handled directly by route handlers with Node.js runtime.
-     *
      * Pattern breakdown:
      * - (?!...) = negative lookahead to exclude patterns
      * - _next = Next.js internal routes
-     * - api/upload|api/uploadthing = upload routes (EXCLUDED)
      * - [^?]*\\.(?:...) = static file extensions
      */
-    "/((?!_next|api/upload|api/uploadthing|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
   ],
 };

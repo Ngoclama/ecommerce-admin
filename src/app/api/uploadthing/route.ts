@@ -8,8 +8,4 @@ export const maxDuration = 60; // 60 seconds for large file uploads
 // Export routes for Next App Router
 export const { GET, POST } = createRouteHandler({
   router: ourFileRouter,
-  config: {
-    callbackUrl: process.env.UPLOADTHING_URL || undefined,
-    logLevel: "Error",
-  },
 });

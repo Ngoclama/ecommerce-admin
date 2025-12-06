@@ -609,8 +609,8 @@ async function parseCSV(file: File): Promise<any[]> {
             }
             resolve(results.data as any[]);
           },
-          error: (error: unknown) => {
-            reject(error instanceof Error ? error : new Error(String(error)));
+          error: (error: Error) => {
+            reject(error);
           },
         });
       } catch (error) {
@@ -633,13 +633,11 @@ async function parseCSV(file: File): Promise<any[]> {
 
         tryParse(text, "UTF-8");
       } catch (error) {
-        reject(error instanceof Error ? error : new Error(String(error)));
+        reject(error);
       }
     };
 
-    reader.onerror = (error) => {
-      reject(error instanceof Error ? error : new Error("File read error"));
-    };
+    reader.onerror = (error) => reject(error);
 
     // Try UTF-8 first
     reader.readAsText(file, "UTF-8");

@@ -4,9 +4,15 @@ import { auth } from "@clerk/nextjs/server";
 const f = createUploadthing();
 
 const handleAuth = async () => {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-  return { userId };
+  try {
+    const { userId } = await auth();
+    console.log("UploadThing auth check:", { userId });
+    if (!userId) throw new Error("Unauthorized - No userId found");
+    return { userId };
+  } catch (error) {
+    console.error("UploadThing auth error:", error);
+    throw error;
+  }
 };
 
 export const ourFileRouter = {
@@ -16,7 +22,7 @@ export const ourFileRouter = {
       maxFileCount: 10,
     },
   })
-    .middleware(() => handleAuth())
+    .middleware(async () => handleAuth())
     .onUploadComplete(async ({ metadata, file }) => {
       // Tối ưu callback để tránh timeout - chỉ trả về thông tin cần thiết
       // Không thực hiện các thao tác tốn thời gian ở đây
@@ -35,7 +41,7 @@ export const ourFileRouter = {
       maxFileCount: 5,
     },
   })
-    .middleware(() => handleAuth())
+    .middleware(async () => handleAuth())
     .onUploadComplete(async ({ metadata, file }) => {
       try {
         console.log("Video upload complete:", file.url);
