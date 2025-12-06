@@ -172,7 +172,9 @@ export async function createMoMoPayment(
 
   const requestId = orderId; // Use orderId as requestId
   const extraData = ""; // Optional: encode additional data as base64
-  const requestType = "captureWallet"; // or "payWithMethod" for QR code
+  // Use "payWithMethod" to allow user to choose payment method (Wallet, ATM card, QR code)
+  // Use "captureWallet" if you only want MoMo wallet payment
+  const requestType = "payWithMethod"; // Allows ATM card payment on test page
 
   // Generate signature
   const signature = generateMoMoSignature(

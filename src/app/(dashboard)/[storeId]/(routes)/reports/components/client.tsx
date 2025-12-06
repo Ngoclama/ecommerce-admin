@@ -141,7 +141,7 @@ interface ReportData {
     total: number;
     items: number;
     status: string;
-  }> | undefined;
+  }>;
   filters?: {
     categories: Array<{ id: string; name: string }>;
     products: Array<{ id: string; name: string }>;
