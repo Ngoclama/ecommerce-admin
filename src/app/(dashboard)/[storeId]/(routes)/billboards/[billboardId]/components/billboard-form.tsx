@@ -48,7 +48,9 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const title = initialData ? t("forms.billboard.title") : t("forms.billboard.titleCreate");
+  const title = initialData
+    ? t("forms.billboard.title")
+    : t("forms.billboard.titleCreate");
   const description = initialData
     ? t("forms.billboard.description")
     : t("forms.billboard.descriptionCreate");
@@ -88,7 +90,11 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
         );
       }
 
-      toast.success(initialData ? t("forms.billboard.updated") : t("forms.billboard.created"));
+      toast.success(
+        initialData
+          ? t("forms.billboard.updated")
+          : t("forms.billboard.created")
+      );
       router.refresh();
       router.push(`/${params.storeId}/billboards`);
     } catch (error) {
@@ -194,6 +200,7 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({
                     <ImageUpload
                       disabled={isLoading}
                       value={field.value ? [field.value] : []}
+                      maxFiles={1}
                       onChange={(urls) => {
                         if (Array.isArray(urls) && urls.length > 0 && urls[0]) {
                           field.onChange(urls[0]);
