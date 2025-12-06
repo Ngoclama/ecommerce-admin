@@ -210,8 +210,14 @@ export async function POST(
       phone_number_collection: {
         enabled: true,
       },
-      success_url: `${process.env.FRONTEND_STORE_URL}/cart?success=1`,
-      cancel_url: `${process.env.FRONTEND_STORE_URL}/cart?canceled=1`,
+      success_url: `${
+        process.env.FRONTEND_STORE_URL ||
+        process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")
+      }/payment/success?orderId=${order.id}&method=stripe`,
+      cancel_url: `${
+        process.env.FRONTEND_STORE_URL ||
+        process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")
+      }/checkout?canceled=1`,
       metadata: {
         orderId: order.id,
       },

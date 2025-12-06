@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { getUserFromDb } from "@/lib/permissions";
 
 export async function GET(req: Request) {
@@ -51,16 +51,78 @@ export async function GET(req: Request) {
     }
 
     // Lấy user từ database
-    const user = await getUserFromDb(clerkUserId);
+    let user = await getUserFromDb(clerkUserId);
+    
+    // Nếu user chưa tồn tại trong database, tạo user mới
     if (!user) {
-      console.warn("[USER_ORDERS_GET] User not found in database:", {
+      try {
+        console.log("[USER_ORDERS_GET] User not found in database, creating user:", clerkUserId);
+        
+        // Lấy thông tin user từ Clerk API
+        let realEmail = `user_${clerkUserId}@temp.com`;
+        let realName = "User";
+        let realImageUrl: string | null = null;
+
+        try {
+          const clerk = await clerkClient();
+          const clerkUser = await clerk.users.getUser(clerkUserId);
+          if (clerkUser && clerkUser.emailAddresses.length > 0) {
+            realEmail = clerkUser.emailAddresses[0].emailAddress;
+            realName =
+              clerkUser.firstName && clerkUser.lastName
+                ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
+                : clerkUser.firstName || clerkUser.lastName || "User";
+            realImageUrl = clerkUser.imageUrl || null;
+          }
+        } catch (clerkError) {
+          console.warn(
+            "[USER_ORDERS_GET] Could not fetch user from Clerk:",
+            clerkError
+          );
+        }
+
+        // Normalize email (lowercase, trim) để đảm bảo matching chính xác
+        realEmail = realEmail.toLowerCase().trim();
+
+        try {
+          user = await prisma.user.create({
+            data: {
+              clerkId: clerkUserId,
+              email: realEmail,
+              name: realName,
+              imageUrl: realImageUrl,
+              role: "CUSTOMER",
+            },
+          });
+          console.log("[USER_ORDERS_GET] User created successfully:", user.id);
+        } catch (createError: any) {
+          // Nếu user đã tồn tại (race condition), lấy lại từ database
+          if (createError.code === "P2002") {
+            user = await getUserFromDb(clerkUserId);
+            if (user) {
+              console.log("[USER_ORDERS_GET] User already exists, using existing user:", user.id);
+            }
+          }
+          
+          if (!user) {
+            console.error("[USER_ORDERS_GET] Failed to create user:", createError);
+            // Trả về empty array nếu không thể tạo user
+            return NextResponse.json([]);
+          }
+        }
+      } catch (error) {
+        console.error("[USER_ORDERS_GET] Error creating user:", error);
+        // Trả về empty array nếu không thể tạo user
+        return NextResponse.json([]);
+      }
+    }
+    
+    if (!user) {
+      console.warn("[USER_ORDERS_GET] User still not found after creation attempt:", {
         clerkUserId,
         hasQueryParam: !!clerkUserIdFromQuery,
         hasAuth: !!clerkUserIdFromAuth,
       });
-
-      // Trả về empty array thay vì 404 để tránh lỗi
-      // User có thể chưa được sync vào database
       return NextResponse.json([]);
     }
 
@@ -74,18 +136,101 @@ export async function GET(req: Request) {
     // Điều này đảm bảo đơn hàng được link ngay cả khi chưa có userId
     if (user.email) {
       try {
-        const linkResult = await prisma.order.updateMany({
+        // Normalize email for comparison (lowercase, trim)
+        const normalizedEmail = user.email.toLowerCase().trim();
+        
+        // MongoDB doesn't support mode: "insensitive", so we need to:
+        // 1. Try exact match first
+        // 2. Try normalized (lowercase) match
+        // 3. Find all orders with userId=null and filter in code (fallback)
+        
+        // First, try exact match
+        let linkResult = await prisma.order.updateMany({
           where: {
-            userId: null, // Chưa có userId
-            email: user.email, // Cùng email với user
+            userId: null,
+            email: user.email, // Exact match
           },
           data: {
-            userId: user.id, // Link với user
+            userId: user.id,
           },
         });
+        
         if (linkResult.count > 0) {
           console.log(
-            `[USER_ORDERS_GET] Auto-linked ${linkResult.count} orders to user based on email`
+            `[USER_ORDERS_GET] Auto-linked ${linkResult.count} orders to user based on exact email match: ${user.email}`
+          );
+        }
+        
+        // Then, try normalized (lowercase) match if email is different
+        if (user.email !== normalizedEmail) {
+          // Find orders with normalized email
+          const ordersToLink = await prisma.order.findMany({
+            where: {
+              userId: null,
+              email: normalizedEmail,
+            },
+            select: {
+              id: true,
+              email: true,
+            },
+          });
+
+          if (ordersToLink.length > 0) {
+            // Update each order individually
+            const linkPromises = ordersToLink.map((order) =>
+              prisma.order.update({
+                where: { id: order.id },
+                data: { userId: user.id },
+              })
+            );
+            
+            await Promise.all(linkPromises);
+            
+            console.log(
+              `[USER_ORDERS_GET] Auto-linked ${ordersToLink.length} orders to user based on normalized email: ${normalizedEmail}`
+            );
+            console.log(
+              `[USER_ORDERS_GET] Linked order IDs:`,
+              ordersToLink.map((o) => o.id)
+            );
+          }
+        }
+        
+        // Fallback: Find all orders with userId=null and email matching (case-insensitive in code)
+        // This handles cases where email might have different casing in database
+        const allUnlinkedOrders = await prisma.order.findMany({
+          where: {
+            userId: null,
+            email: { not: null },
+          },
+          select: {
+            id: true,
+            email: true,
+          },
+          take: 100, // Limit to avoid performance issues
+        });
+        
+        // Filter orders with matching email (case-insensitive)
+        const matchingOrders = allUnlinkedOrders.filter(
+          (order) => order.email && order.email.toLowerCase().trim() === normalizedEmail
+        );
+        
+        if (matchingOrders.length > 0) {
+          const linkPromises = matchingOrders.map((order) =>
+            prisma.order.update({
+              where: { id: order.id },
+              data: { userId: user.id },
+            })
+          );
+          
+          await Promise.all(linkPromises);
+          
+          console.log(
+            `[USER_ORDERS_GET] Auto-linked ${matchingOrders.length} orders via fallback case-insensitive matching`
+          );
+          console.log(
+            `[USER_ORDERS_GET] Linked order IDs:`,
+            matchingOrders.map((o) => o.id)
           );
         }
       } catch (linkError) {
@@ -102,10 +247,16 @@ export async function GET(req: Request) {
 
     // Query orders: Đơn giản nhất - tìm theo userId HOẶC email
     // Chỉ cần lấy đơn hàng đã đặt (không cần filter isPaid vì user muốn xem tất cả)
+    // MongoDB doesn't support mode: "insensitive", so we query with exact matches
+    // and handle case-insensitive matching in the auto-link step above
+    const normalizedEmail = user.email ? user.email.toLowerCase().trim() : null;
     const whereClause: any = {
       OR: [
         { userId: user.id }, // Đơn hàng đã link với user
-        ...(user.email ? [{ email: user.email }] : []), // Hoặc có cùng email
+        ...(user.email ? [
+          { email: user.email }, // Exact match
+          ...(normalizedEmail && normalizedEmail !== user.email ? [{ email: normalizedEmail }] : []), // Normalized match if different
+        ] : []), // Hoặc có cùng email
       ],
     };
 
@@ -357,31 +508,49 @@ export async function GET(req: Request) {
       }
     }
 
-    // Return with caching headers for better performance
-    return NextResponse.json(orders, {
+    // Return with caching headers and CORS
+    const response = NextResponse.json(orders, {
       headers: {
         "Content-Type": "application/json",
         // Cache for 30 seconds on client
         "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
-        // Enable compression
-        "Content-Encoding": "gzip",
+        // CORS headers for store frontend
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Cookie",
       },
     });
+    return response;
   } catch (err: any) {
     console.error("[USER_ORDERS_GET_ERROR]", {
       error: err,
       message: err?.message,
       stack: err?.stack,
     });
-    return new NextResponse(
+    const response = new NextResponse(
       JSON.stringify({
         error: "Internal error",
         message: err?.message || "Failed to fetch orders",
       }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Cookie",
+        },
       }
     );
+    return response;
   }
+}
+
+// Handle OPTIONS request for CORS preflight
+export async function OPTIONS() {
+  const response = new NextResponse(null, { status: 200 });
+  response.headers.set("Access-Control-Allow-Origin", "*");
+  response.headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+  response.headers.set("Access-Control-Allow-Headers", "Content-Type, Cookie");
+  return response;
 }

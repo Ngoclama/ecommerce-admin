@@ -48,13 +48,40 @@ export async function POST(req: Request) {
       // Payment successful
       console.log("[MOMO_IPN] Payment successful for order:", order.id);
 
+      // Link order với user dựa trên email (nếu chưa có userId)
+      const updateData: any = {
+        isPaid: true,
+        status: "PROCESSING",
+      };
+
+      if (!order.userId && order.email) {
+        try {
+          const normalizedEmail = order.email.toLowerCase().trim();
+          
+          // Tìm user theo email (exact match hoặc normalized)
+          const user = await prisma.user.findFirst({
+            where: {
+              OR: [
+                { email: order.email },
+                { email: normalizedEmail },
+              ],
+            },
+          });
+
+          if (user) {
+            updateData.userId = user.id;
+            console.log(`[MOMO_IPN] Linking order ${order.id} to user ${user.id} via email ${order.email}`);
+          }
+        } catch (linkError) {
+          console.error("[MOMO_IPN] Error linking order to user:", linkError);
+          // Không fail webhook nếu link lỗi, chỉ log
+        }
+      }
+
       // Update order status
       await prisma.order.update({
         where: { id: order.id },
-        data: {
-          isPaid: true,
-          status: "PROCESSING",
-        },
+        data: updateData,
       });
 
       // Update product variant inventory

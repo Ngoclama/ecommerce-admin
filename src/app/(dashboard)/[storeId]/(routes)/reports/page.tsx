@@ -13,6 +13,7 @@ import {
 } from "date-fns";
 import prisma from "@/lib/prisma";
 import { ReportsClient } from "./components/client";
+import { getReportsStats, PeriodType } from "@/action/get-reports-stats";
 import type { Prisma } from "@prisma/client";
 
 const ReportsPage = async ({
@@ -23,9 +24,11 @@ const ReportsPage = async ({
   searchParams: Promise<{
     startDate?: string;
     endDate?: string;
-    period?: "custom" | "week" | "month" | "quarter";
+    period?: PeriodType;
     categoryId?: string;
     productId?: string;
+    status?: string;
+    paymentMethod?: string;
   }>;
 }) => {
   const { storeId } = await params;
@@ -35,6 +38,8 @@ const ReportsPage = async ({
     period,
     categoryId,
     productId,
+    status,
+    paymentMethod,
   } = await searchParams;
 
   // Calculate date range based on period
@@ -65,152 +70,41 @@ const ReportsPage = async ({
   const prevEndDate = startOfDay(startDate);
   const prevStartDate = startOfDay(subDays(prevEndDate, daysDiff));
 
-  // Build where clause with filters
-  const whereClause: Prisma.OrderWhereInput = {
-    storeId: storeId,
-    isPaid: true,
-    createdAt: {
-      gte: startOfDay(startDate),
-      lte: endOfDay(endDate),
-    },
-  };
-
-  // Add category/product filters if specified
-  if (categoryId || productId) {
-    whereClause.orderItems = {
-      some: {
-        ...(productId ? { productId } : {}),
-        ...(categoryId
-          ? {
-              product: {
-                categoryId,
-              },
-            }
-          : {}),
-      },
-    };
-  }
-
-  // Get current period orders
-  const orders = await prisma.order.findMany({
-    where: whereClause,
-    include: {
-      orderItems: {
-        include: {
-          product: {
-            include: { category: true },
-          },
-        },
-      },
-      user: true,
-    },
-    orderBy: { createdAt: "desc" },
+  // Sử dụng action function mới để lấy thống kê
+  const stats = await getReportsStats({
+    storeId,
+    period: period || "month",
+    startDate: period === "custom" ? startDate : undefined,
+    endDate: period === "custom" ? endDate : undefined,
+    status: status || undefined,
+    paymentMethod: paymentMethod || undefined,
+    categoryId: categoryId || undefined,
   });
 
-  // Get previous period orders for comparison
-  const prevOrders = await prisma.order.findMany({
-    where: {
-      ...whereClause,
-      createdAt: {
-        gte: prevStartDate,
-        lte: prevEndDate,
-      },
-    },
-    include: {
-      orderItems: {
-        include: {
-          product: {
-            include: { category: true },
-          },
-        },
-      },
-      user: true,
-    },
+  // Tính toán so sánh với kỳ trước
+  const prevStats = await getReportsStats({
+    storeId,
+    period: period || "month",
+    startDate: prevStartDate,
+    endDate: prevEndDate,
+    status: status || undefined,
+    paymentMethod: paymentMethod || undefined,
+    categoryId: categoryId || undefined,
   });
-
-  // Calculate statistics (current)
-  const totalRevenue = orders.reduce(
-    (sum: number, order) => sum + (order.total || 0),
-    0
-  );
-  const totalOrders = orders.length;
-  const totalItems = orders.reduce(
-    (sum: number, order) =>
-      sum + order.orderItems.reduce((s: number, item) => s + item.quantity, 0),
-    0
-  );
-
-  // Calculate statistics (previous)
-  const prevTotalRevenue = prevOrders.reduce(
-    (sum: number, order) => sum + (order.total || 0),
-    0
-  );
-  const prevTotalOrders = prevOrders.length;
-  const prevTotalItems = prevOrders.reduce(
-    (sum: number, order) =>
-      sum + order.orderItems.reduce((s: number, item) => s + item.quantity, 0),
-    0
-  );
 
   // Calculate percentage changes
   const revenueChange =
-    prevTotalRevenue > 0
-      ? ((totalRevenue - prevTotalRevenue) / prevTotalRevenue) * 100
+    prevStats.totalRevenue > 0
+      ? ((stats.totalRevenue - prevStats.totalRevenue) / prevStats.totalRevenue) * 100
       : 0;
   const ordersChange =
-    prevTotalOrders > 0
-      ? ((totalOrders - prevTotalOrders) / prevTotalOrders) * 100
+    prevStats.totalOrders > 0
+      ? ((stats.totalOrders - prevStats.totalOrders) / prevStats.totalOrders) * 100
       : 0;
   const itemsChange =
-    prevTotalItems > 0
-      ? ((totalItems - prevTotalItems) / prevTotalItems) * 100
+    prevStats.totalItemsSold > 0
+      ? ((stats.totalItemsSold - prevStats.totalItemsSold) / prevStats.totalItemsSold) * 100
       : 0;
-
-  // Top products
-  const productSales: Record<
-    string,
-    { name: string; quantity: number; revenue: number; category?: string }
-  > = {};
-  orders.forEach((order) => {
-    order.orderItems.forEach((item) => {
-      const pid = item.productId;
-      const pname = item.productName || item.product?.name || "N/A";
-      const qty = item.quantity;
-      const rev = (item.productPrice || item.product?.price || 0) * qty;
-      const cat = item.product?.category?.name || "N/A";
-      if (!productSales[pid]) {
-        productSales[pid] = {
-          name: pname,
-          quantity: 0,
-          revenue: 0,
-          category: cat,
-        };
-      }
-      productSales[pid].quantity += qty;
-      productSales[pid].revenue += rev;
-    });
-  });
-  const topProducts = Object.values(productSales)
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 20);
-
-  // Category revenue
-  const categoryRevenue: Record<string, number> = {};
-  orders.forEach((order) => {
-    order.orderItems.forEach((item) => {
-      const cname = item.product?.category?.name || "N/A";
-      const rev =
-        (item.productPrice || item.product?.price || 0) * item.quantity;
-      categoryRevenue[cname] = (categoryRevenue[cname] || 0) + rev;
-    });
-  });
-
-  // Daily revenue for chart
-  const dailyRevenue: Record<string, number> = {};
-  orders.forEach((order) => {
-    const date = format(order.createdAt, "yyyy-MM-dd");
-    dailyRevenue[date] = (dailyRevenue[date] || 0) + (order.total || 0);
-  });
 
   // Get all categories for filter dropdown
   const categories = await prisma.category.findMany({
@@ -227,6 +121,13 @@ const ReportsPage = async ({
     take: 100, // Limit for performance
   });
 
+  // Format time series data for charts
+  const dailyRevenue = stats.timeSeriesData.map((item) => ({
+    name: format(new Date(item.date), "dd/MM"),
+    date: item.date,
+    total: item.revenue,
+  }));
+
   const reportData = {
     period: {
       start: startDate.toISOString(),
@@ -234,10 +135,13 @@ const ReportsPage = async ({
       type: period || "custom",
     },
     summary: {
-      totalRevenue,
-      totalOrders,
-      totalItems,
-      averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
+      totalRevenue: stats.totalRevenue,
+      totalOrders: stats.totalOrders,
+      totalItems: stats.totalItemsSold,
+      totalDiscount: stats.totalDiscount,
+      totalShippingCost: stats.totalShippingCost,
+      netProfit: stats.netProfit,
+      averageOrderValue: stats.averageOrderValue,
     },
     comparison: {
       revenueChange,
@@ -246,37 +150,35 @@ const ReportsPage = async ({
       prevPeriod: {
         start: prevStartDate.toISOString(),
         end: prevEndDate.toISOString(),
-        totalRevenue: prevTotalRevenue,
-        totalOrders: prevTotalOrders,
-        totalItems: prevTotalItems,
+        totalRevenue: prevStats.totalRevenue,
+        totalOrders: prevStats.totalOrders,
+        totalItems: prevStats.totalItemsSold,
       },
     },
-    topProducts,
-    categoryRevenue: Object.entries(categoryRevenue)
-      .sort((a, b) => b[1] - a[1])
-      .map(([name, value]) => ({
-        name,
-        value,
-      })),
-    dailyRevenue: Object.entries(dailyRevenue)
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([date, value]) => ({
-        name: format(new Date(date), "dd/MM"),
-        date,
-        total: value,
-      })),
-    orders: orders.map((order) => ({
-      id: order.id,
-      date: format(order.createdAt, "yyyy-MM-dd"),
-      total: order.total,
-      items: order.orderItems.length,
-      status: order.status,
+    topProducts: stats.topProducts.map((p) => ({
+      name: p.productName,
+      quantity: p.quantity,
+      revenue: p.revenue,
+      category: p.categoryName,
+      productId: p.productId,
     })),
+    categoryRevenue: stats.categoryRevenue.map((c) => ({
+      name: c.categoryName,
+      value: c.revenue,
+      categoryId: c.categoryId,
+    })),
+    statusDistribution: stats.statusDistribution,
+    paymentMethodDistribution: stats.paymentMethodDistribution,
+    topColors: stats.topColors,
+    topSizes: stats.topSizes,
+    dailyRevenue,
     filters: {
       categories,
       products,
       selectedCategory: categoryId || null,
       selectedProduct: productId || null,
+      selectedStatus: status || null,
+      selectedPaymentMethod: paymentMethod || null,
     },
   };
 

@@ -8,7 +8,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -27,12 +26,25 @@ import {
   Heart,
   RotateCcw,
   Package,
+  TrendingUp,
+  DollarSign,
+  CreditCard,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Truck,
+  Crown,
+  Award,
+  Eye,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTranslation } from "@/hooks/use-translation";
 import { useParams } from "next/navigation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { formatter } from "@/lib/utils";
 
 interface UserViewModalProps {
   isOpen: boolean;
@@ -123,44 +135,82 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
 
   if (!isMounted) return null;
 
+  // Tính tổng số tiền đã mua
+  const totalSpent = user?.orders?.reduce((sum, order) => sum + order.total, 0) || 0;
+  const totalItemsPurchased = user?.orders?.reduce(
+    (sum, order) => sum + (order.orderItems?.reduce((itemSum, item) => itemSum + item.quantity, 0) || 0),
+    0
+  ) || 0;
+
+  // Tính số đơn hàng theo trạng thái
+  const ordersByStatus = user?.orders?.reduce((acc, order) => {
+    acc[order.status] = (acc[order.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>) || {};
+
+  const getStatusInfo = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return { label: "Chờ xử lý", icon: Clock, color: "text-amber-600", bgColor: "bg-amber-50 dark:bg-amber-950" };
+      case "PROCESSING":
+        return { label: "Đang xử lý", icon: Package, color: "text-blue-600", bgColor: "bg-blue-50 dark:bg-blue-950" };
+      case "SHIPPED":
+        return { label: "Đã gửi hàng", icon: Truck, color: "text-purple-600", bgColor: "bg-purple-50 dark:bg-purple-950" };
+      case "DELIVERED":
+        return { label: "Đã giao hàng", icon: CheckCircle2, color: "text-green-600", bgColor: "bg-green-50 dark:bg-green-950" };
+      case "CANCELLED":
+        return { label: "Đã hủy", icon: XCircle, color: "text-red-600", bgColor: "bg-red-50 dark:bg-red-950" };
+      default:
+        return { label: status, icon: Package, color: "text-gray-600", bgColor: "bg-gray-50 dark:bg-gray-950" };
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden bg-white dark:bg-neutral-900">
-        <div className="p-6 pb-2">
+      <DialogContent className="!max-w-none !w-screen !h-screen !m-0 !rounded-none flex flex-col overflow-hidden bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-500 !inset-0 !translate-x-0 !translate-y-0">
+        <div className="p-6 md:p-8 border-b border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-neutral-50 to-white dark:from-neutral-950 dark:to-gray-900 shrink-0">
           <DialogHeader>
-            <DialogTitle>{t("modals.userDetails")}</DialogTitle>
-            <DialogDescription>{t("modals.userDescription")}</DialogDescription>
+            <DialogTitle className="text-3xl md:text-4xl font-light text-neutral-900 dark:text-neutral-100 uppercase tracking-tight">
+              {t("modals.userDetails") || "Chi tiết người dùng"}
+            </DialogTitle>
           </DialogHeader>
         </div>
 
-        <ScrollArea className="flex-1 px-6">
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="h-full w-full">
+          <div className="pr-4 pb-4">
           {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            <div className="flex items-center justify-center h-96">
+              <div className="text-center space-y-4">
+                <Loader2 className="h-12 w-12 animate-spin text-neutral-400 mx-auto" />
+                <p className="text-sm text-neutral-500 font-light uppercase tracking-wide">
+                  Đang tải thông tin...
+                </p>
+              </div>
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center h-64 space-y-4">
-              <p className="text-red-500 font-medium">
-                {t("modals.failedToFetch") ||
-                  "Không thể tải thông tin người dùng"}
+            <div className="flex flex-col items-center justify-center h-96 space-y-4 p-8">
+              <XCircle className="h-16 w-16 text-red-500" />
+              <p className="text-lg font-light text-red-600 dark:text-red-400 uppercase tracking-wide">
+                {t("modals.failedToFetch") || "Không thể tải thông tin người dùng"}
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-neutral-500 font-light">
                 {error instanceof Error ? error.message : "Đã xảy ra lỗi"}
               </p>
             </div>
           ) : !user ? (
-            <div className="flex items-center justify-center h-64">
-              <p className="text-gray-500">
+            <div className="flex items-center justify-center h-96">
+              <p className="text-neutral-500 font-light uppercase tracking-wide">
                 {t("modals.notFound") || "Không tìm thấy người dùng"}
               </p>
             </div>
           ) : (
-            <div className="space-y-6 pb-6">
-              {/* Header Section - Avatar & Basic Info */}
-              <div className="flex flex-col md:flex-row gap-6 items-start">
-                {/* Avatar */}
-                <div className="shrink-0">
-                  <div className="relative h-32 w-32 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-700">
+            <div className="p-6 md:p-8 space-y-8 pb-8">
+              {/* Header Section - Luxury Style */}
+              <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-center">
+                {/* Avatar - Large & Elegant */}
+                <div className="shrink-0 relative">
+                  <div className="relative h-32 w-32 md:h-40 md:w-40 rounded-sm overflow-hidden border-2 border-neutral-200 dark:border-neutral-800 shadow-lg">
                     <Image
                       fill
                       src={user.imageUrl || "/placeholder-user.jpg"}
@@ -169,365 +219,511 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                       unoptimized
                     />
                   </div>
+                  {user.isVIP && (
+                    <div className="absolute -top-2 -right-2">
+                      <Crown className="w-8 h-8 text-yellow-500 fill-yellow-500" />
+                    </div>
+                  )}
                 </div>
 
                 {/* Basic Info */}
-                <div className="flex-1 space-y-3">
+                <div className="flex-1 space-y-4 min-w-0">
                   <div>
-                    <h2 className="text-2xl font-light text-black dark:text-white uppercase tracking-wide">
-                      {user.name ||
-                        t("modals.anonymous") ||
-                        "Người dùng ẩn danh"}
+                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-light text-neutral-900 dark:text-neutral-100 uppercase tracking-tight leading-tight">
+                      {user.name || t("modals.anonymous") || "Người dùng ẩn danh"}
                     </h2>
-                    <p className="text-gray-600 dark:text-gray-400 font-light mt-1">
+                    <p className="text-neutral-600 dark:text-neutral-400 font-light mt-2 text-base md:text-lg">
                       {user.email}
                     </p>
                   </div>
 
-                  {/* Status Badges */}
-                  <div className="flex flex-wrap gap-2">
+                  {/* Status Badges - Luxury Style */}
+                  <div className="flex flex-wrap gap-3">
                     {user.isVIP && (
-                      <Badge className="bg-yellow-500 text-white hover:bg-yellow-600">
-                        <Star className="w-3 h-3 mr-1" />
-                        {t("columns.vip") || "VIP"}
+                      <Badge className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white hover:from-yellow-600 hover:to-yellow-700 border-0 px-4 py-1.5 gap-1.5">
+                        <Crown className="w-4 h-4" />
+                        <span className="font-light uppercase tracking-wide">{t("columns.vip") || "VIP"}</span>
                       </Badge>
                     )}
                     {user.isBanned ? (
-                      <Badge variant="destructive">
-                        <Ban className="w-3 h-3 mr-1" />
-                        {t("columns.banned") || "Đã chặn"}
+                      <Badge variant="destructive" className="px-4 py-1.5 gap-1.5 border-0">
+                        <Ban className="w-4 h-4" />
+                        <span className="font-light uppercase tracking-wide">{t("columns.banned") || "Đã chặn"}</span>
                       </Badge>
                     ) : (
-                      <Badge
-                        variant="secondary"
-                        className="bg-green-500 text-white hover:bg-green-600"
-                      >
-                        {t("columns.active") || "Hoạt động"}
+                      <Badge className="bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 border-0 px-4 py-1.5 gap-1.5">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span className="font-light uppercase tracking-wide">{t("columns.active") || "Hoạt động"}</span>
                       </Badge>
                     )}
-                    <Badge variant="outline">
-                      <Shield className="w-3 h-3 mr-1" />
-                      {user.role}
+                    <Badge variant="outline" className="px-4 py-1.5 gap-1.5 border-2 border-neutral-300 dark:border-neutral-700">
+                      <Shield className="w-4 h-4" />
+                      <span className="font-light uppercase tracking-wide">{user.role}</span>
                     </Badge>
                   </div>
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="bg-neutral-200 dark:bg-neutral-800" />
 
-              {/* User Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left Column */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-light text-black dark:text-white uppercase tracking-wide">
-                    {t("modals.userInformation") || "Thông tin người dùng"}
-                  </h3>
-
-                  <div className="space-y-3">
-                    {/* User ID */}
-                    <div className="flex items-start gap-3">
-                      <UserIcon className="w-5 h-5 text-gray-500 mt-0.5 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-500 font-light uppercase tracking-wide">
-                          {t("modals.userId") || "ID Người dùng"}
-                        </p>
-                        <p className="text-sm text-black dark:text-white font-mono break-all">
-                          {user.id}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Clerk ID */}
-                    <div className="flex items-start gap-3">
-                      <Shield className="w-5 h-5 text-gray-500 mt-0.5 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-500 font-light uppercase tracking-wide">
-                          Clerk ID
-                        </p>
-                        <p className="text-sm text-black dark:text-white font-mono break-all">
-                          {user.clerkId}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Email */}
-                    <div className="flex items-start gap-3">
-                      <Mail className="w-5 h-5 text-gray-500 mt-0.5 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-500 font-light uppercase tracking-wide">
-                          {t("columns.email") || "Email"}
-                        </p>
-                        <p className="text-sm text-black dark:text-white break-all">
-                          {user.email}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Phone */}
-                    {user.phone && (
-                      <div className="flex items-start gap-3">
-                        <Phone className="w-5 h-5 text-gray-500 mt-0.5 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-gray-500 font-light uppercase tracking-wide">
-                            {t("columns.phone") || "Số điện thoại"}
-                          </p>
-                          <p className="text-sm text-black dark:text-white">
-                            {user.phone}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Role */}
-                    <div className="flex items-start gap-3">
-                      <Shield className="w-5 h-5 text-gray-500 mt-0.5 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-500 font-light uppercase tracking-wide">
-                          {t("columns.role") || "Vai trò"}
-                        </p>
-                        <p className="text-sm text-black dark:text-white">
-                          {user.role}
-                        </p>
-                      </div>
-                    </div>
+              {/* Statistics Cards - Luxury Style */}
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {/* Total Spent */}
+                <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-center gap-2 mb-3">
+                    <DollarSign className="w-5 h-5 text-neutral-500" />
+                    <p className="text-xs text-neutral-500 font-light uppercase tracking-wide">
+                      Tổng chi tiêu
+                    </p>
                   </div>
+                  <p className="text-xl md:text-2xl font-light text-neutral-900 dark:text-neutral-100">
+                    {formatter.format(totalSpent)}
+                  </p>
                 </div>
 
-                {/* Right Column - Statistics */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-light text-black dark:text-white uppercase tracking-wide">
-                    {t("modals.statistics") || "Thống kê"}
-                  </h3>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Stores */}
-                    <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-none bg-gray-50 dark:bg-gray-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Store className="w-4 h-4 text-gray-500" />
-                        <p className="text-xs text-gray-500 font-light uppercase tracking-wide">
-                          {t("nav.stores") || "Cửa hàng"}
-                        </p>
-                      </div>
-                      <p className="text-2xl font-light text-black dark:text-white">
-                        {user._count.stores}
-                      </p>
-                    </div>
-
-                    {/* Orders */}
-                    <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-none bg-gray-50 dark:bg-gray-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <ShoppingBag className="w-4 h-4 text-gray-500" />
-                        <p className="text-xs text-gray-500 font-light uppercase tracking-wide">
-                          {t("nav.orders") || "Đơn hàng"}
-                        </p>
-                      </div>
-                      <p className="text-2xl font-light text-black dark:text-white">
-                        {user._count.orders}
-                      </p>
-                    </div>
-
-                    {/* Reviews */}
-                    <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-none bg-gray-50 dark:bg-gray-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <MessageSquare className="w-4 h-4 text-gray-500" />
-                        <p className="text-xs text-gray-500 font-light uppercase tracking-wide">
-                          {t("nav.reviews") || "Đánh giá"}
-                        </p>
-                      </div>
-                      <p className="text-2xl font-light text-black dark:text-white">
-                        {user._count.reviews}
-                      </p>
-                    </div>
-
-                    {/* Addresses */}
-                    <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-none bg-gray-50 dark:bg-gray-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <MapPin className="w-4 h-4 text-gray-500" />
-                        <p className="text-xs text-gray-500 font-light uppercase tracking-wide">
-                          {t("modals.addresses") || "Địa chỉ"}
-                        </p>
-                      </div>
-                      <p className="text-2xl font-light text-black dark:text-white">
-                        {user._count.addresses}
-                      </p>
-                    </div>
-
-                    {/* Wishlist */}
-                    <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-none bg-gray-50 dark:bg-gray-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Heart className="w-4 h-4 text-gray-500" />
-                        <p className="text-xs text-gray-500 font-light uppercase tracking-wide">
-                          {t("modals.wishlist") || "Yêu thích"}
-                        </p>
-                      </div>
-                      <p className="text-2xl font-light text-black dark:text-white">
-                        {user._count.wishlist}
-                      </p>
-                    </div>
-
-                    {/* Returns */}
-                    <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-none bg-gray-50 dark:bg-gray-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <RotateCcw className="w-4 h-4 text-gray-500" />
-                        <p className="text-xs text-gray-500 font-light uppercase tracking-wide">
-                          {t("nav.returns") || "Đổi trả"}
-                        </p>
-                      </div>
-                      <p className="text-2xl font-light text-black dark:text-white">
-                        {user._count.returns}
-                      </p>
-                    </div>
+                {/* Total Orders */}
+                <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ShoppingBag className="w-5 h-5 text-neutral-500" />
+                    <p className="text-xs text-neutral-500 font-light uppercase tracking-wide">
+                      Đơn hàng
+                    </p>
                   </div>
+                  <p className="text-xl md:text-2xl font-light text-neutral-900 dark:text-neutral-100">
+                    {user._count.orders}
+                  </p>
+                </div>
+
+                {/* Total Items Purchased */}
+                <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Package className="w-5 h-5 text-neutral-500" />
+                    <p className="text-xs text-neutral-500 font-light uppercase tracking-wide">
+                      Sản phẩm
+                    </p>
+                  </div>
+                  <p className="text-xl md:text-2xl font-light text-neutral-900 dark:text-neutral-100">
+                    {totalItemsPurchased}
+                  </p>
+                </div>
+
+                {/* Reviews */}
+                <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-center gap-2 mb-3">
+                    <MessageSquare className="w-5 h-5 text-neutral-500" />
+                    <p className="text-xs text-neutral-500 font-light uppercase tracking-wide">
+                      Đánh giá
+                    </p>
+                  </div>
+                  <p className="text-xl md:text-2xl font-light text-neutral-900 dark:text-neutral-100">
+                    {user._count.reviews}
+                  </p>
+                </div>
+
+                {/* Wishlist */}
+                <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Heart className="w-5 h-5 text-neutral-500" />
+                    <p className="text-xs text-neutral-500 font-light uppercase tracking-wide">
+                      Yêu thích
+                    </p>
+                  </div>
+                  <p className="text-xl md:text-2xl font-light text-neutral-900 dark:text-neutral-100">
+                    {user._count.wishlist}
+                  </p>
+                </div>
+
+                {/* Stores */}
+                <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Store className="w-5 h-5 text-neutral-500" />
+                    <p className="text-xs text-neutral-500 font-light uppercase tracking-wide">
+                      Cửa hàng
+                    </p>
+                  </div>
+                  <p className="text-xl md:text-2xl font-light text-neutral-900 dark:text-neutral-100">
+                    {user._count.stores}
+                  </p>
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="bg-neutral-200 dark:bg-neutral-800" />
 
-              {/* Recent Orders */}
-              {user.orders && user.orders.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-light text-black dark:text-white uppercase tracking-wide">
-                    {t("modals.recentOrders") || "Đơn hàng gần đây"} (
-                    {user.orders.length})
-                  </h3>
-                  <div className="space-y-3">
-                    {user.orders.map((order) => (
-                      <div
-                        key={order.id}
-                        className="p-4 border border-gray-200 dark:border-gray-700 rounded-none bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-center gap-3">
-                              <Package className="w-4 h-4 text-gray-500 shrink-0" />
-                              <div className="flex-1">
-                                <p className="text-sm font-light text-black dark:text-white">
-                                  {t("modals.orderCode") || "Mã đơn"}:{" "}
-                                  <span className="font-mono">
-                                    {order.id.slice(-8).toUpperCase()}
-                                  </span>
-                                </p>
-                                <p className="text-xs text-gray-500 mt-0.5">
-                                  {format(
-                                    new Date(order.createdAt),
-                                    "dd/MM/yyyy HH:mm"
-                                  )}
-                                </p>
-                              </div>
-                            </div>
+              {/* Tabs for organized information */}
+              <Tabs defaultValue="info" className="w-full">
+                <TabsList className="grid w-full grid-cols-3 lg:grid-cols-4 h-12 bg-neutral-100 dark:bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-800">
+                  <TabsTrigger value="info" className="text-xs font-light uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-950">
+                    <UserIcon className="w-4 h-4 mr-2" />
+                    Thông tin
+                  </TabsTrigger>
+                  <TabsTrigger value="orders" className="text-xs font-light uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-950">
+                    <ShoppingBag className="w-4 h-4 mr-2" />
+                    Đơn hàng ({user.orders?.length || 0})
+                  </TabsTrigger>
+                  <TabsTrigger value="stats" className="text-xs font-light uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-950">
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    Thống kê
+                  </TabsTrigger>
+                  <TabsTrigger value="activity" className="text-xs font-light uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-950 hidden lg:flex">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Hoạt động
+                  </TabsTrigger>
+                </TabsList>
 
-                            {/* Order Items */}
-                            {order.orderItems &&
-                              order.orderItems.length > 0 && (
-                                <div className="ml-7 space-y-1">
-                                  {order.orderItems.slice(0, 3).map((item) => (
-                                    <div
-                                      key={item.id}
-                                      className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400"
-                                    >
-                                      <span className="font-light">
-                                        {item.productName ||
-                                          item.product?.name ||
-                                          "N/A"}{" "}
-                                        x {item.quantity}
-                                      </span>
-                                    </div>
-                                  ))}
-                                  {order.orderItems.length > 3 && (
-                                    <p className="text-xs text-gray-500 italic">
-                                      +{order.orderItems.length - 3} sản phẩm
-                                      khác
-                                    </p>
-                                  )}
-                                </div>
-                              )}
+                {/* Info Tab */}
+                <TabsContent value="info" className="mt-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                            {/* Payment Status */}
-                            <div className="ml-7 flex items-center gap-2 flex-wrap">
-                              <Badge
-                                variant={order.isPaid ? "default" : "secondary"}
-                                className={
-                                  order.isPaid
-                                    ? "bg-green-500 text-white hover:bg-green-600"
-                                    : "bg-yellow-500 text-white hover:bg-yellow-600"
-                                }
-                              >
-                                {order.isPaid
-                                  ? t("columns.paid") || "Đã thanh toán"
-                                  : t("modals.unpaid") || "CHƯA THANH TOÁN"}
-                              </Badge>
-                              {order.paymentMethod && (
-                                <Badge variant="outline" className="text-xs">
-                                  {order.paymentMethod}
-                                </Badge>
-                              )}
+                    {/* User Information Card */}
+                    <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 space-y-4">
+                      <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-100 uppercase tracking-wide mb-4">
+                        {t("modals.userInformation") || "Thông tin người dùng"}
+                      </h3>
+                      
+                      <div className="space-y-4">
+                        {/* User ID */}
+                        <div className="flex items-start gap-3">
+                          <UserIcon className="w-5 h-5 text-neutral-500 mt-0.5 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-neutral-500 font-light uppercase tracking-wide mb-1">
+                              {t("modals.userId") || "ID Người dùng"}
+                            </p>
+                            <p className="text-sm text-neutral-900 dark:text-neutral-100 font-mono break-all">
+                              {user.id}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Clerk ID */}
+                        <div className="flex items-start gap-3">
+                          <Shield className="w-5 h-5 text-neutral-500 mt-0.5 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-neutral-500 font-light uppercase tracking-wide mb-1">
+                              Clerk ID
+                            </p>
+                            <p className="text-sm text-neutral-900 dark:text-neutral-100 font-mono break-all">
+                              {user.clerkId}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Email */}
+                        <div className="flex items-start gap-3">
+                          <Mail className="w-5 h-5 text-neutral-500 mt-0.5 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-neutral-500 font-light uppercase tracking-wide mb-1">
+                              {t("columns.email") || "Email"}
+                            </p>
+                            <p className="text-sm text-neutral-900 dark:text-neutral-100 break-all">
+                              {user.email}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Phone */}
+                        {user.phone ? (
+                          <div className="flex items-start gap-3">
+                            <Phone className="w-5 h-5 text-neutral-500 mt-0.5 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-neutral-500 font-light uppercase tracking-wide mb-1">
+                                {t("columns.phone") || "Số điện thoại"}
+                              </p>
+                              <p className="text-sm text-neutral-900 dark:text-neutral-100">
+                                {user.phone}
+                              </p>
                             </div>
                           </div>
+                        ) : (
+                          <div className="flex items-start gap-3">
+                            <Phone className="w-5 h-5 text-neutral-400 mt-0.5 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-neutral-400 font-light uppercase tracking-wide mb-1">
+                                {t("columns.phone") || "Số điện thoại"}
+                              </p>
+                              <p className="text-sm text-neutral-400 italic">
+                                Chưa cập nhật
+                              </p>
+                            </div>
+                          </div>
+                        )}
 
-                          <div className="text-right shrink-0">
-                            <p className="text-sm font-light text-black dark:text-white">
-                              {new Intl.NumberFormat("vi-VN", {
-                                style: "currency",
-                                currency: "VND",
-                              }).format(order.total)}
+                        {/* Role */}
+                        <div className="flex items-start gap-3">
+                          <Shield className="w-5 h-5 text-neutral-500 mt-0.5 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-neutral-500 font-light uppercase tracking-wide mb-1">
+                              {t("columns.role") || "Vai trò"}
                             </p>
-                            <Badge variant="outline" className="mt-1 text-xs">
-                              {order.status === "PENDING"
-                                ? t("actions.pending")
-                                : order.status === "PROCESSING"
-                                ? t("actions.processingStatus")
-                                : order.status === "SHIPPED"
-                                ? t("actions.shipped")
-                                : order.status === "DELIVERED"
-                                ? t("actions.delivered")
-                                : order.status === "CANCELLED"
-                                ? t("actions.cancelled")
-                                : order.status}
+                            <Badge variant="outline" className="mt-1">
+                              {user.role}
                             </Badge>
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                    </div>
 
-              <Separator />
+                    {/* Dates Card */}
+                    <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 space-y-4">
+                      <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-100 uppercase tracking-wide mb-4">
+                        Thời gian
+                      </h3>
+                      
+                      <div className="space-y-4">
+                        <div className="flex items-start gap-3">
+                          <Calendar className="w-5 h-5 text-neutral-500 mt-0.5 shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-xs text-neutral-500 font-light uppercase tracking-wide mb-1">
+                              {t("modals.joinedDate") || "Ngày tham gia"}
+                            </p>
+                            <p className="text-sm text-neutral-900 dark:text-neutral-100">
+                              {format(new Date(user.createdAt), "dd/MM/yyyy HH:mm")}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <Calendar className="w-5 h-5 text-neutral-500 mt-0.5 shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-xs text-neutral-500 font-light uppercase tracking-wide mb-1">
+                              {t("modals.updated") || "Cập nhật lần cuối"}
+                            </p>
+                            <p className="text-sm text-neutral-900 dark:text-neutral-100">
+                              {format(new Date(user.updatedAt), "dd/MM/yyyy HH:mm")}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
 
-              {/* Dates */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-start gap-3">
-                  <Calendar className="w-5 h-5 text-gray-500 mt-0.5 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-xs text-gray-500 font-light uppercase tracking-wide">
-                      {t("modals.joinedDate") || "Ngày tham gia"}
-                    </p>
-                    <p className="text-sm text-black dark:text-white">
-                      {format(new Date(user.createdAt), "dd/MM/yyyy HH:mm")}
-                    </p>
+                {/* Orders Tab */}
+                <TabsContent value="orders" className="mt-6">
+                  {user.orders && user.orders.length > 0 ? (
+                    <div className="space-y-4">
+                      {user.orders.map((order) => {
+                        const statusInfo = getStatusInfo(order.status);
+                        const StatusIcon = statusInfo.icon;
+                        return (
+                          <div
+                            key={order.id}
+                            className="p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:shadow-lg transition-all duration-300"
+                          >
+                            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                              <div className="flex-1 space-y-4">
+                                {/* Order Header */}
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  <Package className="w-5 h-5 text-neutral-500 shrink-0" />
+                                  <div>
+                                    <p className="text-sm font-light text-neutral-900 dark:text-neutral-100 uppercase tracking-wide">
+                                      Mã đơn: <span className="font-mono">{order.id.slice(-8).toUpperCase()}</span>
+                                    </p>
+                                    <p className="text-xs text-neutral-500 mt-0.5">
+                                      {format(new Date(order.createdAt), "dd/MM/yyyy HH:mm")}
+                                    </p>
+                                  </div>
+                                  <Badge className={cn("gap-1.5", statusInfo.bgColor, statusInfo.color)}>
+                                    <StatusIcon className="w-3.5 h-3.5" />
+                                    {statusInfo.label}
+                                  </Badge>
+                                </div>
+
+                                {/* Order Items */}
+                                {order.orderItems && order.orderItems.length > 0 && (
+                                  <div className="ml-8 space-y-3">
+                                    {order.orderItems.map((item) => {
+                                      const imageUrl = item.product?.images?.[0]?.url || "/placeholder.svg";
+                                      return (
+                                        <div key={item.id} className="flex items-center gap-3">
+                                          <div className="relative w-16 h-16 shrink-0 border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+                                            <Image
+                                              src={imageUrl}
+                                              alt={item.productName || item.product?.name || "Product"}
+                                              fill
+                                              className="object-cover"
+                                              sizes="64px"
+                                            />
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-light text-neutral-900 dark:text-neutral-100 line-clamp-1">
+                                              {item.productName || item.product?.name || "N/A"}
+                                            </p>
+                                            <p className="text-xs text-neutral-500 mt-0.5">
+                                              Số lượng: {item.quantity} × {formatter.format(item.price)}
+                                            </p>
+                                          </div>
+                                          <p className="text-sm font-light text-neutral-900 dark:text-neutral-100 shrink-0">
+                                            {formatter.format(item.price * item.quantity)}
+                                          </p>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+
+                                {/* Payment Status */}
+                                <div className="ml-8 flex items-center gap-2 flex-wrap">
+                                  <Badge
+                                    variant={order.isPaid ? "default" : "secondary"}
+                                    className={cn(
+                                      "gap-1.5",
+                                      order.isPaid
+                                        ? "bg-green-500 text-white hover:bg-green-600"
+                                        : "bg-yellow-500 text-white hover:bg-yellow-600"
+                                    )}
+                                  >
+                                    {order.isPaid ? (
+                                      <>
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                        Đã thanh toán
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Clock className="w-3.5 h-3.5" />
+                                        Chưa thanh toán
+                                      </>
+                                    )}
+                                  </Badge>
+                                  {order.paymentMethod && (
+                                    <Badge variant="outline" className="gap-1.5">
+                                      <CreditCard className="w-3.5 h-3.5" />
+                                      {order.paymentMethod}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Order Total */}
+                              <div className="text-right shrink-0">
+                                <p className="text-2xl font-light text-neutral-900 dark:text-neutral-100 mb-2">
+                                  {formatter.format(order.total)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Package className="w-16 h-16 text-neutral-400 mx-auto mb-4" />
+                      <p className="text-neutral-500 font-light uppercase tracking-wide">
+                        Chưa có đơn hàng
+                      </p>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Stats Tab */}
+                <TabsContent value="stats" className="mt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Order Status Breakdown */}
+                    <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+                      <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-100 uppercase tracking-wide mb-4">
+                        Đơn hàng theo trạng thái
+                      </h3>
+                      <div className="space-y-3">
+                        {Object.entries(ordersByStatus).map(([status, count]) => {
+                          const statusInfo = getStatusInfo(status);
+                          const StatusIcon = statusInfo.icon;
+                          return (
+                            <div key={status} className="flex items-center justify-between p-3 bg-neutral-50 dark:bg-neutral-900">
+                              <div className="flex items-center gap-3">
+                                <StatusIcon className={cn("w-5 h-5", statusInfo.color)} />
+                                <span className="text-sm font-light text-neutral-900 dark:text-neutral-100">
+                                  {statusInfo.label}
+                                </span>
+                              </div>
+                              <span className="text-lg font-light text-neutral-900 dark:text-neutral-100">
+                                {count}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Additional Stats */}
+                    <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 space-y-4">
+                      <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-100 uppercase tracking-wide mb-4">
+                        Thống kê khác
+                      </h3>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-3 bg-neutral-50 dark:bg-neutral-900">
+                          <div className="flex items-center gap-3">
+                            <MapPin className="w-5 h-5 text-neutral-500" />
+                            <span className="text-sm font-light text-neutral-900 dark:text-neutral-100">
+                              Địa chỉ
+                            </span>
+                          </div>
+                          <span className="text-lg font-light text-neutral-900 dark:text-neutral-100">
+                            {user._count.addresses}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-neutral-50 dark:bg-neutral-900">
+                          <div className="flex items-center gap-3">
+                            <RotateCcw className="w-5 h-5 text-neutral-500" />
+                            <span className="text-sm font-light text-neutral-900 dark:text-neutral-100">
+                              Đổi trả
+                            </span>
+                          </div>
+                          <span className="text-lg font-light text-neutral-900 dark:text-neutral-100">
+                            {user._count.returns}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Calendar className="w-5 h-5 text-gray-500 mt-0.5 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-xs text-gray-500 font-light uppercase tracking-wide">
-                      {t("modals.updated") || "Cập nhật lần cuối"}
-                    </p>
-                    <p className="text-sm text-black dark:text-white">
-                      {format(new Date(user.updatedAt), "dd/MM/yyyy HH:mm")}
-                    </p>
+                </TabsContent>
+
+                {/* Activity Tab */}
+                <TabsContent value="activity" className="mt-6">
+                  <div className="space-y-4">
+                    <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+                      <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-100 uppercase tracking-wide mb-4">
+                        Hoạt động gần đây
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-neutral-900">
+                          <Calendar className="w-5 h-5 text-neutral-500" />
+                          <div className="flex-1">
+                            <p className="text-sm font-light text-neutral-900 dark:text-neutral-100">
+                              Tham gia hệ thống
+                            </p>
+                            <p className="text-xs text-neutral-500 mt-0.5">
+                              {format(new Date(user.createdAt), "dd/MM/yyyy HH:mm")}
+                            </p>
+                          </div>
+                        </div>
+                        {user.updatedAt && user.updatedAt !== user.createdAt && (
+                          <div className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-neutral-900">
+                            <Calendar className="w-5 h-5 text-neutral-500" />
+                            <div className="flex-1">
+                              <p className="text-sm font-light text-neutral-900 dark:text-neutral-100">
+                                Cập nhật lần cuối
+                              </p>
+                              <p className="text-xs text-neutral-500 mt-0.5">
+                                {format(new Date(user.updatedAt), "dd/MM/yyyy HH:mm")}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </TabsContent>
+              </Tabs>
+
             </div>
           )}
-        </ScrollArea>
+          </div>
+          </ScrollArea>
+        </div>
 
-        <div className="p-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="p-6 md:p-8 pt-4 border-t border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-neutral-50 to-white dark:from-neutral-950 dark:to-gray-900 shrink-0">
           <div className="flex items-center justify-end">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-light uppercase tracking-wide text-black dark:text-white border border-gray-300 dark:border-gray-600 rounded-none hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              className="px-6 py-2.5 text-sm font-light uppercase tracking-wide text-neutral-900 dark:text-neutral-100 border-2 border-neutral-300 dark:border-neutral-700 rounded-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-300"
             >
               {t("modals.close") || "Đóng"}
             </button>

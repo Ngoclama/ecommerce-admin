@@ -29,13 +29,30 @@ export async function POST(req: Request) {
     console.log("[VNPAY_IPN] Received notification:", vnpParams);
 
     // Validate VNPay configuration
-    if (!process.env.VNPAY_TMN_CODE || !process.env.VNPAY_SECURE_SECRET) {
-      console.error("[VNPAY_IPN] Missing configuration");
+    const tmnCode = process.env.VNPAY_TMN_CODE?.trim();
+    const secureSecret = process.env.VNPAY_SECURE_SECRET?.trim();
+
+    if (!tmnCode || !secureSecret) {
+      console.error("[VNPAY_IPN] Missing configuration", {
+        hasTmnCode: !!tmnCode,
+        hasSecureSecret: !!secureSecret,
+        tmnCodeLength: tmnCode?.length,
+        secureSecretLength: secureSecret?.length,
+      });
       return NextResponse.json(
         { RspCode: "97", Message: "Missing configuration" },
         { status: 400 }
       );
     }
+
+    // Log secure secret for debugging (only first and last 2 chars for security)
+    console.log("[VNPAY_IPN] Secure Secret Info:", {
+      length: secureSecret.length,
+      firstChars: secureSecret.substring(0, 2),
+      lastChars: secureSecret.substring(secureSecret.length - 2),
+      expected: "G9Y1BW7S",
+      matches: secureSecret === "G9Y1BW7S",
+    });
 
     // Initialize VNPay for verification
     // Priority: VNPAY_HOST env var > VERCEL_ENV check > NODE_ENV check > default to production on Vercel
@@ -62,8 +79,8 @@ export async function POST(req: Request) {
     const testMode = vnpayHost.includes("sandbox");
 
     const vnpay = new VNPay({
-      tmnCode: process.env.VNPAY_TMN_CODE,
-      secureSecret: process.env.VNPAY_SECURE_SECRET,
+      tmnCode: tmnCode,
+      secureSecret: secureSecret,
       vnpayHost: vnpayHost,
       testMode: testMode,
     });
@@ -142,13 +159,39 @@ export async function POST(req: Request) {
       // Payment successful
       console.log("[VNPAY_IPN] Payment successful for order:", orderId);
 
+      // Link order với user dựa trên email (nếu chưa có userId)
+      const updateData: any = {
+        isPaid: true,
+        status: "PROCESSING",
+      };
+
+      if (!order.userId && order.email) {
+        try {
+          const normalizedEmail = order.email.toLowerCase().trim();
+
+          // Tìm user theo email (exact match hoặc normalized)
+          const user = await prisma.user.findFirst({
+            where: {
+              OR: [{ email: order.email }, { email: normalizedEmail }],
+            },
+          });
+
+          if (user) {
+            updateData.userId = user.id;
+            console.log(
+              `[VNPAY_IPN] Linking order ${order.id} to user ${user.id} via email ${order.email}`
+            );
+          }
+        } catch (linkError) {
+          console.error("[VNPAY_IPN] Error linking order to user:", linkError);
+          // Không fail webhook nếu link lỗi, chỉ log
+        }
+      }
+
       // Update order status
       await prisma.order.update({
         where: { id: order.id },
-        data: {
-          isPaid: true,
-          status: "PROCESSING",
-        },
+        data: updateData,
       });
 
       // Update product variant inventory

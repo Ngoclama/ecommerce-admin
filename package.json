@@ -9,6 +9,7 @@
     "build:turbo": "next build --turbopack",
     "start": "next start",
     "reset-db": "ts-node scripts/reset-db.ts",
+    "set-admin": "ts-node scripts/set-admin.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

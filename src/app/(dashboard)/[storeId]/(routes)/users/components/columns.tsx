@@ -13,6 +13,7 @@ export type UserColumn = {
   role: string;
   isVIP: boolean;
   isBanned: boolean;
+  totalProductsPurchased: number;
   createdAt: string;
 };
 
@@ -73,6 +74,15 @@ export const useUserColumns = (): ColumnDef<UserColumn>[] => {
         ) : (
           <span className="text-green-600">{t("columns.active")}</span>
         ),
+    },
+    {
+      accessorKey: "totalProductsPurchased",
+      header: "Sản phẩm đã mua",
+      cell: ({ row }) => (
+        <span className="font-medium">
+          {row.original.totalProductsPurchased || 0}
+        </span>
+      ),
     },
     {
       accessorKey: "createdAt",

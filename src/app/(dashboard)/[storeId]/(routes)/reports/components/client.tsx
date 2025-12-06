@@ -52,6 +52,8 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import Link from "next/link";
+import { ExternalLink, Eye } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -62,6 +64,7 @@ import {
   PieChart as RePieChart,
   Pie,
   Cell,
+  Legend,
 } from "recharts";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -70,12 +73,15 @@ interface ReportData {
   period: {
     start: string;
     end: string;
-    type?: "custom" | "week" | "month" | "quarter";
+    type?: "custom" | "week" | "month" | "quarter" | "day" | "year";
   };
   summary: {
     totalRevenue: number;
     totalOrders: number;
     totalItems: number;
+    totalDiscount?: number;
+    totalShippingCost?: number;
+    netProfit?: number;
     averageOrderValue: number;
   };
   comparison?: {
@@ -94,10 +100,39 @@ interface ReportData {
     name: string;
     quantity: number;
     revenue: number;
+    category?: string;
+    productId?: string;
   }>;
   categoryRevenue: Array<{
     name: string;
     value: number;
+    categoryId?: string;
+  }>;
+  statusDistribution?: Array<{
+    status: string;
+    count: number;
+    revenue: number;
+    percentage: number;
+  }>;
+  paymentMethodDistribution?: Array<{
+    method: string;
+    count: number;
+    revenue: number;
+    percentage: number;
+  }>;
+  topColors?: Array<{
+    colorName: string;
+    quantity: number;
+    revenue: number;
+    orders: number;
+    percentage: number;
+  }>;
+  topSizes?: Array<{
+    sizeName: string;
+    quantity: number;
+    revenue: number;
+    orders: number;
+    percentage: number;
   }>;
   dailyRevenue?: Array<{ name: string; date: string; total: number }>;
   orders: Array<{
@@ -112,6 +147,8 @@ interface ReportData {
     products: Array<{ id: string; name: string }>;
     selectedCategory: string | null;
     selectedProduct: string | null;
+    selectedStatus?: string | null;
+    selectedPaymentMethod?: string | null;
   };
 }
 
@@ -140,6 +177,12 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
   );
   const [productId, setProductId] = useState<string | "">(
     data.filters?.selectedProduct || ""
+  );
+  const [status, setStatus] = useState<string | "">(
+    data.filters?.selectedStatus || ""
+  );
+  const [paymentMethod, setPaymentMethod] = useState<string | "">(
+    data.filters?.selectedPaymentMethod || ""
   );
 
   const categoryOptions = data.filters?.categories || [];
@@ -196,9 +239,30 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
     urlParams.set("period", period);
     if (categoryId) urlParams.set("categoryId", categoryId);
     if (productId) urlParams.set("productId", productId);
+    if (status) urlParams.set("status", status);
+    if (paymentMethod) urlParams.set("paymentMethod", paymentMethod);
     router.push(`/${params.storeId as string}/reports?${urlParams.toString()}`);
     router.refresh();
   };
+
+  // Order status options
+  const statusOptions = [
+    { value: "", label: "Tất cả trạng thái" },
+    { value: "PENDING", label: "Chờ xử lý" },
+    { value: "PROCESSING", label: "Đang xử lý" },
+    { value: "SHIPPED", label: "Đã giao hàng" },
+    { value: "DELIVERED", label: "Đã nhận hàng" },
+    { value: "CANCELLED", label: "Đã hủy" },
+  ];
+
+  // Payment method options
+  const paymentMethodOptions = [
+    { value: "", label: "Tất cả phương thức" },
+    { value: "COD", label: "Thanh toán khi nhận hàng" },
+    { value: "VNPAY", label: "VNPay" },
+    { value: "MOMO", label: "MoMo" },
+    { value: "STRIPE", label: "Stripe" },
+  ];
 
   const handleExportPDF = async () => {
     setIsExporting(true);
@@ -358,6 +422,36 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
                 ))}
               </select>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="status">Trạng thái đơn hàng</Label>
+              <select
+                id="status"
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                {statusOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="paymentMethod">Phương thức thanh toán</Label>
+              <select
+                id="paymentMethod"
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              >
+                {paymentMethodOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="flex items-end">
               <Button onClick={handleDateFilter} className="w-full">
                 {t("reports.applyFilter")}
@@ -368,17 +462,23 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
       </Card>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               {t("reports.totalRevenue")}
             </CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {formatter.format(data.summary.totalRevenue)}
             </div>
+            {data.summary.totalDiscount !== undefined && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Giảm giá: {formatter.format(data.summary.totalDiscount)}
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -387,9 +487,13 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
             <CardTitle className="text-sm font-medium">
               {t("reports.totalOrders")}
             </CardTitle>
+            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.summary.totalOrders}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Giá trị TB: {formatter.format(data.summary.averageOrderValue)}
+            </p>
           </CardContent>
         </Card>
 
@@ -398,24 +502,37 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
             <CardTitle className="text-sm font-medium">
               {t("reports.totalItems")}
             </CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.summary.totalItems}</div>
+            {data.summary.totalShippingCost !== undefined && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Phí vận chuyển:{" "}
+                {formatter.format(data.summary.totalShippingCost)}
+              </p>
+            )}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {t("reports.avgOrderValue")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatter.format(data.summary.averageOrderValue)}
-            </div>
-          </CardContent>
-        </Card>
+        {data.summary.netProfit !== undefined && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Lợi nhuận ròng
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatter.format(data.summary.netProfit)}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Doanh thu - Chi phí
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Comparison vs previous period */}
@@ -546,6 +663,98 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
         </Card>
       </div>
 
+      {/* Status and Payment Method Distribution */}
+      {(data.statusDistribution || data.paymentMethodDistribution) && (
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+          {data.statusDistribution && data.statusDistribution.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PieChart className="h-5 w-5" />
+                  Phân bố theo trạng thái đơn hàng
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RePieChart>
+                    <Pie
+                      data={data.statusDistribution.map((s) => ({
+                        name: s.status,
+                        value: s.count,
+                      }))}
+                      dataKey="value"
+                      nameKey="name"
+                      outerRadius={90}
+                    >
+                      {data.statusDistribution.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={
+                            [
+                              "#22c55e",
+                              "#06b6d4",
+                              "#a855f7",
+                              "#f59e0b",
+                              "#ef4444",
+                            ][index % 5]
+                          }
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </RePieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {data.paymentMethodDistribution &&
+            data.paymentMethodDistribution.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <PieChart className="h-5 w-5" />
+                    Phân bố theo phương thức thanh toán
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RePieChart>
+                      <Pie
+                        data={data.paymentMethodDistribution.map((p) => ({
+                          name: p.method,
+                          value: p.count,
+                        }))}
+                        dataKey="value"
+                        nameKey="name"
+                        outerRadius={90}
+                      >
+                        {data.paymentMethodDistribution.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={
+                              [
+                                "#22c55e",
+                                "#06b6d4",
+                                "#a855f7",
+                                "#f59e0b",
+                                "#ef4444",
+                              ][index % 5]
+                            }
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </RePieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+        </div>
+      )}
+
       {/* Top Products */}
       <Card>
         <CardHeader>
@@ -564,8 +773,23 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
             </TableHeader>
             <TableBody>
               {data.topProducts.map((product, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">{product.name}</TableCell>
+                <TableRow
+                  key={index}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-900/50 cursor-pointer"
+                >
+                  <TableCell className="font-medium">
+                    {product.productId ? (
+                      <Link
+                        href={`/${params.storeId}/products/${product.productId}`}
+                        className="flex items-center gap-2 hover:text-primary transition-colors group"
+                      >
+                        <span>{product.name}</span>
+                        <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </Link>
+                    ) : (
+                      product.name
+                    )}
+                  </TableCell>
                   <TableCell>{product.quantity}</TableCell>
                   <TableCell className="text-right">
                     {formatter.format(product.revenue)}
@@ -594,8 +818,34 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
             </TableHeader>
             <TableBody>
               {data.categoryRevenue.map((category, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">{category.name}</TableCell>
+                <TableRow
+                  key={index}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-900/50 cursor-pointer"
+                  onClick={() => {
+                    if (category.categoryId) {
+                      const urlParams = new URLSearchParams();
+                      urlParams.set("startDate", startDate);
+                      urlParams.set("endDate", endDate);
+                      urlParams.set("period", period);
+                      urlParams.set("categoryId", category.categoryId);
+                      if (status) urlParams.set("status", status);
+                      if (paymentMethod)
+                        urlParams.set("paymentMethod", paymentMethod);
+                      router.push(
+                        `/${params.storeId}/reports?${urlParams.toString()}`
+                      );
+                      router.refresh();
+                    }
+                  }}
+                >
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2 group">
+                      <span>{category.name}</span>
+                      {category.categoryId && (
+                        <Eye className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-right">
                     {formatter.format(category.value)}
                   </TableCell>
@@ -605,6 +855,148 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Top Colors and Sizes */}
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+        {/* Top Colors */}
+        {data.topColors && data.topColors.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Màu sắc được mua nhiều nhất
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Màu sắc</TableHead>
+                    <TableHead className="text-right">Số lượng</TableHead>
+                    <TableHead className="text-right">Doanh thu</TableHead>
+                    <TableHead className="text-right">Tỷ lệ</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.topColors.map((color, index) => (
+                    <TableRow
+                      key={index}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-900/50 cursor-pointer"
+                      onClick={() => {
+                        toast.info(
+                          `Đang lọc báo cáo theo màu: ${color.colorName}`,
+                          {
+                            description: "Tính năng này sẽ được cập nhật sớm",
+                          }
+                        );
+                      }}
+                    >
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2 group">
+                          <div
+                            className="w-4 h-4 rounded-full border border-gray-300"
+                            style={{
+                              backgroundColor:
+                                color.colorName.toLowerCase() === "đỏ"
+                                  ? "#ef4444"
+                                  : color.colorName.toLowerCase() === "xanh"
+                                  ? "#3b82f6"
+                                  : color.colorName.toLowerCase() === "vàng"
+                                  ? "#fbbf24"
+                                  : color.colorName.toLowerCase() === "xanh lá"
+                                  ? "#22c55e"
+                                  : color.colorName.toLowerCase() === "đen"
+                                  ? "#000000"
+                                  : color.colorName.toLowerCase() === "trắng"
+                                  ? "#ffffff"
+                                  : color.colorName.toLowerCase() === "hồng"
+                                  ? "#ec4899"
+                                  : color.colorName.toLowerCase() === "tím"
+                                  ? "#a855f7"
+                                  : color.colorName.toLowerCase() === "cam"
+                                  ? "#f97316"
+                                  : color.colorName.toLowerCase() === "nâu"
+                                  ? "#92400e"
+                                  : "transparent",
+                            }}
+                          />
+                          <span>{color.colorName}</span>
+                          <Eye className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {color.quantity}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatter.format(color.revenue)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {color.percentage.toFixed(1)}%
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Top Sizes */}
+        {data.topSizes && data.topSizes.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Kích thước được mua nhiều nhất
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Kích thước</TableHead>
+                    <TableHead className="text-right">Số lượng</TableHead>
+                    <TableHead className="text-right">Doanh thu</TableHead>
+                    <TableHead className="text-right">Tỷ lệ</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.topSizes.map((size, index) => (
+                    <TableRow
+                      key={index}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-900/50 cursor-pointer"
+                      onClick={() => {
+                        toast.info(
+                          `Đang lọc báo cáo theo kích thước: ${size.sizeName}`,
+                          {
+                            description: "Tính năng này sẽ được cập nhật sớm",
+                          }
+                        );
+                      }}
+                    >
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2 group">
+                          <span>{size.sizeName}</span>
+                          <Eye className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {size.quantity}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatter.format(size.revenue)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {size.percentage.toFixed(1)}%
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };

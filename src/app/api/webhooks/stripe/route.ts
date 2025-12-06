@@ -127,6 +127,31 @@ export async function POST(req: Request) {
         updateData.country = "Vietnam";
       }
 
+      // Link order với user dựa trên email (nếu chưa có userId)
+      if (!existingOrder.userId && updateData.email) {
+        try {
+          const normalizedEmail = updateData.email.toLowerCase().trim();
+          
+          // Tìm user theo email (exact match hoặc normalized)
+          const user = await prisma.user.findFirst({
+            where: {
+              OR: [
+                { email: updateData.email },
+                { email: normalizedEmail },
+              ],
+            },
+          });
+
+          if (user) {
+            updateData.userId = user.id;
+            console.log(`[STRIPE_WEBHOOK] Linking order ${orderId} to user ${user.id} via email ${updateData.email}`);
+          }
+        } catch (linkError) {
+          console.error("[STRIPE_WEBHOOK] Error linking order to user:", linkError);
+          // Không fail webhook nếu link lỗi, chỉ log
+        }
+      }
+
       // Cập nhật order
       const order = await prisma.order.update({
         where: {
@@ -137,6 +162,7 @@ export async function POST(req: Request) {
 
       console.log(`[STRIPE_WEBHOOK] Order ${orderId} updated:`, {
         isPaid: order.isPaid,
+        userId: order.userId,
         email: order.email,
         phone: order.phone,
         address: order.address,

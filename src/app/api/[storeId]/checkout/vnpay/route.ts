@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { VNPay, ProductCode, VnpLocale } from "vnpay";
+import { auth } from "@clerk/nextjs/server";
+import { getUserFromDb } from "@/lib/permissions";
 
 interface CheckoutItem {
   productId: string;
@@ -56,12 +58,29 @@ export async function POST(
     }
 
     // Validate VNPay configuration
-    if (!process.env.VNPAY_TMN_CODE || !process.env.VNPAY_SECURE_SECRET) {
-      console.error("[VNPAY] Missing configuration");
+    const tmnCode = process.env.VNPAY_TMN_CODE?.trim();
+    const secureSecret = process.env.VNPAY_SECURE_SECRET?.trim();
+
+    if (!tmnCode || !secureSecret) {
+      console.error("[VNPAY] Missing configuration", {
+        hasTmnCode: !!tmnCode,
+        hasSecureSecret: !!secureSecret,
+        tmnCodeLength: tmnCode?.length,
+        secureSecretLength: secureSecret?.length,
+      });
       return new NextResponse("VNPay payment is not configured", {
         status: 500,
       });
     }
+
+    // Log secure secret for debugging (only first and last 2 chars for security)
+    console.log("[VNPAY] Secure Secret Info:", {
+      length: secureSecret.length,
+      firstChars: secureSecret.substring(0, 2),
+      lastChars: secureSecret.substring(secureSecret.length - 2),
+      expected: "G9Y1BW7S",
+      matches: secureSecret === "G9Y1BW7S",
+    });
 
     const productIds = items.map((item) => item.productId);
 
@@ -174,10 +193,35 @@ export async function POST(
       Math.round(subtotal - discount + shippingCost + tax)
     );
 
+    // Get user email from Clerk (if authenticated)
+    let userEmail: string | null = null;
+    let userId: string | null = null;
+    try {
+      const { userId: clerkUserId } = await auth();
+      if (clerkUserId) {
+        const user = await getUserFromDb(clerkUserId);
+        if (user) {
+          userId = user.id;
+          userEmail = user.email;
+        }
+      }
+    } catch (authError) {
+      // Continue without auth if error
+      console.warn("[VNPAY_CHECKOUT] Auth error:", authError);
+    }
+
+    // Normalize email: prioritize user email from Clerk, then shippingAddress email
+    const normalizedEmail =
+      userEmail || shippingAddress.email || null
+        ? (userEmail || shippingAddress.email || "").toLowerCase().trim() ||
+          null
+        : null;
+
     // Create Order in database
     const order = await prisma.order.create({
       data: {
         storeId: storeId,
+        userId: userId || null,
         isPaid: false,
         status: "PENDING",
         paymentMethod: "VNPAY",
@@ -187,7 +231,7 @@ export async function POST(
         shippingCost,
         total,
         phone: shippingAddress.phone,
-        email: shippingAddress.email,
+        email: normalizedEmail,
         address: `${shippingAddress.address}, ${shippingAddress.ward}, ${shippingAddress.district}, ${shippingAddress.province}`,
         city: shippingAddress.province,
         shippingMethod: shippingMethod,
@@ -284,8 +328,8 @@ export async function POST(
     });
 
     const vnpay = new VNPay({
-      tmnCode: process.env.VNPAY_TMN_CODE,
-      secureSecret: process.env.VNPAY_SECURE_SECRET,
+      tmnCode: tmnCode,
+      secureSecret: secureSecret,
       vnpayHost: vnpayHost,
       testMode: testMode,
     });

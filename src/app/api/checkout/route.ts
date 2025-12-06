@@ -4,7 +4,7 @@ import Stripe from "stripe";
 import prisma from "@/lib/prisma";
 import { createMoMoPayment } from "@/lib/momo";
 import { VNPay, ProductCode, VnpLocale } from "vnpay";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { getUserFromDb } from "@/lib/permissions";
 
 // Helper function to get CORS headers based on request origin
@@ -18,19 +18,14 @@ const getCorsHeaders = (req: Request) => {
     "http://localhost:3001",
   ].filter(Boolean) as string[];
 
-  // When using credentials, we MUST use a specific origin, not wildcard
-  // If origin matches any allowed origin, use it
-  // Otherwise, use the store URL from env (never use wildcard)
   let allowedOrigin: string;
 
   if (origin) {
-    // Check if origin exactly matches or starts with any allowed origin
     const matchedOrigin = allowedOrigins.find(
       (url) => origin === url || origin.startsWith(url)
     );
     allowedOrigin = matchedOrigin || origin; // Use origin if it's provided
   } else {
-    // No origin header (e.g., same-origin request), use store URL
     allowedOrigin =
       allowedOrigins[0] || "https://ecommerce-store-henna-nine.vercel.app";
   }
@@ -321,7 +316,77 @@ export async function POST(req: Request) {
     try {
       const { userId: clerkUserId } = await auth();
       if (clerkUserId) {
-        const user = await getUserFromDb(clerkUserId);
+        let user = await getUserFromDb(clerkUserId);
+
+        // Nếu user chưa tồn tại trong database, tạo user mới
+        if (!user) {
+          try {
+            // Lấy thông tin user từ Clerk API
+            let realEmail = `user_${clerkUserId}@temp.com`;
+            let realName = "User";
+            let realImageUrl: string | null = null;
+
+            try {
+              const clerk = await clerkClient();
+              const clerkUser = await clerk.users.getUser(clerkUserId);
+              if (clerkUser && clerkUser.emailAddresses.length > 0) {
+                realEmail = clerkUser.emailAddresses[0].emailAddress;
+                realName =
+                  clerkUser.firstName && clerkUser.lastName
+                    ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
+                    : clerkUser.firstName || clerkUser.lastName || "User";
+                realImageUrl = clerkUser.imageUrl || null;
+              }
+            } catch (clerkError) {
+              console.warn(
+                "[CHECKOUT] Could not fetch user from Clerk:",
+                clerkError
+              );
+            }
+
+            // Normalize email (lowercase, trim) để đảm bảo matching chính xác
+            realEmail = realEmail.toLowerCase().trim();
+
+            console.log("[CHECKOUT] Creating user in database:", {
+              clerkUserId,
+              email: realEmail,
+              name: realName,
+            });
+
+            try {
+              user = await prisma.user.create({
+                data: {
+                  clerkId: clerkUserId,
+                  email: realEmail,
+                  name: realName,
+                  imageUrl: realImageUrl,
+                  role: "CUSTOMER",
+                },
+              });
+              console.log("[CHECKOUT] User created successfully:", user.id);
+            } catch (createError: any) {
+              // Nếu user đã tồn tại (race condition), lấy lại từ database
+              if (createError.code === "P2002") {
+                user = await getUserFromDb(clerkUserId);
+                if (user) {
+                  console.log(
+                    "[CHECKOUT] User already exists, using existing user:",
+                    user.id
+                  );
+                }
+              }
+
+              if (!user) {
+                console.error("[CHECKOUT] Failed to create user:", createError);
+                // Vẫn tiếp tục tạo order như guest nếu không thể tạo user
+              }
+            }
+          } catch (error) {
+            console.error("[CHECKOUT] Error creating user:", error);
+            // Vẫn tiếp tục tạo order như guest nếu không thể tạo user
+          }
+        }
+
         if (user) {
           userId = user.id;
           userEmail = user.email || null;
@@ -332,12 +397,10 @@ export async function POST(req: Request) {
           });
         } else {
           console.warn(
-            "[CHECKOUT] User not found in database for clerkId:",
+            "[CHECKOUT] User not found/created in database for clerkId:",
             clerkUserId,
-            "- Order will be created as guest. User should be created via webhook."
+            "- Order will be created as guest"
           );
-          // Không tạo user ở đây, để webhook xử lý
-          // Đơn hàng sẽ được tạo nhưng không có userId
         }
       } else {
         console.warn(
@@ -368,10 +431,16 @@ export async function POST(req: Request) {
       total,
       // Lưu shipping address nếu có - ĐẢM BẢO LUÔN LƯU
       // Ưu tiên email từ user đã đăng nhập, sau đó mới dùng email từ shippingAddress
+      // Normalize email (lowercase, trim) để đảm bảo matching chính xác
       ...(shippingAddress && shippingAddress.phone && shippingAddress.address
         ? {
             phone: shippingAddress.phone,
-            email: userEmail || shippingAddress.email || null, // Ưu tiên email từ user đã đăng nhập
+            email:
+              userEmail || shippingAddress.email || null
+                ? (userEmail || shippingAddress.email || "")
+                    .toLowerCase()
+                    .trim() || null
+                : null, // Normalize email for consistent matching
             receiverName: shippingAddress.fullName || null,
             receiverPhone: shippingAddress.phone || null,
             address: `${shippingAddress.address}, ${
@@ -590,8 +659,16 @@ export async function POST(req: Request) {
       }
 
       // Validate VNPay configuration
-      if (!process.env.VNPAY_TMN_CODE || !process.env.VNPAY_SECURE_SECRET) {
-        console.error("[VNPAY] Missing configuration");
+      const tmnCode = process.env.VNPAY_TMN_CODE?.trim();
+      const secureSecret = process.env.VNPAY_SECURE_SECRET?.trim();
+      
+      if (!tmnCode || !secureSecret) {
+        console.error("[VNPAY] Missing configuration", {
+          hasTmnCode: !!tmnCode,
+          hasSecureSecret: !!secureSecret,
+          tmnCodeLength: tmnCode?.length,
+          secureSecretLength: secureSecret?.length,
+        });
         return NextResponse.json(
           {
             success: false,
@@ -604,6 +681,15 @@ export async function POST(req: Request) {
           }
         );
       }
+      
+      // Log secure secret for debugging (only first and last 2 chars for security)
+      console.log("[VNPAY] Secure Secret Info:", {
+        length: secureSecret.length,
+        firstChars: secureSecret.substring(0, 2),
+        lastChars: secureSecret.substring(secureSecret.length - 2),
+        expected: "G9Y1BW7S",
+        matches: secureSecret === "G9Y1BW7S",
+      });
 
       try {
         // Determine VNPay host - use production URL if in production mode
@@ -652,8 +738,8 @@ export async function POST(req: Request) {
         // Initialize VNPay
 
         const vnpay = new VNPay({
-          tmnCode: process.env.VNPAY_TMN_CODE,
-          secureSecret: process.env.VNPAY_SECURE_SECRET,
+          tmnCode: tmnCode,
+          secureSecret: secureSecret,
           vnpayHost: vnpayHost,
           testMode: testMode,
         });

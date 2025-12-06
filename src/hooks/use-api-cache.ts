@@ -3,6 +3,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
+// Cấu hình axios để gửi credentials (cookies) với mỗi request
+// Điều này cần thiết để Clerk authentication hoạt động
+// Trong Next.js, cookies sẽ tự động được gửi nếu cùng domain,
+// nhưng vớiCredentials đảm bảo cookies được gửi trong mọi trường hợp
+if (typeof window !== "undefined") {
+  axios.defaults.withCredentials = true;
+}
+
 // Cache keys
 export const queryKeys = {
   products: (storeId: string) => ["products", storeId],
@@ -37,12 +45,39 @@ export function useUser(storeId: string, userId: string | null) {
       : ["user", storeId, "null"],
     queryFn: async () => {
       if (!userId) return null;
-      const response = await axios.get(`/api/${storeId}/users/${userId}`);
-      return response.data;
+      try {
+        const response = await axios.get(`/api/${storeId}/users/${userId}`, {
+          withCredentials: true, // Đảm bảo gửi cookies
+        });
+        return response.data;
+      } catch (error: any) {
+        // Log lỗi để debug
+        if (process.env.NODE_ENV === "development") {
+          console.error("[useUser] Error fetching user:", {
+            storeId,
+            userId,
+            status: error?.response?.status,
+            message: error?.response?.data || error?.message,
+          });
+        }
+        // Nếu là lỗi 401, có thể do session hết hạn hoặc chưa đăng nhập
+        if (error?.response?.status === 401) {
+          console.warn("[useUser] Unauthorized - User may need to re-authenticate");
+        }
+        throw error; // Re-throw để React Query xử lý
+      }
     },
     enabled: !!userId && !!storeId,
     staleTime: 0, // Always refetch to get latest data
     refetchOnWindowFocus: true,
+    retry: (failureCount, error: any) => {
+      // Không retry nếu là lỗi 401 (Unauthorized) hoặc 403 (Forbidden)
+      if (error?.response?.status === 401 || error?.response?.status === 403) {
+        return false;
+      }
+      // Retry tối đa 2 lần cho các lỗi khác
+      return failureCount < 2;
+    },
   });
 }
 
