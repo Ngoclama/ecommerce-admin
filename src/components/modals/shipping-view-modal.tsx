@@ -43,7 +43,7 @@ export const ShippingViewModal = () => {
           setData(res.data);
         } catch (error) {
           toast.error(
-            t("modals.failedToFetch") || "Failed to load shipping details"
+            t("modals.failedToFetch") || "Không thể tải thông tin vận chuyển"
           );
           onClose(); // Đóng modal nếu có lỗi
         } finally {

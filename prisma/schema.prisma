@@ -36,9 +36,9 @@ model Store {
   id             String         @id @default(auto()) @map("_id") @db.ObjectId
   name           String
   userId         String
-  address        String? // Địa chỉ cửa hàng
-  phone          String? // Số điện thoại hotline
-  email          String? // Email hỗ trợ
+  address        String?
+  phone          String?
+  email          String?
   categories     Category[]
   products       Product[]
   orders         Order[]
@@ -54,6 +54,8 @@ model Store {
   flashSales     FlashSale[]
   blogPosts      BlogPost[]
   blogCategories BlogCategory[]
+
+  @@index([userId])
 }
 
 // ─── 3. CATALOG & ATTRIBUTES ──────────────────────────────────
@@ -78,13 +80,12 @@ model Category {
   slug        String
   imageUrl    String?
   products    Product[]
-  blogPosts   BlogPost[] // Blog posts sử dụng category này
+  blogPosts   BlogPost[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   billboard   Billboard? @relation(fields: [billboardId], references: [id])
   billboardId String?    @db.ObjectId
 
-  // Category hierarchy (parent-child relationship)
   parentId String?    @db.ObjectId
   parent   Category?  @relation("CategoryParent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   children Category[] @relation("CategoryParent")
@@ -100,8 +101,8 @@ model Size {
   store           Store            @relation(fields: [storeId], references: [id])
   name            String
   value           String
-  productVariants ProductVariant[] // Quan hệ tới biến thể
-  cartItems       CartItem[] // Quan hệ tới giỏ hàng
+  productVariants ProductVariant[]
+  cartItems       CartItem[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
@@ -114,8 +115,8 @@ model Color {
   store           Store            @relation(fields: [storeId], references: [id])
   name            String
   value           String
-  productVariants ProductVariant[] // Quan hệ tới biến thể
-  cartItems       CartItem[] // Quan hệ tới giỏ hàng
+  productVariants ProductVariant[]
+  cartItems       CartItem[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
@@ -128,8 +129,8 @@ model Material {
   store           Store            @relation(fields: [storeId], references: [id])
   name            String
   value           String
-  products        Product[] // Quan hệ trực tiếp (nếu 1 sp chỉ có 1 chất liệu)
-  productVariants ProductVariant[] // Quan hệ với variants
+  products        Product[]
+  productVariants ProductVariant[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   cartItems       CartItem[]
@@ -155,39 +156,32 @@ model Product {
   slug        String
   description String?
 
-  // Giá và giá khuyến mãi
-  price          Int // Giá hiển thị
-  compareAtPrice Int? // Giá gốc (để hiển thị giảm giá)
+  price          Int
+  compareAtPrice Int?
 
-  // Trạng thái
   isFeatured  Boolean @default(false)
   isArchived  Boolean @default(false)
-  isPublished Boolean @default(true) // Hiển thị trên storefront
+  isPublished Boolean @default(true)
 
-  // Quan hệ biến thể (Size + Color + Material)
   variants ProductVariant[]
 
-  // Thông tin chung (fallback nếu variant không có material)
   materialId String?   @db.ObjectId
   material   Material? @relation(fields: [materialId], references: [id])
   gender     String?   @default("UNISEX")
 
-  // SEO fields
   metaTitle       String?
   metaDescription String?
-  tags            String[] // Tags để tìm kiếm và filter
+  tags            String[]
 
-  // Quản lý kho tổng
-  trackQuantity  Boolean @default(true) // Có theo dõi số lượng không
-  allowBackorder Boolean @default(false) // Cho phép đặt hàng khi hết hàng
+  trackQuantity  Boolean @default(true)
+  allowBackorder Boolean @default(false)
 
-  images     Image[]
-  orderItems OrderItem[]
-  cartItems  CartItem[] // Link tới sản phẩm gốc
-
+  images            Image[]
+  orderItems        OrderItem[]
+  cartItems         CartItem[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
-  publishedAt       DateTime? // Ngày publish
+  publishedAt       DateTime?
   reviews           Review[]
   wishlists         Wishlist[]
   flashSaleProducts FlashSaleProduct[]
@@ -195,11 +189,19 @@ model Product {
   @@unique([storeId, slug])
   @@index([storeId])
   @@index([categoryId])
-  @@index([isPublished])
 }
 
-// [NEW MODEL] Quản lý biến thể (Size + Color + Material + Kho)
-// Bảng trung gian lưu biến thể (Size + Color + Material + Kho)
+model Image {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId String   @db.ObjectId
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+}
+
 model ProductVariant {
   id        String  @id @default(auto()) @map("_id") @db.ObjectId
   productId String  @db.ObjectId
@@ -214,15 +216,12 @@ model ProductVariant {
   materialId String?   @db.ObjectId
   material   Material? @relation(fields: [materialId], references: [id])
 
-  // SKU cho variant (mã sản phẩm duy nhất)
   sku String?
 
-  // Quản lý kho
   inventory         Int @default(0)
-  lowStockThreshold Int @default(10) // Cảnh báo khi tồn kho thấp
+  lowStockThreshold Int @default(10)
 
-  // Giá variant (nếu khác giá product chính)
-  price Int? // Giá riêng cho variant này (optional)
+  price Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -234,23 +233,13 @@ model ProductVariant {
   @@index([materialId])
 }
 
-model Image {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  productId String   @db.ObjectId
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  url       String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([productId])
-}
-
 enum OrderStatus {
   PENDING
   PROCESSING
   SHIPPED
   DELIVERED
   CANCELLED
+  RETURNED
 }
 
 // ─── 5. ORDER & CHECKOUT ──────────────────────────────────────
@@ -259,55 +248,50 @@ model Order {
   orderNumber   String      @unique @default(cuid())
   storeId       String      @db.ObjectId
   store         Store       @relation(fields: [storeId], references: [id])
+  userId        String?     @db.ObjectId
+  user          User?       @relation(fields: [userId], references: [id])
   orderItems    OrderItem[]
   isPaid        Boolean     @default(false)
   status        OrderStatus @default(PENDING)
   statusHistory Json?
 
-  // Thông tin khách hàng
   receiverName    String?
   receiverPhone   String?
   phone           String  @default("")
-  email           String? // Email khách hàng
+  email           String?
   address         String  @default("")
   shippingAddress String?
-  city            String? // Thành phố
-  postalCode      String? // Mã bưu điện
-  country         String? // Quốc gia
+  city            String?
+  postalCode      String?
+  country         String?
 
-  // Thông tin giao hàng
-  shippingMethod String? // Phương thức giao hàng
-  shippingCost   Float?  @default(0) // Phí vận chuyển
-  trackingNumber String? // Mã vận đơn
+  shippingMethod String?
+  shippingCost   Float?  @default(0)
+  trackingNumber String?
 
-  // Thanh toán
-  paymentMethod String? // Phương thức thanh toán
-  paymentStatus String? // PENDING | PAID | REFUNDED
-  transactionId String? // ID giao dịch từ payment gateway
+  paymentMethod String?
+  paymentStatus String?
+  transactionId String?
 
-  // Giá trị đơn hàng
-  subtotal   Float   @default(0) // Tổng tiền sản phẩm
-  tax        Float   @default(0) // Thuế
-  discount   Float   @default(0) // Giảm giá
+  subtotal   Float   @default(0)
+  tax        Float   @default(0)
+  discount   Float   @default(0)
   couponCode String?
-  total      Float   @default(0) // Tổng cộng
+  total      Float   @default(0)
 
-  // Ghi chú
-  customerNote String? // Ghi chú từ khách hàng
-  adminNote    String? // Ghi chú nội bộ
+  customerNote String?
+  adminNote    String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User?    @relation(fields: [userId], references: [id])
-  userId    String?  @db.ObjectId
+  shippings Shipping[]
+  returns   Return[]
 
-  returns       Return[]
-  shippings     Shipping[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   notifications Notification[]
 
   @@index([storeId])
-  @@index([status])
   @@index([userId])
+  @@index([status])
   @@index([createdAt])
 }
 
@@ -319,10 +303,9 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id])
 
   quantity Int     @default(1)
-  price    Float? // Giá tại thời điểm đặt hàng (nullable để tương thích với dữ liệu cũ)
+  price    Float?
   imageUrl String?
 
-  // Snapshot thông tin lúc đặt hàng (để hiển thị khi sản phẩm bị xóa/thay đổi)
   sizeId       String? @db.ObjectId
   colorId      String? @db.ObjectId
   materialId   String? @db.ObjectId
@@ -339,14 +322,13 @@ model OrderItem {
   @@index([productId])
 }
 
-// ─── 6. MARKETING ─────────────────────────────────────────────
 model Coupon {
   id        String    @id @default(auto()) @map("_id") @db.ObjectId
   storeId   String    @db.ObjectId
   store     Store     @relation(fields: [storeId], references: [id])
   code      String
   value     Float
-  type      String // "PERCENT" | "FIXED"
+  type      String
   createdAt DateTime  @default(now())
   expiresAt DateTime?
 
@@ -354,7 +336,7 @@ model Coupon {
   @@index([storeId])
 }
 
-// ─── 10. FLASH SALE ──────────────────────────────────────────────
+// ─── 6. FLASH SALE ──────────────────────────────────────────────
 model FlashSale {
   id          String  @id @default(auto()) @map("_id") @db.ObjectId
   storeId     String  @db.ObjectId
@@ -362,18 +344,14 @@ model FlashSale {
   name        String
   description String?
 
-  // Sale timing
   startDate DateTime
   endDate   DateTime
 
-  // Discount
-  discountType  String // "PERCENT" | "FIXED"
+  discountType  String
   discountValue Float
 
-  // Products (many-to-many via FlashSaleProduct)
   flashSaleProducts FlashSaleProduct[]
 
-  // Status
   isActive Boolean @default(true)
 
   createdAt DateTime @default(now())
@@ -399,20 +377,21 @@ model FlashSaleProduct {
   @@index([productId])
 }
 
+// ─── 7. REVIEWS ──────────────────────────────────────────────────
 model Review {
-  id        String  @id @default(auto()) @map("_id") @db.ObjectId
-  productId String  @db.ObjectId
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  userId    String  @db.ObjectId
-  user      User    @relation(fields: [userId], references: [id])
-
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  productId     String    @db.ObjectId
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId        String    @db.ObjectId
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   rating        Int
   content       String?
   imageUrls     String[]
   videoUrls     String[]
-  isArchived    Boolean  @default(false)
+  isArchived    Boolean   @default(false)
   adminResponse String?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime? @updatedAt
 
   @@index([productId])
   @@index([userId])
@@ -446,7 +425,7 @@ model Address {
   @@index([userId])
 }
 
-// ─── 7. CART ──────────────────────────────────────────────────
+// ─── 8. CART ──────────────────────────────────────────────────
 model Cart {
   id        String     @id @default(auto()) @map("_id") @db.ObjectId
   userId    String?    @unique
@@ -454,7 +433,6 @@ model Cart {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
-  // Coupon áp dụng cho cart
   couponCode String?
 }
 
@@ -465,7 +443,6 @@ model CartItem {
   productId String  @db.ObjectId
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  // Lưu lựa chọn của khách (variant)
   sizeId     String?   @db.ObjectId
   size       Size?     @relation(fields: [sizeId], references: [id])
   colorId    String?   @db.ObjectId
@@ -482,14 +459,11 @@ model CartItem {
   @@index([productId])
 }
 
-// ─── 8. RETURNS & REFUNDS ──────────────────────────────────────
 enum ReturnStatus {
   PENDING
   APPROVED
   REJECTED
-  PROCESSING
   COMPLETED
-  CANCELLED
 }
 
 model Return {
@@ -500,22 +474,19 @@ model Return {
   user    User   @relation(fields: [userId], references: [id])
 
   status      ReturnStatus @default(PENDING)
-  reason      String // Lý do trả hàng
-  description String? // Mô tả chi tiết
+  reason      String
+  description String?
 
-  // Sản phẩm trả lại
   returnItems ReturnItem[]
 
-  // Hoàn tiền
   refundAmount Float   @default(0)
-  refundMethod String? // "ORIGINAL", "STORE_CREDIT", etc.
+  refundMethod String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([orderId])
   @@index([userId])
-  @@index([status])
 }
 
 model ReturnItem {
@@ -532,7 +503,7 @@ model ReturnItem {
   @@index([returnId])
 }
 
-// ─── 9. SHIPPING ──────────────────────────────────────────────────
+// ─── 9. SHIPPING ──────────────────────────────────────────────
 enum ShippingProvider {
   GHN
   VIETTELPOST
@@ -557,31 +528,26 @@ model Shipping {
   storeId String @db.ObjectId
   store   Store  @relation(fields: [storeId], references: [id])
 
-  // Provider info
   provider        ShippingProvider @default(CUSTOM)
-  providerOrderId String? // ID từ shipping provider
-  trackingNumber  String           @unique // Mã vận đơn
+  providerOrderId String?
+  trackingNumber  String           @unique
 
-  // Shipping details
   status         ShippingStatus @default(PENDING)
-  shippingMethod String? // Phương thức giao hàng
+  shippingMethod String?
   shippingCost   Float          @default(0)
 
-  // Address info
-  fromAddress String // Địa chỉ người gửi
+  fromAddress String
   fromPhone   String
   fromName    String
-  toAddress   String // Địa chỉ người nhận
+  toAddress   String
   toPhone     String
   toName      String
   toCity      String?
   toDistrict  String?
   toWard      String?
 
-  // Provider response data (JSON)
-  providerData String? // Lưu response từ provider API
+  providerData String?
 
-  // Timestamps
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   pickedUpAt  DateTime?
@@ -593,30 +559,26 @@ model Shipping {
   @@index([provider])
 }
 
-// ─── 11. BLOG ─────────────────────────────────────────────────────
+// ─── 10. BLOG ─────────────────────────────────────────────────
 model BlogPost {
   id            String  @id @default(auto()) @map("_id") @db.ObjectId
   storeId       String  @db.ObjectId
   store         Store   @relation(fields: [storeId], references: [id])
   title         String
   slug          String  @unique
-  content       String // HTML content
-  excerpt       String? // Short description
+  content       String
+  excerpt       String?
   featuredImage String?
 
-  // SEO
   metaTitle       String?
   metaDescription String?
   tags            String[]
 
-  // Category (sử dụng Category thông thường thay vì BlogCategory)
   categoryId String?   @db.ObjectId
   category   Category? @relation(fields: [categoryId], references: [id])
 
-  // Categories (deprecated - sẽ xóa sau)
   blogCategories BlogPostCategory[]
 
-  // Status
   isPublished Boolean   @default(false)
   publishedAt DateTime?
 
@@ -659,12 +621,13 @@ model BlogPostCategory {
   @@index([blogCategoryId])
 }
 
+// ─── 11. NOTIFICATIONS ────────────────────────────────────────
 model Notification {
   id        String    @id @default(auto()) @map("_id") @db.ObjectId
   userId    String    @db.ObjectId
   orderId   String    @db.ObjectId
   message   String
-  type      String // ORDER_CONFIRMED | ORDER_SHIPPING | ORDER_DELIVERED | ORDER_CANCELLED
+  type      String
   isRead    Boolean   @default(false)
   createdAt DateTime  @default(now())
   readAt    DateTime?

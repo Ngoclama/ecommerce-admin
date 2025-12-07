@@ -93,8 +93,12 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ storeId: string; orderId: string }> }
 ) {
+  let orderId: string | undefined;
+  let storeId: string | undefined;
   try {
-    const { storeId, orderId } = await params;
+    const paramsData = await params;
+    storeId = paramsData.storeId;
+    orderId = paramsData.orderId;
     const { userId } = await auth();
     const body = await req.json();
 
@@ -108,6 +112,8 @@ export async function PATCH(
       customerNote,
       adminNote,
       email,
+      phone,
+      address,
       city,
       postalCode,
       country,
@@ -136,12 +142,21 @@ export async function PATCH(
       return new NextResponse("Không tìm thấy đơn hàng", { status: 404 });
     }
 
+    console.log("[ORDER_PATCH] Update request:", {
+      orderId,
+      currentStatus: existingOrder.status,
+      requestedStatus: status,
+      statusChanged: status && status !== existingOrder.status,
+    });
+
     // Validate status transition using state machine
     if (status && status !== existingOrder.status) {
       const validation = validateOrderStatusTransition(
         existingOrder.status,
         status
       );
+
+      console.log("[ORDER_PATCH] Validation result:", validation);
 
       if (!validation.valid) {
         return NextResponse.json(
@@ -157,8 +172,9 @@ export async function PATCH(
     }
 
     // Prepare update data
+    // Always include status - use provided status or keep existing
     const updateData: any = {
-      status: status || existingOrder.status,
+      status: status !== undefined ? status : existingOrder.status,
       shippingMethod:
         shippingMethod !== undefined
           ? shippingMethod
@@ -183,6 +199,8 @@ export async function PATCH(
         customerNote !== undefined ? customerNote : existingOrder.customerNote,
       adminNote: adminNote !== undefined ? adminNote : existingOrder.adminNote,
       email: email !== undefined ? email : existingOrder.email,
+      phone: phone !== undefined ? phone : existingOrder.phone,
+      address: address !== undefined ? address : existingOrder.address,
       city: city !== undefined ? city : existingOrder.city,
       postalCode:
         postalCode !== undefined ? postalCode : existingOrder.postalCode,
@@ -226,21 +244,68 @@ export async function PATCH(
       }
 
       // Merge business logic results
-      Object.assign(updateData, transitionResult.updates);
+      // Only merge valid Order model fields, exclude metadata like 'message'
+      if (transitionResult.updates) {
+        const { message, requiresRefund, ...validUpdates } = transitionResult.updates;
+        Object.assign(updateData, validUpdates);
+      }
     }
 
-    // Update order
-    const order = await prisma.order.update({
-      where: { id: orderId },
-      data: updateData,
+    console.log("[ORDER_PATCH] Final update data:", {
+      orderId,
+      updateData,
+      statusInUpdate: updateData.status,
+      updateDataKeys: Object.keys(updateData),
     });
 
-    return NextResponse.json(order);
-  } catch (error) {
-    console.error("[ORDER_PATCH_ERROR]", error);
-    return new NextResponse("Đã xảy ra lỗi. Vui lòng thử lại sau", {
-      status: 500,
+    // Update order
+    try {
+      const order = await prisma.order.update({
+        where: { id: orderId },
+        data: updateData,
+      });
+
+      console.log("[ORDER_PATCH] Order updated successfully:", {
+        orderId,
+        newStatus: order.status,
+      });
+
+      return NextResponse.json(order);
+    } catch (dbError: any) {
+      console.error("[ORDER_PATCH_DB_ERROR]", {
+        orderId,
+        error: dbError,
+        errorCode: dbError?.code,
+        errorMessage: dbError?.message,
+        updateData,
+      });
+      throw dbError;
+    }
+  } catch (error: any) {
+    console.error("[ORDER_PATCH_ERROR]", {
+      orderId: orderId || "unknown",
+      error,
+      errorMessage: error?.message,
+      errorStack: error?.stack,
+      errorCode: error?.code,
     });
+    
+    // Return more detailed error in development
+    const errorMessage = process.env.NODE_ENV === "development"
+      ? error?.message || "Đã xảy ra lỗi. Vui lòng thử lại sau"
+      : "Đã xảy ra lỗi. Vui lòng thử lại sau";
+    
+    return NextResponse.json(
+      {
+        error: "Không thể cập nhật đơn hàng",
+        message: errorMessage,
+        ...(process.env.NODE_ENV === "development" && {
+          details: error?.message,
+          code: error?.code,
+        }),
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -277,18 +342,19 @@ export async function DELETE(
       );
     }
 
-    // Chỉ cho phép xóa đơn hàng đã hoàn thành (DELIVERED) hoặc đã hủy (CANCELLED)
+    // Chỉ cho phép xóa đơn hàng đã hoàn thành (DELIVERED), đã hủy (CANCELLED) hoặc đã trả hàng (RETURNED)
     // Không cho xóa đơn đang xử lý (PENDING, PROCESSING, SHIPPED)
     const allowedStatusesToDelete = [
       ORDER_STATUS.DELIVERED,
       ORDER_STATUS.CANCELLED,
+      ORDER_STATUS.RETURNED,
     ];
 
     if (!(allowedStatusesToDelete as any).includes(existingOrder.status)) {
       return new NextResponse(
         JSON.stringify({
           error: "Không thể xóa đơn hàng",
-          message: `Chỉ có thể xóa đơn hàng đã giao thành công hoặc đã hủy. Đơn hàng #${existingOrder.orderNumber} đang ở trạng thái: ${existingOrder.status}`,
+          message: `Chỉ có thể xóa đơn hàng đã giao thành công, đã hủy hoặc đã trả hàng. Đơn hàng #${existingOrder.orderNumber} đang ở trạng thái: ${existingOrder.status}`,
           currentStatus: existingOrder.status,
         }),
         { status: 400, headers: { "Content-Type": "application/json" } }

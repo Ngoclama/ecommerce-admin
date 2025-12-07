@@ -114,6 +114,7 @@ export async function DELETE(
       const allowedStatusesToDelete = [
         ORDER_STATUS.DELIVERED,
         ORDER_STATUS.CANCELLED,
+        ORDER_STATUS.RETURNED,
       ];
       const invalidOrders = ordersToDelete.filter(
         (order) => !(allowedStatusesToDelete as any).includes(order.status)
@@ -126,7 +127,7 @@ export async function DELETE(
         return NextResponse.json(
           {
             error: "Không thể xóa một số đơn hàng",
-            message: `Chỉ có thể xóa đơn hàng đã giao thành công hoặc đã hủy. Các đơn sau đang ở trạng thái không hợp lệ: ${invalidOrderNumbers}`,
+            message: `Chỉ có thể xóa đơn hàng đã giao thành công, đã hủy hoặc đã trả hàng. Các đơn sau đang ở trạng thái không hợp lệ: ${invalidOrderNumbers}`,
             invalidOrders: invalidOrders.map((o) => ({
               orderNumber: o.orderNumber,
               status: o.status,
@@ -147,10 +148,11 @@ export async function DELETE(
         );
       }
     } else {
-      // Xóa tất cả - chỉ lấy đơn hàng đã giao hoặc đã hủy
+      // Xóa tất cả - chỉ lấy đơn hàng đã giao, đã hủy hoặc đã trả hàng
       const allowedStatusesToDelete = [
         ORDER_STATUS.DELIVERED,
         ORDER_STATUS.CANCELLED,
+        ORDER_STATUS.RETURNED,
       ];
       const ordersToDelete = await prisma.order.findMany({
         where: {

@@ -5,6 +5,30 @@ import { startOfDay, endOfDay, format as formatDate, subDays } from "date-fns";
 import { API_MESSAGES, HTTP_STATUS } from "@/lib/constants";
 import * as XLSX from "xlsx";
 
+// Helper function to map status to Vietnamese labels
+const getStatusLabel = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    PENDING: "Chờ xử lý",
+    PROCESSING: "Đang xử lý",
+    SHIPPED: "Đã giao hàng",
+    DELIVERED: "Đã nhận hàng",
+    CANCELLED: "Đã hủy",
+  };
+  return statusMap[status] || status;
+};
+
+// Helper function to map payment method to Vietnamese labels
+const getPaymentMethodLabel = (method: string): string => {
+  const methodMap: Record<string, string> = {
+    COD: "Thanh toán khi nhận hàng",
+    VNPAY: "VNPay",
+    MOMO: "MoMo",
+    STRIPE: "Stripe",
+    UNKNOWN: "Không xác định",
+  };
+  return methodMap[method] || method;
+};
+
 // GET: Export reports as PDF or Excel
 export async function GET(
   req: Request,
@@ -174,6 +198,13 @@ export async function GET(
       statusCount[order.status] = (statusCount[order.status] || 0) + 1;
     });
 
+    // Payment method distribution
+    const paymentCount: Record<string, number> = {};
+    orders.forEach((order) => {
+      const method = order.paymentMethod || "UNKNOWN";
+      paymentCount[method] = (paymentCount[method] || 0) + 1;
+    });
+
     if (format === "excel") {
       // Create Excel workbook
       const wb = XLSX.utils.book_new();
@@ -207,7 +238,7 @@ export async function GET(
         ["PHÂN BỐ TRẠNG THÁI ĐƠN HÀNG"],
         ["Trạng thái", "Số lượng", "Tỷ lệ"],
         ...Object.entries(statusCount).map(([status, count]) => [
-          status,
+          getStatusLabel(status),
           count,
           `${((count / totalOrders) * 100).toFixed(2)}%`,
         ]),
@@ -285,6 +316,26 @@ export async function GET(
       ];
       XLSX.utils.book_append_sheet(wb, ws_category, "Doanh thu theo danh mục");
 
+      // Payment Method Distribution sheet
+      const paymentData = [
+        ["PHÂN BỐ THEO PHƯƠNG THỨC THANH TOÁN"],
+        [],
+        ["STT", "Phương thức", "Số lượng", "% Số lượng"],
+        ...Object.entries(paymentCount)
+          .sort((a, b) => b[1] - a[1])
+          .map(([method, count], index) => [
+            index + 1,
+            getPaymentMethodLabel(method),
+            count,
+            `${((count / totalOrders) * 100).toFixed(2)}%`,
+          ]),
+        [],
+        ["TỔNG CỘNG", "", totalOrders, "100%"],
+      ];
+      const ws_payment = XLSX.utils.aoa_to_sheet(paymentData);
+      ws_payment["!cols"] = [{ wch: 5 }, { wch: 30 }, { wch: 15 }, { wch: 15 }];
+      XLSX.utils.book_append_sheet(wb, ws_payment, "Phương thức thanh toán");
+
       // Daily Revenue sheet
       const dailyData = [
         ["DOANH THU THEO NGÀY"],
@@ -325,6 +376,7 @@ export async function GET(
           "Ngày đặt",
           "Khách hàng",
           "Số điện thoại",
+          "Phương thức TT",
           "Trạng thái",
           "Số sản phẩm",
           "Tổng tiền",
@@ -335,13 +387,15 @@ export async function GET(
           formatDate(order.createdAt, "dd/MM/yyyy HH:mm"),
           order.user?.name || "Khách lẻ",
           order.phone || "N/A",
-          order.status,
+          getPaymentMethodLabel(order.paymentMethod || "UNKNOWN"),
+          getStatusLabel(order.status),
           order.orderItems.reduce((sum, item) => sum + item.quantity, 0),
           (order.total || 0).toLocaleString("vi-VN") + " ₫",
         ]),
         [],
         [
           "TỔNG CỘNG",
+          "",
           "",
           "",
           "",
@@ -358,7 +412,8 @@ export async function GET(
         { wch: 18 },
         { wch: 25 },
         { wch: 15 },
-        { wch: 12 },
+        { wch: 18 },
+        { wch: 15 },
         { wch: 12 },
         { wch: 20 },
       ];
@@ -413,7 +468,7 @@ export async function GET(
           })),
         statusDistribution: Object.entries(statusCount).map(
           ([status, count]) => ({
-            status,
+            status: getStatusLabel(status),
             count,
             percentage: ((count / totalOrders) * 100).toFixed(2),
           })
@@ -423,7 +478,10 @@ export async function GET(
           date: formatDate(order.createdAt, "dd/MM/yyyy HH:mm"),
           customer: order.user?.name || "Khách lẻ",
           phone: order.phone || "N/A",
-          status: order.status,
+          paymentMethod: getPaymentMethodLabel(
+            order.paymentMethod || "UNKNOWN"
+          ),
+          status: getStatusLabel(order.status),
           items: order.orderItems.reduce((sum, item) => sum + item.quantity, 0),
           total: order.total || 0,
         })),

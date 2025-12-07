@@ -108,6 +108,13 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData }) => {
   const onSubmit = async (data: OrderFormValues) => {
     try {
       setLoading(true);
+      console.log("Submitting order update:", {
+        orderId: params.orderId,
+        status: data.status,
+        currentStatus: initialData.status,
+        allData: data,
+      });
+      
       await axios.patch(
         `/api/${params.storeId}/orders/${params.orderId}`,
         data
@@ -116,7 +123,14 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData }) => {
       router.push(`/${params.storeId}/orders`);
       toast.success(toastMessage);
     } catch (error: any) {
-      toast.error(t("forms.order.error"));
+      console.error("Order update error:", error);
+      console.error("Error response:", error?.response?.data);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        t("forms.order.error");
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -144,8 +158,11 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData }) => {
                     <FormLabel>{t("forms.order.status")}</FormLabel>
                     <Select
                       disabled={loading}
-                      onValueChange={field.onChange}
-                      value={field.value}
+                      onValueChange={(value) => {
+                        console.log("Status changed:", value);
+                        field.onChange(value);
+                      }}
+                      value={field.value || initialData.status}
                     >
                       <FormControl>
                         <SelectTrigger>

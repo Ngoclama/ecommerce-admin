@@ -93,7 +93,7 @@ export const Editor = ({
           quill.insertEmbed(range.index, "image", url);
         }
       } catch (error: any) {
-        toast.error(`Image upload failed: ${error.message}`);
+        toast.error(`Tải ảnh thất bại: ${error.message}`);
       } finally {
         setIsUploading(false);
       }

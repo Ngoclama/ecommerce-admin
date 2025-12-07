@@ -392,7 +392,7 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
               </CardTitle>
               <motion.div
                 whileHover={{ scale: 1.1, rotate: 5 }}
-                className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/20 flex items-center justify-center shadow-sm"
+                className="h-12 w-12 rounded-xl bg-linear-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/20 flex items-center justify-center shadow-sm"
               >
                 <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
               </motion.div>
@@ -422,7 +422,7 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
               </CardTitle>
               <motion.div
                 whileHover={{ scale: 1.1, rotate: 5 }}
-                className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/20 flex items-center justify-center shadow-sm"
+                className="h-12 w-12 rounded-xl bg-linear-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/20 flex items-center justify-center shadow-sm"
               >
                 <ShoppingCart className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </motion.div>
@@ -451,7 +451,7 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
               </CardTitle>
               <motion.div
                 whileHover={{ scale: 1.1, rotate: 5 }}
-                className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/30 dark:to-amber-800/20 flex items-center justify-center shadow-sm"
+                className="h-12 w-12 rounded-xl bg-linear-to-br from-amber-100 to-amber-200 dark:from-amber-900/30 dark:to-amber-800/20 flex items-center justify-center shadow-sm"
               >
                 <Package className="h-6 w-6 text-amber-600 dark:text-amber-400" />
               </motion.div>
@@ -480,7 +480,7 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
               </CardTitle>
               <motion.div
                 whileHover={{ scale: 1.1, rotate: 5 }}
-                className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/20 flex items-center justify-center shadow-sm"
+                className="h-12 w-12 rounded-xl bg-linear-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/20 flex items-center justify-center shadow-sm"
               >
                 <BarChart3 className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </motion.div>

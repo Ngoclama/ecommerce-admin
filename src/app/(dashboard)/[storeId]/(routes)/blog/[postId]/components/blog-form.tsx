@@ -121,7 +121,13 @@ export const BlogForm: React.FC<BlogFormProps> = ({ initialData }) => {
       router.push(`/${params.storeId}/blog`);
       toast.success(toastMessage);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || t("forms.blog.error"));
+      console.error("Blog form error:", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        t("forms.blog.error");
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -134,8 +140,14 @@ export const BlogForm: React.FC<BlogFormProps> = ({ initialData }) => {
       router.refresh();
       router.push(`/${params.storeId}/blog`);
       toast.success(t("forms.blog.deleted"));
-    } catch (error) {
-      toast.error(t("forms.blog.error"));
+    } catch (error: any) {
+      console.error("Blog delete error:", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        t("forms.blog.error");
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
       setOpen(false);

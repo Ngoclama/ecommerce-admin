@@ -7,7 +7,7 @@
  * Đảm bảo chỉ cho phép các transitions hợp lệ
  */
 
-import { ORDER_STATUS } from "@/lib/constants";
+import { ORDER_STATUS, PAYMENT_METHODS } from "@/lib/constants";
 
 // Define valid state transitions
 const ORDER_STATE_TRANSITIONS: Record<string, string[]> = {
@@ -120,26 +120,23 @@ export async function handleOrderStatusTransition(
       break;
 
     case ORDER_STATUS.SHIPPED:
-      // Khi shipped, cần có tracking number
-      if (!orderData.trackingNumber) {
-        return {
-          success: false,
-          message: "Cần có mã vận đơn để đánh dấu đã giao hàng",
-        };
-      }
+      // Khi shipped, tracking number is optional (GHN/Viettel will assign)
       updates.message = "Đơn hàng đã được giao cho đơn vị vận chuyển";
       break;
 
-    case "DELIVERED":
+    case ORDER_STATUS.DELIVERED:
       // Khi giao hàng thành công
       // Nếu là COD và chưa thanh toán -> đánh dấu đã thanh toán
-      if (orderData.paymentMethod === "COD" && !orderData.isPaid) {
+      if (
+        orderData.paymentMethod === PAYMENT_METHODS.COD &&
+        !orderData.isPaid
+      ) {
         updates.isPaid = true;
       }
       updates.message = "Đơn hàng đã được giao thành công";
       break;
 
-    case "CANCELLED":
+    case ORDER_STATUS.CANCELLED:
       // Khi hủy đơn hàng
       // TODO: Restore inventory
       updates.message = "Đơn hàng đã bị hủy";
@@ -147,13 +144,15 @@ export async function handleOrderStatusTransition(
       // Nếu đã thanh toán online, cần hoàn tiền
       if (
         orderData.isPaid &&
-        ["STRIPE", "MOMO"].includes(orderData.paymentMethod)
+        [PAYMENT_METHODS.STRIPE, PAYMENT_METHODS.MOMO].includes(
+          orderData.paymentMethod
+        )
       ) {
         updates.requiresRefund = true;
       }
       break;
 
-    case "RETURNED":
+    case ORDER_STATUS.RETURNED:
       // Khi trả hàng
       updates.message = "Đơn hàng đã được trả lại";
       // TODO: Create return record

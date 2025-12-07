@@ -20,7 +20,9 @@ export const ReturnViewModal = () => {
 
   useEffect(() => {
     if (error) {
-      toast.error(t("modals.failedToFetch") || "Failed to load return details");
+      toast.error(
+        t("modals.failedToFetch") || "Không thể tải thông tin hoàn lại"
+      );
       onClose();
     }
   }, [error, onClose]);
@@ -39,7 +41,7 @@ export const ReturnViewModal = () => {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}

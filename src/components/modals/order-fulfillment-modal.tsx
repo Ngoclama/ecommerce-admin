@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
 import { Truck, Loader2 } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
+import { getValidNextStatuses } from "@/lib/order-state-machine";
+import { ORDER_STATUS } from "@/lib/constants";
 
 import {
   Dialog,
@@ -43,6 +45,7 @@ const formSchema = z.object({
     "SHIPPED",
     "DELIVERED",
     "CANCELLED",
+    "RETURNED",
   ]),
   shippingMethod: z.string().optional().nullable(),
   trackingNumber: z.string().optional().nullable(),
@@ -80,15 +83,50 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
     },
   });
 
+  // Get valid next statuses based on current status
+  const validStatuses = useMemo(() => {
+    const validNext = getValidNextStatuses(currentStatus);
+    // Always include current status
+    return [currentStatus, ...validNext];
+  }, [currentStatus]);
+
+  // Reset form when modal opens or currentStatus changes
+  useEffect(() => {
+    if (isOpen) {
+      form.reset({
+        status: currentStatus as any,
+        shippingMethod: initialData?.shippingMethod || null,
+        trackingNumber: initialData?.trackingNumber || null,
+      });
+    }
+  }, [isOpen, currentStatus, initialData, form]);
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsLoading(true);
+      console.log("Order fulfillment modal - submitting:", {
+        orderId,
+        storeId: params.storeId,
+        currentStatus,
+        newStatus: values.status,
+        values,
+      });
+      
       await axios.patch(`/api/${params.storeId}/orders/${orderId}`, values);
       toast.success(t("actions.orderStatusUpdated"));
       router.refresh();
       onClose();
-    } catch (error) {
-      toast.error(t("actions.failedToUpdateOrder"));
+    } catch (error: any) {
+      console.error("Order fulfillment modal error:", error);
+      console.error("Error response:", error?.response?.data);
+      
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        t("actions.failedToUpdateOrder");
+      
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -128,21 +166,36 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="PENDING">
-                        {t("actions.pending")}
-                      </SelectItem>
-                      <SelectItem value="PROCESSING">
-                        {t("actions.processingStatus")}
-                      </SelectItem>
-                      <SelectItem value="SHIPPED">
-                        {t("actions.shipped")}
-                      </SelectItem>
-                      <SelectItem value="DELIVERED">
-                        {t("actions.delivered")}
-                      </SelectItem>
-                      <SelectItem value="CANCELLED">
-                        {t("actions.cancelled")}
-                      </SelectItem>
+                      {validStatuses.includes(ORDER_STATUS.PENDING) && (
+                        <SelectItem value="PENDING">
+                          {t("actions.pending")}
+                        </SelectItem>
+                      )}
+                      {validStatuses.includes(ORDER_STATUS.PROCESSING) && (
+                        <SelectItem value="PROCESSING">
+                          {t("actions.processingStatus")}
+                        </SelectItem>
+                      )}
+                      {validStatuses.includes(ORDER_STATUS.SHIPPED) && (
+                        <SelectItem value="SHIPPED">
+                          {t("actions.shipped")}
+                        </SelectItem>
+                      )}
+                      {validStatuses.includes(ORDER_STATUS.DELIVERED) && (
+                        <SelectItem value="DELIVERED">
+                          {t("actions.delivered")}
+                        </SelectItem>
+                      )}
+                      {validStatuses.includes(ORDER_STATUS.CANCELLED) && (
+                        <SelectItem value="CANCELLED">
+                          {t("actions.cancelled")}
+                        </SelectItem>
+                      )}
+                      {validStatuses.includes(ORDER_STATUS.RETURNED) && (
+                        <SelectItem value="RETURNED">
+                          {t("actions.returned")}
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />

@@ -2,7 +2,7 @@
 
 import * as z from "zod";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { handleError } from "@/lib/error-handler";
@@ -91,8 +91,8 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
     : t("forms.coupon.created");
   const action = initialData ? t("forms.saveChanges") : t("forms.create");
 
-  const form = useForm({
-    resolver: zodResolver(formSchema),
+  const form = useForm<CouponFormValues>({
+    resolver: zodResolver(formSchema) as Resolver<CouponFormValues>,
     defaultValues: initialData
       ? {
           ...initialData,
@@ -145,7 +145,7 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
       router.refresh();
       router.push(`/${params.storeId}/coupons`);
       toast.success(toastMessage);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       // Xử lý lỗi 409 (Conflict - trùng tên)
       if (error.response?.status === 409 || error.code === "ERR_BAD_REQUEST") {
@@ -203,7 +203,10 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
       router.push(`/${params.storeId}/coupons`);
       toast.success(t("forms.coupon.deleted"));
     } catch (error) {
-      handleError(error, t("forms.coupon.errorDelete") || "Không thể xóa mã giảm giá.");
+      handleError(
+        error,
+        t("forms.coupon.errorDelete") || "Không thể xóa mã giảm giá."
+      );
     } finally {
       setLoading(false);
       setOpen(false);
@@ -270,14 +273,24 @@ export const CouponForm: React.FC<CouponFormProps> = ({ initialData }) => {
                 <FormItem>
                   <FormLabel>{t("forms.coupon.value")}</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      disabled={loading}
-                      placeholder={t("forms.coupon.valuePlaceholder")}
-                      {...field}
-                      value={field.value ? String(field.value) : ""}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        disabled={loading}
+                        placeholder={t("forms.coupon.valuePlaceholder")}
+                        {...field}
+                        value={field.value ? String(field.value) : ""}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
+                      {/* Hiển thị format giá trị nếu là FIXED */}
+                      {field.value && form.getValues("type") === "FIXED" && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-primary pointer-events-none">
+                          {new Intl.NumberFormat("vi-VN").format(
+                            Number(field.value)
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

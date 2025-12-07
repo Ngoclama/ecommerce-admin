@@ -105,8 +105,10 @@ export const BulkCreateCouponModal = () => {
       const hasNumber = /[0-9]/.test(codeValue);
 
       if (!hasLetter) {
-        const errorMessage = t("bulk.coupon.invalidCode")
-          .replace("{row}", (i + 1).toString());
+        const errorMessage = t("bulk.coupon.invalidCode").replace(
+          "{row}",
+          (i + 1).toString()
+        );
         toast.error(errorMessage);
         return false;
       }
@@ -121,8 +123,10 @@ export const BulkCreateCouponModal = () => {
       }
 
       if (!rows[i].value || isNaN(Number(rows[i].value))) {
-        const errorMessage = t("bulk.coupon.invalidValue")
-          .replace("{row}", (i + 1).toString());
+        const errorMessage = t("bulk.coupon.invalidValue").replace(
+          "{row}",
+          (i + 1).toString()
+        );
         toast.error(errorMessage);
         return false;
       }
@@ -132,8 +136,10 @@ export const BulkCreateCouponModal = () => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         if (selectedDate < today) {
-          const errorMessage = t("bulk.coupon.invalidDate")
-            .replace("{row}", (i + 1).toString());
+          const errorMessage = t("bulk.coupon.invalidDate").replace(
+            "{row}",
+            (i + 1).toString()
+          );
           toast.error(errorMessage);
           return false;
         }
@@ -260,7 +266,9 @@ export const BulkCreateCouponModal = () => {
               <div className="col-span-2">{t("bulk.coupon.value")}</div>
               <div className="col-span-3">{t("bulk.coupon.type")}</div>
               <div className="col-span-3">{t("bulk.coupon.expiresAt")}</div>
-              <div className="col-span-1 text-center">{t("columns.actions")}</div>
+              <div className="col-span-1 text-center">
+                {t("columns.actions")}
+              </div>
             </div>
 
             <div className="space-y-3 pb-4">
@@ -314,15 +322,25 @@ export const BulkCreateCouponModal = () => {
                         <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
                           {t("bulk.coupon.value")}
                         </label>
-                        <Input
-                          type="number"
-                          disabled={isLoading}
-                          placeholder={t("bulk.coupon.valuePlaceholder")}
-                          value={row.value}
-                          onChange={(e) =>
-                            handleChange(index, "value", e.target.value)
-                          }
-                        />
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            disabled={isLoading}
+                            placeholder={t("bulk.coupon.valuePlaceholder")}
+                            value={row.value}
+                            onChange={(e) =>
+                              handleChange(index, "value", e.target.value)
+                            }
+                          />
+                          {/* Hiển thị format giá trị nếu là FIXED */}
+                          {row.value && row.type === "FIXED" && (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-primary pointer-events-none">
+                              {new Intl.NumberFormat("vi-VN").format(
+                                Number(row.value)
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {/* Type Select (3 cols - Increased from 2) */}
@@ -338,7 +356,9 @@ export const BulkCreateCouponModal = () => {
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder={t("bulk.coupon.typePlaceholder")} />
+                            <SelectValue
+                              placeholder={t("bulk.coupon.typePlaceholder")}
+                            />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="PERCENT">
@@ -369,8 +389,9 @@ export const BulkCreateCouponModal = () => {
                                 const today = new Date();
                                 today.setHours(0, 0, 0, 0);
                                 if (date < today) {
-                                  const errorMessage = t("bulk.coupon.invalidDate")
-                                    .replace("{row}", (index + 1).toString());
+                                  const errorMessage = t(
+                                    "bulk.coupon.invalidDate"
+                                  ).replace("{row}", (index + 1).toString());
                                   toast.error(errorMessage);
                                   return;
                                 }
@@ -440,8 +461,10 @@ export const BulkCreateCouponModal = () => {
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
-                  {t("bulk.coupon.createSuccess")
-                    .replace("{count}", rows.length.toString())}
+                  {t("bulk.coupon.createSuccess").replace(
+                    "{count}",
+                    rows.length.toString()
+                  )}
                 </>
               )}
             </Button>

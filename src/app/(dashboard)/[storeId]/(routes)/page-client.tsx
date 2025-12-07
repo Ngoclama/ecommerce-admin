@@ -91,6 +91,18 @@ export const DashboardClient: React.FC<DashboardClientProps> = ({
   const { t } = useTranslation();
   const params = useParams();
 
+  // Status label helper function
+  const getStatusLabel = (status: string): string => {
+    const statusMap: Record<string, string> = {
+      PENDING: "Chờ xử lý",
+      PROCESSING: "Đang xử lý",
+      SHIPPED: "Đã gửi",
+      DELIVERED: "Đã giao",
+      CANCELLED: "Đã hủy",
+    };
+    return statusMap[status] || status;
+  };
+
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
@@ -147,7 +159,7 @@ export const DashboardClient: React.FC<DashboardClientProps> = ({
                 </div>
                 <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium">
                   <TrendingUp className="h-3 w-3" />
-                  <span>+20.1% from last month</span>
+                  <span>+20.1% từ tháng trước</span>
                 </div>
               </CardContent>
             </Card>
@@ -178,7 +190,7 @@ export const DashboardClient: React.FC<DashboardClientProps> = ({
                 </div>
                 <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-medium">
                   <TrendingUp className="h-3 w-3" />
-                  <span>+19% from last month</span>
+                  <span>+19% từ tháng trước</span>
                 </div>
               </CardContent>
             </Card>
@@ -208,7 +220,7 @@ export const DashboardClient: React.FC<DashboardClientProps> = ({
                   {stockCount}
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  In stock
+                  Trong kho
                 </p>
               </CardContent>
             </Card>
@@ -241,7 +253,7 @@ export const DashboardClient: React.FC<DashboardClientProps> = ({
                   +{newStats.newUsersCount}
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  This month
+                  Tháng này
                 </p>
               </CardContent>
             </Card>
@@ -271,7 +283,7 @@ export const DashboardClient: React.FC<DashboardClientProps> = ({
                   {newStats.totalVIPUsers}
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Total VIP members
+                  Tổng thành viên VIP
                 </p>
               </CardContent>
             </Card>
@@ -301,7 +313,7 @@ export const DashboardClient: React.FC<DashboardClientProps> = ({
                   +{newStats.newProductsCount}
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  This month
+                  Tháng này
                 </p>
               </CardContent>
             </Card>
@@ -418,15 +430,15 @@ export const DashboardClient: React.FC<DashboardClientProps> = ({
                           firstItem?.product?.category?.name || "N/A";
                         const statusColors: Record<string, string> = {
                           PENDING:
-                            "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+                            "bg-yellow-100 text-yellow-700 border border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-700",
                           PROCESSING:
-                            "bg-blue-500/10 text-blue-500 border-blue-500/20",
+                            "bg-blue-100 text-blue-700 border border-blue-300 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700",
                           SHIPPED:
-                            "bg-purple-500/10 text-purple-500 border-purple-500/20",
+                            "bg-purple-100 text-purple-700 border border-purple-300 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-700",
                           DELIVERED:
-                            "bg-green-500/10 text-green-500 border-green-500/20",
+                            "bg-green-100 text-green-700 border border-green-300 dark:bg-green-900/30 dark:text-green-400 dark:border-green-700",
                           CANCELLED:
-                            "bg-red-500/10 text-red-500 border-red-500/20",
+                            "bg-red-100 text-red-700 border border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700",
                         };
                         return (
                           <motion.tr
@@ -452,7 +464,7 @@ export const DashboardClient: React.FC<DashboardClientProps> = ({
                                   "bg-gray-500/10 text-gray-500 border-gray-500/20"
                                 }
                               >
-                                {order.status || "PENDING"}
+                                {getStatusLabel(order.status || "PENDING")}
                               </Badge>
                             </TableCell>
                           </motion.tr>

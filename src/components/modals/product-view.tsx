@@ -121,7 +121,7 @@ export const ProductViewModal: React.FC<ProductViewModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="!max-w-none !w-screen !h-screen !m-0 !rounded-none flex flex-col overflow-hidden bg-white dark:bg-neutral-950 border-0 shadow-2xl !inset-0 !translate-x-0 !translate-y-0 p-0 gap-0">
+      <DialogContent className="max-w-none! w-screen! h-screen! m-0! rounded-none! flex flex-col overflow-hidden bg-white dark:bg-neutral-950 border-0 shadow-2xl inset-0! translate-x-0! translate-y-0! p-0 gap-0">
         {/* Simple Header - Gray & White */}
         <div className="relative bg-neutral-50 dark:bg-neutral-900 px-12 py-7 border-b border-neutral-200 dark:border-neutral-800 animate-in slide-in-from-top duration-500">
           <DialogHeader className="space-y-2">
@@ -195,7 +195,7 @@ export const ProductViewModal: React.FC<ProductViewModalProps> = ({
                           className="object-cover transition-all duration-700 group-hover:scale-105"
                           priority
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        <div className="absolute inset-0 bg-linear-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       </>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">

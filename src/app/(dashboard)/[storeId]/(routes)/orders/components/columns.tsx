@@ -24,6 +24,30 @@ export type OrderColumn = {
 export const useOrderColumns = (): ColumnDef<OrderColumn>[] => {
   const { t } = useTranslation();
 
+  const getStatusLabel = (status: string) => {
+    const map: Record<string, string> = {
+      PENDING: "Chờ xử lý",
+      PROCESSING: "Đang xử lý",
+      SHIPPED: "Đang gửi", // giữ sát ý "ĐANG GỬI HÀNG" trên UI
+      DELIVERED: "Đã giao",
+      CANCELLED: "Đã hủy",
+    };
+    return map[status?.toUpperCase()] || status || t("columns.na");
+  };
+
+  const statusColors: Record<string, string> = {
+    PENDING:
+      "bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700",
+    PROCESSING:
+      "bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700",
+    SHIPPED:
+      "bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700",
+    DELIVERED:
+      "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700",
+    CANCELLED:
+      "bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700",
+  };
+
   return [
     {
       id: "select",
@@ -95,33 +119,16 @@ export const useOrderColumns = (): ColumnDef<OrderColumn>[] => {
       header: t("columns.status"),
       cell: ({ row }) => {
         const status = row.original.status;
-        let variant: "default" | "secondary" | "destructive" | "outline" =
-          "secondary";
-        if (status === "SHIPPED" || status === "PROCESSING")
-          variant = "default";
-        if (status === "DELIVERED") variant = "default";
-        if (status === "CANCELLED") variant = "destructive";
-
-        const getStatusText = (status: string) => {
-          switch (status?.toUpperCase()) {
-            case "PENDING":
-              return t("actions.pending");
-            case "PROCESSING":
-              return t("actions.processingStatus");
-            case "SHIPPED":
-              return t("actions.shipped");
-            case "DELIVERED":
-              return t("actions.delivered");
-            case "CANCELLED":
-              return t("actions.cancelled");
-            default:
-              return status;
-          }
-        };
 
         return (
-          <Badge variant={variant} className="uppercase text-[10px]">
-            {getStatusText(status)}
+          <Badge
+            variant="outline"
+            className={`text-[11px] font-semibold uppercase ${
+              statusColors[status?.toUpperCase()] ||
+              "bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"
+            }`}
+          >
+            {getStatusLabel(status)}
           </Badge>
         );
       },
@@ -132,24 +139,24 @@ export const useOrderColumns = (): ColumnDef<OrderColumn>[] => {
       cell: ({ row }) => {
         const { isPaid, paymentMethod, status } = row.original;
 
-        // Logic: Nếu thanh toán trực tuyến thì đã thanh toán, còn COD thì chỉ khi đã giao
+        // Nếu thanh toán trực tuyến thì luôn đã thanh toán; COD chỉ khi đã giao
         let displayPaid = isPaid;
         if (paymentMethod === "COD") {
-          // COD: chỉ đã thanh toán khi status là DELIVERED
           displayPaid = status === "DELIVERED";
         } else if (
           paymentMethod &&
           ["STRIPE", "MOMO", "VNPAY", "QR"].includes(paymentMethod)
         ) {
-          // Thanh toán trực tuyến: luôn đã thanh toán
           displayPaid = true;
         }
 
         return (
           <Badge
-            variant={displayPaid ? "default" : "destructive"}
+            variant="outline"
             className={
-              displayPaid ? "bg-green-500 hover:bg-green-600 text-white" : ""
+              displayPaid
+                ? "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700"
+                : "bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700"
             }
           >
             {displayPaid ? t("columns.yes") : t("columns.no")}

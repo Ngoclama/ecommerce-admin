@@ -102,11 +102,13 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(
-          (errorData as { message?: string })?.message ||
-            t("actions.somethingWentWrong") ||
-            "Có lỗi xảy ra."
-        );
+        const errorMessage =
+          (errorData as { message?: string; error?: string })?.message ||
+          (errorData as { message?: string; error?: string })?.error ||
+          t("actions.somethingWentWrong") ||
+          "Có lỗi xảy ra.";
+        console.error("Category form error:", errorMessage, errorData);
+        throw new Error(errorMessage);
       }
 
       toast.success(

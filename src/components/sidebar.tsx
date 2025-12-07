@@ -293,7 +293,7 @@ export function Sidebar({
                         collapsed && "justify-center"
                       )}
                     >
-                      <Icon className="h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110" />
+                      <Icon className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110" />
                       {!collapsed && (
                         <motion.span
                           initial={{ opacity: 0 }}
@@ -323,13 +323,13 @@ export function Sidebar({
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    <Box className="h-5 w-5 flex-shrink-0" />
+                    <Box className="h-5 w-5 shrink-0" />
                     {!collapsed && <span>{productMenu.label}</span>}
                   </div>
                   {!collapsed && (
                     <ChevronRight
                       className={cn(
-                        "h-4 w-4 transition-transform flex-shrink-0",
+                        "h-4 w-4 transition-transform shrink-0",
                         isMenuExpanded(productMenu.key) && "rotate-90"
                       )}
                     />
@@ -351,7 +351,7 @@ export function Sidebar({
                               : "text-gray-600 dark:text-gray-400"
                           )}
                         >
-                          <ItemIcon className="h-4 w-4 flex-shrink-0" />
+                          <ItemIcon className="h-4 w-4 shrink-0" />
                           {item.label}
                         </Link>
                       );
@@ -375,13 +375,13 @@ export function Sidebar({
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    <ShoppingCart className="h-5 w-5 flex-shrink-0" />
+                    <ShoppingCart className="h-5 w-5 shrink-0" />
                     {!collapsed && <span>{orderMenu.label}</span>}
                   </div>
                   {!collapsed && (
                     <ChevronRight
                       className={cn(
-                        "h-4 w-4 transition-transform flex-shrink-0",
+                        "h-4 w-4 transition-transform shrink-0",
                         isMenuExpanded(orderMenu.key) && "rotate-90"
                       )}
                     />
@@ -403,7 +403,7 @@ export function Sidebar({
                               : "text-gray-600 dark:text-gray-400"
                           )}
                         >
-                          <ItemIcon className="h-4 w-4 flex-shrink-0" />
+                          <ItemIcon className="h-4 w-4 shrink-0" />
                           {item.label}
                         </Link>
                       );
@@ -427,13 +427,13 @@ export function Sidebar({
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    <FileText className="h-5 w-5 flex-shrink-0" />
+                    <FileText className="h-5 w-5 shrink-0" />
                     {!collapsed && <span>{contentMenu.label}</span>}
                   </div>
                   {!collapsed && (
                     <ChevronRight
                       className={cn(
-                        "h-4 w-4 transition-transform flex-shrink-0",
+                        "h-4 w-4 transition-transform shrink-0",
                         isMenuExpanded(contentMenu.key) && "rotate-90"
                       )}
                     />
@@ -455,7 +455,7 @@ export function Sidebar({
                               : "text-gray-600 dark:text-gray-400"
                           )}
                         >
-                          <ItemIcon className="h-4 w-4 flex-shrink-0" />
+                          <ItemIcon className="h-4 w-4 shrink-0" />
                           {item.label}
                         </Link>
                       );
@@ -479,13 +479,13 @@ export function Sidebar({
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    <Settings className="h-5 w-5 flex-shrink-0" />
+                    <Settings className="h-5 w-5 shrink-0" />
                     {!collapsed && <span>{settingsMenu.label}</span>}
                   </div>
                   {!collapsed && (
                     <ChevronRight
                       className={cn(
-                        "h-4 w-4 transition-transform flex-shrink-0",
+                        "h-4 w-4 transition-transform shrink-0",
                         isMenuExpanded(settingsMenu.key) && "rotate-90"
                       )}
                     />
@@ -507,7 +507,7 @@ export function Sidebar({
                               : "text-gray-600 dark:text-gray-400"
                           )}
                         >
-                          <ItemIcon className="h-4 w-4 flex-shrink-0" />
+                          <ItemIcon className="h-4 w-4 shrink-0" />
                           {item.label}
                         </Link>
                       );

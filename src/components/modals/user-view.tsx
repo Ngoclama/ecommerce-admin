@@ -167,8 +167,8 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="!max-w-none !w-screen !h-screen !m-0 !rounded-none flex flex-col overflow-hidden bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-500 !inset-0 !translate-x-0 !translate-y-0">
-        <div className="p-6 md:p-8 border-b border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-neutral-50 to-white dark:from-neutral-950 dark:to-gray-900 shrink-0">
+      <DialogContent className="max-w-none! w-screen! h-screen! m-0! rounded-none! flex flex-col overflow-hidden bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-500 inset-0! translate-x-0! translate-y-0!">
+        <div className="p-6 md:p-8 border-b border-neutral-200 dark:border-neutral-800 bg-linear-to-br from-neutral-50 to-white dark:from-neutral-950 dark:to-gray-900 shrink-0">
           <DialogHeader>
             <DialogTitle className="text-3xl md:text-4xl font-light text-neutral-900 dark:text-neutral-100 uppercase tracking-tight">
               {t("modals.userDetails") || "Chi tiết người dùng"}
@@ -240,7 +240,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                   {/* Status Badges - Luxury Style */}
                   <div className="flex flex-wrap gap-3">
                     {user.isVIP && (
-                      <Badge className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white hover:from-yellow-600 hover:to-yellow-700 border-0 px-4 py-1.5 gap-1.5">
+                      <Badge className="bg-linear-to-r from-yellow-500 to-yellow-600 text-white hover:from-yellow-600 hover:to-yellow-700 border-0 px-4 py-1.5 gap-1.5">
                         <Crown className="w-4 h-4" />
                         <span className="font-light uppercase tracking-wide">{t("columns.vip") || "VIP"}</span>
                       </Badge>
@@ -251,7 +251,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                         <span className="font-light uppercase tracking-wide">{t("columns.banned") || "Đã chặn"}</span>
                       </Badge>
                     ) : (
-                      <Badge className="bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 border-0 px-4 py-1.5 gap-1.5">
+                      <Badge className="bg-linear-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 border-0 px-4 py-1.5 gap-1.5">
                         <CheckCircle2 className="w-4 h-4" />
                         <span className="font-light uppercase tracking-wide">{t("columns.active") || "Hoạt động"}</span>
                       </Badge>
@@ -269,7 +269,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
               {/* Statistics Cards - Luxury Style */}
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {/* Total Spent */}
-                <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
+                <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-linear-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
                   <div className="flex items-center gap-2 mb-3">
                     <DollarSign className="w-5 h-5 text-neutral-500" />
                     <p className="text-xs text-neutral-500 font-light uppercase tracking-wide">
@@ -282,7 +282,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                 </div>
 
                 {/* Total Orders */}
-                <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
+                <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-linear-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
                   <div className="flex items-center gap-2 mb-3">
                     <ShoppingBag className="w-5 h-5 text-neutral-500" />
                     <p className="text-xs text-neutral-500 font-light uppercase tracking-wide">
@@ -295,7 +295,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                 </div>
 
                 {/* Total Items Purchased */}
-                <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
+                <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-linear-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
                   <div className="flex items-center gap-2 mb-3">
                     <Package className="w-5 h-5 text-neutral-500" />
                     <p className="text-xs text-neutral-500 font-light uppercase tracking-wide">
@@ -308,7 +308,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                 </div>
 
                 {/* Reviews */}
-                <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
+                <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-linear-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
                   <div className="flex items-center gap-2 mb-3">
                     <MessageSquare className="w-5 h-5 text-neutral-500" />
                     <p className="text-xs text-neutral-500 font-light uppercase tracking-wide">
@@ -321,7 +321,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                 </div>
 
                 {/* Wishlist */}
-                <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
+                <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-linear-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
                   <div className="flex items-center gap-2 mb-3">
                     <Heart className="w-5 h-5 text-neutral-500" />
                     <p className="text-xs text-neutral-500 font-light uppercase tracking-wide">
@@ -334,7 +334,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                 </div>
 
                 {/* Stores */}
-                <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
+                <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-linear-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
                   <div className="flex items-center gap-2 mb-3">
                     <Store className="w-5 h-5 text-neutral-500" />
                     <p className="text-xs text-neutral-500 font-light uppercase tracking-wide">
@@ -719,7 +719,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
           </ScrollArea>
         </div>
 
-        <div className="p-6 md:p-8 pt-4 border-t border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-neutral-50 to-white dark:from-neutral-950 dark:to-gray-900 shrink-0">
+        <div className="p-6 md:p-8 pt-4 border-t border-neutral-200 dark:border-neutral-800 bg-linear-to-br from-neutral-50 to-white dark:from-neutral-950 dark:to-gray-900 shrink-0">
           <div className="flex items-center justify-end">
             <button
               onClick={onClose}

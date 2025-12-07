@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   Download,
@@ -68,6 +68,30 @@ import {
 } from "recharts";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+
+// Helper function to map status to Vietnamese labels
+const getStatusLabel = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    PENDING: "Chờ xử lý",
+    PROCESSING: "Đang xử lý",
+    SHIPPED: "Đã giao hàng",
+    DELIVERED: "Đã nhận hàng",
+    CANCELLED: "Đã hủy",
+  };
+  return statusMap[status] || status;
+};
+
+// Helper function to map payment method to Vietnamese labels
+const getPaymentMethodLabel = (method: string): string => {
+  const methodMap: Record<string, string> = {
+    COD: "Thanh toán khi nhận hàng",
+    VNPAY: "VNPay",
+    MOMO: "MoMo",
+    STRIPE: "Stripe",
+    UNKNOWN: "Không xác định",
+  };
+  return methodMap[method] || method;
+};
 
 interface ReportData {
   period: {
@@ -185,6 +209,16 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
     data.filters?.selectedPaymentMethod || ""
   );
 
+  // Pagination state - persisted in localStorage
+  const [rowsPerPage, setRowsPerPage] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("reportsRowsPerPage");
+      return saved ? parseInt(saved, 10) : 10;
+    }
+    return 10;
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+
   const categoryOptions = data.filters?.categories || [];
   const groupedCategories = useMemo(() => {
     const parents: Record<
@@ -231,6 +265,33 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
       total: Math.round(d.total),
     }));
   }, [data.dailyRevenue]);
+
+  // Save rowsPerPage to localStorage when changed
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("reportsRowsPerPage", rowsPerPage.toString());
+    }
+  }, [rowsPerPage]);
+
+  // Pagination calculations
+  const orders = data.orders || [];
+  const totalPages = Math.ceil(orders.length / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  const paginatedOrders = orders.slice(startIndex, endIndex);
+
+  const handleRowsPerPageChange = (newValue: number) => {
+    setRowsPerPage(newValue);
+    setCurrentPage(1); // Reset to first page
+  };
+
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
 
   const handleDateFilter = () => {
     const urlParams = new URLSearchParams();
@@ -609,14 +670,17 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
-              {t("reports.dailyRevenue")}
+              {t("reports.dailyRevenue")} (Đ)
             </CardTitle>
           </CardHeader>
           <CardContent className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={dailyLine}>
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
+                <YAxis
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(v) => formatter.format(Number(v))}
+                />
                 <Tooltip formatter={(v: any) => formatter.format(Number(v))} />
                 <Line
                   type="monotone"
@@ -679,7 +743,7 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
                   <RePieChart>
                     <Pie
                       data={data.statusDistribution.map((s) => ({
-                        name: s.status,
+                        name: getStatusLabel(s.status),
                         value: s.count,
                       }))}
                       dataKey="value"
@@ -723,7 +787,7 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
                     <RePieChart>
                       <Pie
                         data={data.paymentMethodDistribution.map((p) => ({
-                          name: p.method,
+                          name: getPaymentMethodLabel(p.method),
                           value: p.count,
                         }))}
                         dataKey="value"
@@ -997,6 +1061,100 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
           </Card>
         )}
       </div>
+
+      {/* Orders List with Pagination */}
+      {orders.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              Chi tiết đơn hàng
+            </CardTitle>
+            <CardDescription>
+              Danh sách đơn hàng trong khoảng thời gian được chọn
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Mã đơn</TableHead>
+                  <TableHead>Ngày đặt</TableHead>
+                  <TableHead className="text-right">Số sản phẩm</TableHead>
+                  <TableHead className="text-right">Tổng tiền</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedOrders.map((order, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="font-mono text-sm font-medium">
+                      {order.id}
+                    </TableCell>
+                    <TableCell>{order.date}</TableCell>
+                    <TableCell className="text-right">{order.items}</TableCell>
+                    <TableCell className="text-right font-semibold">
+                      {formatter.format(order.total)}
+                    </TableCell>
+                    <TableCell>
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                        {getStatusLabel(order.status)}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {/* Pagination Controls */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-t pt-4">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="rowsPerPage" className="text-sm font-medium">
+                  Hàng trên trang:
+                </Label>
+                <select
+                  id="rowsPerPage"
+                  value={rowsPerPage}
+                  onChange={(e) =>
+                    handleRowsPerPageChange(Number(e.target.value))
+                  }
+                  className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium cursor-pointer"
+                >
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Trang {currentPage} của {Math.max(1, totalPages)}
+                </span>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                >
+                  Trước
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                >
+                  Tiếp theo
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

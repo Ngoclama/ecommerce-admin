@@ -75,7 +75,7 @@ export const ShippingClient: React.FC<ShippingClientProps> = ({ data }) => {
 
   const handleDeleteSelected = async () => {
     if (selectedRows.length === 0) {
-      toast.error(t("actions.noItemsSelected") || "No items selected");
+      toast.error(t("actions.noItemsSelected") || "Chưa chọn mục nào");
       return;
     }
 

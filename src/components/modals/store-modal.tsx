@@ -28,7 +28,7 @@ function GlassStoreModal({ form, onSubmit, storeModal, loading }: any) {
     <AnimatePresence>
       {storeModal.isOpen && (
         <motion.div
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md"
+          className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -46,7 +46,7 @@ function GlassStoreModal({ form, onSubmit, storeModal, loading }: any) {
               "border border-white/20 dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.2)]"
             )}
           >
-            <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-white/10 via-white/5 to-transparent opacity-60" />
+            <div className="absolute inset-0 pointer-events-none bg-linear-to-tr from-white/10 via-white/5 to-transparent opacity-60" />
 
             <h2 className="text-xl font-semibold text-white dark:text-neutral-50 mb-1">
               {t("storeModal.title")}

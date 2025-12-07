@@ -12,6 +12,7 @@ import { Trash, Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Heading } from "@/components/ui/heading";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/hooks/use-translation";
 import {
   Form,
   FormControl,
@@ -39,16 +40,21 @@ interface CategoryFormProps {
 export const CategoryForm: React.FC<CategoryFormProps> = ({ initialData }) => {
   const params = useParams();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const title = initialData ? "Edit Category" : "Create Category";
+  const title = initialData
+    ? t("forms.blogCategory.title")
+    : t("forms.blogCategory.titleCreate");
   const description = initialData
-    ? "Edit a blog category."
-    : "Add a new blog category.";
-  const toastMessage = initialData ? "Category updated." : "Category created.";
-  const action = initialData ? "Save changes" : "Create";
+    ? t("forms.blogCategory.description")
+    : t("forms.blogCategory.descriptionCreate");
+  const toastMessage = initialData
+    ? t("forms.blogCategory.updated")
+    : t("forms.blogCategory.created");
+  const action = initialData ? t("forms.saveChanges") : t("forms.create");
 
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(formSchema),
@@ -78,7 +84,9 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({ initialData }) => {
       router.push(`/${params.storeId}/blog/categories`);
       toast.success(toastMessage);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Something went wrong.");
+      toast.error(
+        error.response?.data?.message || t("forms.blogCategory.error")
+      );
     } finally {
       setLoading(false);
     }
@@ -92,9 +100,9 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({ initialData }) => {
       );
       router.refresh();
       router.push(`/${params.storeId}/blog/categories`);
-      toast.success("Category deleted.");
+      toast.success(t("forms.blogCategory.deleted"));
     } catch (error) {
-      toast.error("Something went wrong.");
+      toast.error(t("forms.blogCategory.error"));
     } finally {
       setLoading(false);
       setOpen(false);
@@ -134,11 +142,11 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({ initialData }) => {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>{t("forms.blogCategory.name")}</FormLabel>
                   <FormControl>
                     <Input
                       disabled={loading}
-                      placeholder="Category name"
+                      placeholder={t("forms.blogCategory.namePlaceholder")}
                       {...field}
                     />
                   </FormControl>
@@ -152,18 +160,22 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({ initialData }) => {
               name="description"
               render={({ field }) => (
                 <FormItem className="col-span-3">
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>
+                    {t("forms.blogCategory.descriptionLabel")}
+                  </FormLabel>
                   <FormControl>
                     <Textarea
                       disabled={loading}
-                      placeholder="Category description"
+                      placeholder={t(
+                        "forms.blogCategory.descriptionPlaceholder"
+                      )}
                       {...field}
                       value={field.value || ""}
                       rows={3}
                     />
                   </FormControl>
                   <FormDescription>
-                    A brief description of this category
+                    {t("forms.blogCategory.descriptionInfo")}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

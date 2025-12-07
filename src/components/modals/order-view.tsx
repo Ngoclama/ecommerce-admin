@@ -175,7 +175,7 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
   if (loading) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="!max-w-none !w-screen !h-screen !m-0 !rounded-none !inset-0 !translate-x-0 !translate-y-0">
+        <DialogContent className="max-w-none! w-screen! h-screen! m-0! rounded-none! inset-0! translate-x-0! translate-y-0!">
           <DialogHeader className="sr-only">
             <DialogTitle>{t("modals.orderDetails")}</DialogTitle>
           </DialogHeader>
@@ -189,7 +189,7 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="!max-w-none !w-screen !h-screen !m-0 !rounded-none flex flex-col overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 print:bg-white print:border-none print:shadow-none print:max-w-none print:max-h-none print:overflow-visible p-0 gap-0 !inset-0 !translate-x-0 !translate-y-0">
+      <DialogContent className="max-w-none! w-screen! h-screen! m-0! rounded-none! flex flex-col overflow-hidden bg-linear-to-br from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 print:bg-white print:border-none print:shadow-none print:max-w-none print:max-h-none print:overflow-visible p-0 gap-0 inset-0! translate-x-0! translate-y-0!">
         <DialogHeader className="sr-only">
           <DialogTitle>{t("modals.orderDetails")}</DialogTitle>
           <DialogDescription>
@@ -198,7 +198,7 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
         </DialogHeader>
 
         {/* Modern Header */}
-        <div className="relative bg-gradient-to-r from-primary/10 via-primary/5 to-transparent dark:from-primary/20 dark:via-primary/10 border-b border-gray-200 dark:border-gray-800 px-8 py-5 print:hidden shrink-0">
+        <div className="relative bg-linear-to-r from-primary/10 via-primary/5 to-transparent dark:from-primary/20 dark:via-primary/10 border-b border-gray-200 dark:border-gray-800 px-8 py-5 print:hidden shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="p-2.5 rounded-xl bg-primary/10 dark:bg-primary/20">
@@ -242,7 +242,7 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
           <ScrollArea className="flex-1 px-8 py-6 min-h-0">
             <div className="space-y-6 w-full">
               {/* Status Banner */}
-              <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-r from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 p-6 shadow-sm">
+              <div className="relative overflow-hidden rounded-2xl border bg-linear-to-r from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 p-6 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div
@@ -561,7 +561,7 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
 
               {/* Order Items */}
               <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
-                <div className="p-6 border-b bg-gradient-to-r from-gray-50 to-transparent dark:from-gray-900 dark:to-transparent">
+                <div className="p-6 border-b bg-linear-to-r from-gray-50 to-transparent dark:from-gray-900 dark:to-transparent">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-primary/10">
                       <Package className="h-5 w-5 text-primary" />
