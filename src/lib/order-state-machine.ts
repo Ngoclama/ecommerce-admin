@@ -1,0 +1,185 @@
+/**
+ * ═══════════════════════════════════════════════════════════════
+ * ORDER STATE MACHINE - PROFESSIONAL ECOMMERCE LOGIC
+ * ═══════════════════════════════════════════════════════════════
+ *
+ * Quản lý trạng thái đơn hàng một cách chuyên nghiệp
+ * Đảm bảo chỉ cho phép các transitions hợp lệ
+ */
+
+import { ORDER_STATUS } from "@/lib/constants";
+
+// Define valid state transitions
+const ORDER_STATE_TRANSITIONS: Record<string, string[]> = {
+  [ORDER_STATUS.PENDING]: [ORDER_STATUS.PROCESSING, ORDER_STATUS.CANCELLED],
+  [ORDER_STATUS.PROCESSING]: [ORDER_STATUS.SHIPPED, ORDER_STATUS.CANCELLED],
+  [ORDER_STATUS.SHIPPED]: [
+    ORDER_STATUS.DELIVERED,
+    ORDER_STATUS.RETURNED, // Khách từ chối nhận hàng
+  ],
+  [ORDER_STATUS.DELIVERED]: [
+    ORDER_STATUS.RETURNED, // Khách trả hàng sau khi nhận
+  ],
+  [ORDER_STATUS.CANCELLED]: [], // Final state - không thể chuyển
+  [ORDER_STATUS.RETURNED]: [], // Final state - không thể chuyển
+};
+
+/**
+ * Kiểm tra xem có thể chuyển từ trạng thái này sang trạng thái khác không
+ */
+export function canTransitionOrderStatus(
+  currentStatus: string,
+  newStatus: string
+): boolean {
+  // Nếu status không đổi, luôn cho phép
+  if (currentStatus === newStatus) return true;
+
+  const allowedTransitions = ORDER_STATE_TRANSITIONS[currentStatus] || [];
+  return allowedTransitions.includes(newStatus);
+}
+
+/**
+ * Lấy danh sách các trạng thái có thể chuyển đến
+ */
+export function getValidNextStatuses(currentStatus: string): string[] {
+  return ORDER_STATE_TRANSITIONS[currentStatus] || [];
+}
+
+/**
+ * Validate order status transition và trả về error message nếu invalid
+ */
+export function validateOrderStatusTransition(
+  currentStatus: string,
+  newStatus: string
+): { valid: boolean; error?: string } {
+  if (currentStatus === newStatus) {
+    return { valid: true };
+  }
+
+  if (!canTransitionOrderStatus(currentStatus, newStatus)) {
+    const validStatuses = getValidNextStatuses(currentStatus);
+
+    return {
+      valid: false,
+      error: `Không thể chuyển từ trạng thái "${currentStatus}" sang "${newStatus}". Các trạng thái hợp lệ: ${
+        validStatuses.join(", ") || "Không có (trạng thái cuối)"
+      }`,
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Kiểm tra xem đơn hàng có ở trạng thái cuối không (không thể thay đổi)
+ */
+export function isOrderFinalState(status: string): boolean {
+  return (["CANCELLED", "RETURNED"] as string[]).includes(status);
+}
+
+/**
+ * Kiểm tra xem đơn hàng có thể bị hủy không
+ */
+export function canCancelOrder(currentStatus: string): boolean {
+  return (["PENDING", "PROCESSING"] as string[]).includes(currentStatus);
+}
+
+/**
+ * Logic nghiệp vụ cho từng transition
+ */
+export interface OrderTransitionResult {
+  success: boolean;
+  message: string;
+  updates?: Record<string, any>;
+}
+
+export async function handleOrderStatusTransition(
+  orderId: string,
+  currentStatus: string,
+  newStatus: string,
+  orderData: any
+): Promise<OrderTransitionResult> {
+  // Validate transition
+  const validation = validateOrderStatusTransition(currentStatus, newStatus);
+  if (!validation.valid) {
+    return {
+      success: false,
+      message: validation.error!,
+    };
+  }
+
+  const updates: Record<string, any> = {
+    status: newStatus,
+  };
+
+  // Handle specific transitions
+  switch (newStatus) {
+    case ORDER_STATUS.PROCESSING:
+      // Khi chuyển sang PROCESSING, kiểm tra inventory
+      updates.message = "Đơn hàng đang được xử lý";
+      break;
+
+    case ORDER_STATUS.SHIPPED:
+      // Khi shipped, cần có tracking number
+      if (!orderData.trackingNumber) {
+        return {
+          success: false,
+          message: "Cần có mã vận đơn để đánh dấu đã giao hàng",
+        };
+      }
+      updates.message = "Đơn hàng đã được giao cho đơn vị vận chuyển";
+      break;
+
+    case "DELIVERED":
+      // Khi giao hàng thành công
+      // Nếu là COD và chưa thanh toán -> đánh dấu đã thanh toán
+      if (orderData.paymentMethod === "COD" && !orderData.isPaid) {
+        updates.isPaid = true;
+      }
+      updates.message = "Đơn hàng đã được giao thành công";
+      break;
+
+    case "CANCELLED":
+      // Khi hủy đơn hàng
+      // TODO: Restore inventory
+      updates.message = "Đơn hàng đã bị hủy";
+
+      // Nếu đã thanh toán online, cần hoàn tiền
+      if (
+        orderData.isPaid &&
+        ["STRIPE", "MOMO"].includes(orderData.paymentMethod)
+      ) {
+        updates.requiresRefund = true;
+      }
+      break;
+
+    case "RETURNED":
+      // Khi trả hàng
+      updates.message = "Đơn hàng đã được trả lại";
+      // TODO: Create return record
+      // TODO: Process refund if paid
+      break;
+  }
+
+  return {
+    success: true,
+    message: updates.message || `Đơn hàng chuyển sang trạng thái ${newStatus}`,
+    updates,
+  };
+}
+
+/**
+ * Get user-friendly status name in Vietnamese
+ */
+export function getOrderStatusDisplayName(status: string): string {
+  const statusNames: Record<string, string> = {
+    [ORDER_STATUS.PENDING]: "Chờ xử lý",
+    [ORDER_STATUS.PROCESSING]: "Đang xử lý",
+    [ORDER_STATUS.SHIPPED]: "Đang giao hàng",
+    [ORDER_STATUS.DELIVERED]: "Đã giao hàng",
+    [ORDER_STATUS.CANCELLED]: "Đã hủy",
+    [ORDER_STATUS.RETURNED]: "Đã trả hàng",
+  };
+
+  return statusNames[status] || status;
+}

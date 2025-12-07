@@ -53,7 +53,10 @@ export const OrderClient: React.FC<OrderClientProps> = ({ data }) => {
       toast.success(result.message || t("actions.allOrdersDeleted"));
       router.refresh();
     } catch (error: any) {
-      handleError(error, t("actions.failedToDeleteOrders") || "Không thể xóa đơn hàng.");
+      handleError(
+        error,
+        t("actions.failedToDeleteOrders") || "Không thể xóa đơn hàng."
+      );
     } finally {
       setIsLoading(false);
       setDeleteAllOpen(false);
@@ -79,7 +82,11 @@ export const OrderClient: React.FC<OrderClientProps> = ({ data }) => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || t("actions.failedToDeleteOrders"));
+        const errorMessage =
+          errorData.message ||
+          errorData.error ||
+          t("actions.failedToDeleteOrders");
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
@@ -91,11 +98,14 @@ export const OrderClient: React.FC<OrderClientProps> = ({ data }) => {
       setSelectedRows([]);
       router.refresh();
     } catch (error: any) {
-      handleError(
-        error,
-        t("actions.deleteSelectedError") ||
+      // Hiển thị message chi tiết từ error
+      toast.error(
+        error.message ||
           t("actions.unableToDeleteSelectedOrders") ||
-          "Không thể xóa đơn hàng đã chọn."
+          "Không thể xóa đơn hàng đã chọn.",
+        {
+          duration: 6000,
+        }
       );
     } finally {
       setIsLoading(false);

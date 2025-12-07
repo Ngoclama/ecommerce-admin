@@ -68,7 +68,7 @@ export const CategoryViewModal: React.FC<CategoryViewModalProps> = ({
 
   useEffect(() => {
     if (error && isValidCategoryId) {
-      toast.error("Failed to load category details.");
+      toast.error("Không thể tải thông tin danh mục");
       onClose();
     }
   }, [error, onClose, isValidCategoryId]);

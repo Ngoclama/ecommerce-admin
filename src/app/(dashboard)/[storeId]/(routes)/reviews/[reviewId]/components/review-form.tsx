@@ -34,7 +34,7 @@ import slugify from "slugify";
 
 const formSchema = z.object({
   name: z.string().min(1, "Category name is required"),
-  slug: z.string().min(1, "Slug is required"), 
+  slug: z.string().min(1, "Slug is required"),
   billboardId: z.string().min(1, "Billboard is required"),
 });
 
@@ -98,7 +98,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
         );
       }
 
-      toast.success(initialData ? "Review updated!" : "Review created!");
+      toast.success(initialData ? "Đã cập nhật đánh giá!" : "Đã tạo đánh giá!");
       router.refresh();
       router.push(`/${params.storeId}/reviews`);
     } catch (error) {
@@ -114,7 +114,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       await fetch(`/api/${params.storeId}/categories/${params.categoryId}`, {
         method: "DELETE",
       });
-      toast.success("Category deleted successfully");
+      toast.success("Đã xóa danh mục thành công");
       router.push(`/${params.storeId}/categories`);
       router.refresh();
     } catch (error) {

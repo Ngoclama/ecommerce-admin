@@ -45,10 +45,17 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       setIsLoading(true);
       await axios.delete(`/api/${params.storeId}/products/${data.id}`);
 
-      toast.success("Product deleted successfully");
+      toast.success("Đã xóa sản phẩm thành công");
       router.refresh();
-    } catch (error) {
-      toast.error("Make sure you removed all orders using this product first.");
+    } catch (error: any) {
+      // Kiểm tra xem có phải lỗi từ server trả về không
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message, {
+          duration: 6000,
+        });
+      } else {
+        toast.error("Không thể xóa sản phẩm. Vui lòng thử lại sau.");
+      }
     } finally {
       setIsLoading(false);
       setOpenAlert(false);

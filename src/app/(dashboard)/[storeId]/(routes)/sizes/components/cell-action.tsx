@@ -35,10 +35,10 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
     try {
       setLoading(true);
       await axios.delete(`/api/${params.storeId}/sizes/${data.id}`);
-      toast.success("Size deleted.");
+      toast.success("Đã xóa kích thước");
       router.refresh();
     } catch (error) {
-      toast.error("Make sure you removed all products using this size first.");
+      toast.error("Vui lòng xóa tất cả sản phẩm sử dụng kích thước này trước");
     } finally {
       setLoading(false);
       setOpen(false);
@@ -47,7 +47,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
 
   const onCopy = (id: string) => {
     navigator.clipboard.writeText(id);
-    toast.success("Size ID copied to clipboard.");
+    toast.success("Đã sao chép ID kích thước");
   };
 
   return (

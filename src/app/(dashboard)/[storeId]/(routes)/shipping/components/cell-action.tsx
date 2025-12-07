@@ -44,9 +44,9 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       setLoading(true);
       await axios.delete(`/api/${params.storeId}/shipping/${data.id}`);
       router.refresh(); // Refresh lại trang để cập nhật danh sách
-      toast.success("Shipping deleted.");
+      toast.success("Đã xóa đơn vận chuyển");
     } catch (error) {
-      toast.error("Something went wrong.");
+      toast.error("Có lỗi xảy ra");
     } finally {
       setLoading(false);
       setOpenAlert(false); // Đóng modal xác nhận
@@ -59,7 +59,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
    */
   const onCopy = (id: string) => {
     navigator.clipboard.writeText(id);
-    toast.success("Shipping ID copied to clipboard.");
+    toast.success("Đã sao chép ID đơn vận chuyển");
   };
 
   /**
@@ -73,10 +73,10 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
         `/api/${params.storeId}/shipping/tracking`,
         { trackingNumber: data.trackingNumber }
       );
-      toast.success("Tracking updated!");
+      toast.success("Đã cập nhật thông tin vận chuyển!");
       router.refresh(); // Refresh để hiển thị thông tin mới
     } catch (error) {
-      toast.error("Failed to update tracking.");
+      toast.error("Không thể cập nhật thông tin vận chuyển");
     } finally {
       setLoading(false);
     }

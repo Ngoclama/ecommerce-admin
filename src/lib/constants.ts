@@ -74,6 +74,7 @@ export const ORDER_STATUS = {
   SHIPPED: "SHIPPED",
   DELIVERED: "DELIVERED",
   CANCELLED: "CANCELLED",
+  RETURNED: "RETURNED",
 } as const;
 
 // ─── PAYMENT METHODS ─────────────────────────────────────────────

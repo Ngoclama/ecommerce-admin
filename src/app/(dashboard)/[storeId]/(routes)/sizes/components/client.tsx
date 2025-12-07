@@ -47,10 +47,13 @@ export const SizeClient: React.FC<SizeClientProps> = ({ data }) => {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete Sizes");
-      toast.success("All Sizes deleted successfully");
+      toast.success("Đã xóa tất cả kích thước thành công");
       router.refresh();
     } catch (error) {
-      handleError(error, "Không thể xóa kích thước. Vui lòng kiểm tra các mục liên quan trước.");
+      handleError(
+        error,
+        "Không thể xóa kích thước. Vui lòng kiểm tra các mục liên quan trước."
+      );
     } finally {
       setIsLoading(false);
       setDeleteAllOpen(false);

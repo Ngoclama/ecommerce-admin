@@ -78,7 +78,7 @@ export const BulkCreateCategoryModal: React.FC = () => {
           setBillboards(res.data);
         } catch (error) {
           console.error("Failed to fetch billboards:", error);
-          toast.error("Could not load billboards. Please refresh.");
+          toast.error("Không thể tải billboard. Vui lòng làm mới trang");
         } finally {
           setIsBillboardsLoading(false);
         }

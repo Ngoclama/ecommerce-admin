@@ -46,8 +46,17 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       await axios.delete(`/api/${params.storeId}/orders/${data.id}`);
       toast.success(t("actions.orderDeleted"));
       router.refresh();
-    } catch (error) {
-      toast.error(t("actions.somethingWentWrong"));
+    } catch (error: any) {
+      // Hiển thị message chi tiết từ server
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message, {
+          duration: 6000,
+        });
+      } else if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error(t("actions.somethingWentWrong"));
+      }
     } finally {
       setLoading(false);
       setOpenDelete(false);

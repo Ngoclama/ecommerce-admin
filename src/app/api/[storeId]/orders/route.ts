@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { ORDER_STATUS } from "@/lib/constants";
 
 export async function GET(
   req: Request,
@@ -102,8 +103,38 @@ export async function DELETE(
           id: { in: idsToDelete },
           storeId: storeId,
         },
-        select: { id: true },
+        select: {
+          id: true,
+          status: true,
+          orderNumber: true,
+        },
       });
+
+      // Kiểm tra xem có đơn hàng nào không được phép xóa không
+      const allowedStatusesToDelete = [
+        ORDER_STATUS.DELIVERED,
+        ORDER_STATUS.CANCELLED,
+      ];
+      const invalidOrders = ordersToDelete.filter(
+        (order) => !(allowedStatusesToDelete as any).includes(order.status)
+      );
+
+      if (invalidOrders.length > 0) {
+        const invalidOrderNumbers = invalidOrders
+          .map((o) => `#${o.orderNumber}`)
+          .join(", ");
+        return NextResponse.json(
+          {
+            error: "Không thể xóa một số đơn hàng",
+            message: `Chỉ có thể xóa đơn hàng đã giao thành công hoặc đã hủy. Các đơn sau đang ở trạng thái không hợp lệ: ${invalidOrderNumbers}`,
+            invalidOrders: invalidOrders.map((o) => ({
+              orderNumber: o.orderNumber,
+              status: o.status,
+            })),
+          },
+          { status: 400 }
+        );
+      }
 
       orderIds = ordersToDelete.map((o) => o.id);
 
@@ -116,12 +147,30 @@ export async function DELETE(
         );
       }
     } else {
+      // Xóa tất cả - chỉ lấy đơn hàng đã giao hoặc đã hủy
+      const allowedStatusesToDelete = [
+        ORDER_STATUS.DELIVERED,
+        ORDER_STATUS.CANCELLED,
+      ];
       const ordersToDelete = await prisma.order.findMany({
-        where: { storeId: storeId },
+        where: {
+          storeId: storeId,
+          status: { in: allowedStatusesToDelete as any },
+        },
         select: { id: true },
       });
 
       orderIds = ordersToDelete.map((o) => o.id);
+
+      if (orderIds.length === 0) {
+        return NextResponse.json(
+          {
+            message:
+              "Không có đơn hàng nào có thể xóa. Chỉ có thể xóa đơn hàng đã giao thành công hoặc đã hủy.",
+          },
+          { status: 400 }
+        );
+      }
     }
 
     if (orderIds.length > 0) {
