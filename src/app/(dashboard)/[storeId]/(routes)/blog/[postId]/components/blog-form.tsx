@@ -26,6 +26,7 @@ import { AlertModal } from "@/components/modals/alert-modal";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Editor } from "@/components/ui/editor";
+import ImageUpload from "@/components/ui/image-upload";
 import { useQuery } from "@tanstack/react-query";
 import {
   Select,
@@ -279,13 +280,23 @@ export const BlogForm: React.FC<BlogFormProps> = ({ initialData }) => {
                 <FormItem className="col-span-3">
                   <FormLabel>{t("forms.blog.featuredImage")}</FormLabel>
                   <FormControl>
-                    <Input
+                    <ImageUpload
                       disabled={loading}
-                      placeholder={t("forms.blog.featuredImagePlaceholder")}
-                      {...field}
-                      value={field.value || ""}
+                      value={field.value ? [field.value] : []}
+                      maxFiles={1}
+                      onChange={(urls) => {
+                        if (Array.isArray(urls) && urls.length > 0 && urls[0]) {
+                          field.onChange(urls[0]);
+                        } else {
+                          field.onChange("");
+                        }
+                      }}
+                      onRemove={() => field.onChange("")}
                     />
                   </FormControl>
+                  <FormDescription>
+                    {t("forms.blog.featuredImageDescription") || "Upload featured image for this blog post"}
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
