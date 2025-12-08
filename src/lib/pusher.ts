@@ -8,9 +8,6 @@ export const pusherServer = new Pusher({
   useTLS: true,
 });
 
-/**
- * Trigger event for order status update
- */
 export async function triggerOrderStatusUpdate(
   userId: string,
   orderId: string,
@@ -26,13 +23,10 @@ export async function triggerOrderStatusUpdate(
     });
   } catch (error) {
     console.error("[Pusher] Error triggering order.status.updated:", error);
-    // Don't throw; notification creation is priority
+    
   }
 }
 
-/**
- * Trigger event for notification created
- */
 export async function triggerNotificationCreated(
   userId: string,
   notification: {

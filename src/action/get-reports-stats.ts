@@ -213,7 +213,7 @@ export const getReportsStats = async (
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  // Status distribution
+  
   const statusMap: Record<string, { count: number; revenue: number }> = {};
   orders.forEach((order) => {
     const orderStatus = order.status || "PENDING";
@@ -233,7 +233,7 @@ export const getReportsStats = async (
     }))
     .sort((a, b) => b.revenue - a.revenue);
 
-  // Payment method distribution
+  
   const paymentMap: Record<string, { count: number; revenue: number }> = {};
   orders.forEach((order) => {
     const method = order.paymentMethod || "UNKNOWN";

@@ -127,7 +127,7 @@ export const BulkCreateColorModal: React.FC = () => {
           </DialogHeader>
         </div>
 
-        {/* 2. Table Header (Sticky) */}
+        {}
         <div className="bg-neutral-50/80 dark:bg-neutral-900/80 backdrop-blur-sm border-b dark:border-neutral-800 z-10 px-6 py-3 grid grid-cols-12 gap-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
           <div className="col-span-1 text-center">{t("common.preview") || "Preview"}</div>
           <div className="col-span-5">{t("bulk.color.name")}</div>
@@ -151,7 +151,7 @@ export const BulkCreateColorModal: React.FC = () => {
                 transition={{ duration: 0.2 }}
                 className="group relative bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3 shadow-sm hover:shadow-md transition-all duration-200 grid grid-cols-12 gap-4 items-center"
               >
-                {/* Color Preview */}
+                {}
                 <div className="col-span-1 flex justify-center">
                   <div
                     className="h-8 w-8 rounded-full border shadow-sm relative cursor-pointer"
@@ -175,7 +175,7 @@ export const BulkCreateColorModal: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Name Input */}
+                {}
                 <div className="col-span-5">
                   <Input
                     disabled={isLoading}
@@ -192,7 +192,7 @@ export const BulkCreateColorModal: React.FC = () => {
                   />
                 </div>
 
-                {/* Value Input (Hex Code) */}
+                {}
                 <div className="col-span-4">
                   <div className="relative">
                     <Input
@@ -225,7 +225,7 @@ export const BulkCreateColorModal: React.FC = () => {
                   </Button>
                 </div>
 
-                {/* Row Number (for visual reference) */}
+                {}
                 <div className="absolute -left-3 top-1/2 -translate-y-1/2 h-6 w-6 items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-800 text-xs font-bold text-neutral-500 opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex">
                   {index + 1}
                 </div>
@@ -233,7 +233,7 @@ export const BulkCreateColorModal: React.FC = () => {
             ))}
           </AnimatePresence>
 
-          {/* Add Row Button (Bottom of list) */}
+          {}
           <motion.button
             layout
             onClick={handleAddRow}

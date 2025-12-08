@@ -1,7 +1,4 @@
-/**
- * Request Deduplication Utility
- * Prevents duplicate requests for same data
- */
+
 
 type PendingRequest<T> = {
   promise: Promise<T>;
@@ -12,10 +9,6 @@ const pendingRequests = new Map<string, PendingRequest<any>>();
 
 const REQUEST_DEDUP_TIMEOUT = 5000; // 5 seconds
 
-/**
- * Execute request with deduplication
- * If same request is made within timeout, reuse pending promise
- */
 export async function deduplicateRequest<T>(
   key: string,
   requester: () => Promise<T>
@@ -37,9 +30,6 @@ export async function deduplicateRequest<T>(
   return promise;
 }
 
-/**
- * Batch multiple requests to avoid N+1
- */
 export async function batchRequests<T, K>(
   items: T[],
   keyExtractor: (item: T) => string,
@@ -53,9 +43,6 @@ export async function batchRequests<T, K>(
   return fetcher(uniqueIds);
 }
 
-/**
- * Clear all pending requests
- */
 export function clearPendingRequests() {
   pendingRequests.clear();
 }

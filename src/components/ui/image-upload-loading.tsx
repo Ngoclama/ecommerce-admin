@@ -91,7 +91,7 @@ export const ImageUploadLoading: React.FC<ImageUploadLoadingProps> = ({
       exit={{ opacity: 0, scale: 0.95 }}
       className="relative w-full max-w-sm bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-lg overflow-hidden"
     >
-      {/* Preview Image */}
+      {}
       {previewUrl && (
         <div className="relative w-full h-32 bg-neutral-100 dark:bg-neutral-900">
           <Image
@@ -113,7 +113,7 @@ export const ImageUploadLoading: React.FC<ImageUploadLoadingProps> = ({
           {/* Icon */}
           <div className="flex-shrink-0 mt-0.5">{getStatusIcon()}</div>
 
-          {/* File Info */}
+          {}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
               {fileName}
@@ -132,7 +132,7 @@ export const ImageUploadLoading: React.FC<ImageUploadLoadingProps> = ({
           </div>
         </div>
 
-        {/* Progress Bar - Only show when uploading */}
+        {}
         {status === "uploading" && (
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
@@ -168,7 +168,7 @@ export const ImageUploadLoading: React.FC<ImageUploadLoadingProps> = ({
           </div>
         )}
 
-        {/* Error Message */}
+        {}
         {status === "error" && errorMessage && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
@@ -180,7 +180,7 @@ export const ImageUploadLoading: React.FC<ImageUploadLoadingProps> = ({
         )}
       </div>
 
-      {/* Success Checkmark Animation */}
+      {}
       {status === "success" && (
         <motion.div
           className="absolute top-2 right-2"
@@ -244,5 +244,4 @@ export const ImageUploadLoadingList: React.FC<ImageUploadLoadingListProps> = ({
     </div>
   );
 };
-
 

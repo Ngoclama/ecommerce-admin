@@ -39,7 +39,7 @@ export const FlashSaleClient: React.FC<FlashSaleClientProps> = ({ data }) => {
       setIsLoading(true);
       await axios.delete(`/api/${params.storeId}/flash-sales`);
       router.refresh();
-      toast.success("All flash sales deleted successfully.");
+      toast.success("Đã xóa tất cả flash sale thành công");
     } catch (error) {
       handleError(error, "Có lỗi xảy ra khi xóa flash sale.");
     } finally {
@@ -50,7 +50,7 @@ export const FlashSaleClient: React.FC<FlashSaleClientProps> = ({ data }) => {
 
   const handleDeleteSelected = async () => {
     if (selectedRows.length === 0) {
-      toast.error("No items selected");
+      toast.error("Chưa chọn mục nào");
       return;
     }
 
@@ -70,7 +70,7 @@ export const FlashSaleClient: React.FC<FlashSaleClientProps> = ({ data }) => {
         throw new Error(errorData.message || "Failed to delete flash sales");
       }
 
-      toast.success(`${selectedRows.length} flash sales deleted successfully!`);
+      toast.success(`Đã xóa ${selectedRows.length} flash sale thành công!`);
       setSelectedRows([]);
       router.refresh();
     } catch (error: any) {

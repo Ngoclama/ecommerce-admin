@@ -147,7 +147,7 @@ export const BulkCreateSizeModal: React.FC = () => {
                 transition={{ duration: 0.2 }}
                 className="group relative bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3 shadow-sm hover:shadow-md transition-all duration-200 grid grid-cols-12 gap-4 items-center"
               >
-                {/* Name Input */}
+                {}
                 <div className="col-span-5">
                   <Input
                     disabled={isLoading}
@@ -164,7 +164,7 @@ export const BulkCreateSizeModal: React.FC = () => {
                   />
                 </div>
 
-                {/* Value Input */}
+                {}
                 <div className="col-span-5">
                   <Input
                     disabled={isLoading}

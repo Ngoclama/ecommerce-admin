@@ -1,12 +1,6 @@
 import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
-/**
- * Wishlist Service
- * Professional backend service layer for wishlist operations
- * Follows SOLID principles and best practices
- */
-
 export interface WishlistItem {
   id: string;
   productId: string;
@@ -30,20 +24,17 @@ export interface WishlistOperationResult {
 }
 
 export class WishlistService {
-  /**
-   * Get user's wishlist product IDs
-   * Optimized query with proper indexing
-   */
+  
   async getUserWishlistProductIds(userId: string): Promise<string[]> {
     try {
       const wishlistItems = await prisma.wishlist.findMany({
         where: { userId },
         select: { productId: true },
         orderBy: { createdAt: "desc" },
-        // Use index on userId for better performance
+        
       });
 
-      // Return unique product IDs (should already be unique due to constraint)
+      
       return Array.from(new Set(wishlistItems.map((item) => item.productId)));
     } catch (error) {
       console.error("[WISHLIST_SERVICE] Error fetching wishlist:", error);
@@ -51,9 +42,7 @@ export class WishlistService {
     }
   }
 
-  /**
-   * Get user's wishlist with full details
-   */
+  
   async getUserWishlist(
     userId: string,
     options?: {
@@ -98,10 +87,7 @@ export class WishlistService {
     }
   }
 
-  /**
-   * Check if product is in user's wishlist
-   * Optimized with single query
-   */
+  
   async isProductInWishlist(
     userId: string,
     productId: string
@@ -124,16 +110,13 @@ export class WishlistService {
     }
   }
 
-  /**
-   * Add product to wishlist
-   * Uses upsert to handle race conditions
-   */
+  
   async addToWishlist(
     userId: string,
     productId: string
   ): Promise<WishlistOperationResult> {
     try {
-      // Validate product exists
+      
       const product = await prisma.product.findUnique({
         where: { id: productId },
         select: { id: true },
@@ -147,7 +130,7 @@ export class WishlistService {
         };
       }
 
-      // Use upsert to handle race conditions (multiple requests at once)
+      
       const wishlistItem = await prisma.wishlist.upsert({
         where: {
           userId_productId: {
@@ -160,7 +143,7 @@ export class WishlistService {
           productId,
         },
         update: {
-          // If exists, just return existing (idempotent)
+          
         },
         select: {
           id: true,
@@ -179,7 +162,7 @@ export class WishlistService {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
-          // Unique constraint violation - already exists
+          
           return {
             success: true,
             isLiked: true,
@@ -193,9 +176,7 @@ export class WishlistService {
     }
   }
 
-  /**
-   * Remove product from wishlist
-   */
+  
   async removeFromWishlist(
     userId: string,
     productId: string
@@ -227,16 +208,13 @@ export class WishlistService {
     }
   }
 
-  /**
-   * Toggle product in wishlist
-   * Atomic operation with proper error handling
-   */
+  
   async toggleWishlist(
     userId: string,
     productId: string
   ): Promise<WishlistOperationResult> {
     try {
-      // Check current status
+      
       const exists = await this.isProductInWishlist(userId, productId);
 
       if (exists) {
@@ -250,10 +228,7 @@ export class WishlistService {
     }
   }
 
-  /**
-   * Batch add products to wishlist
-   * Efficient for syncing local storage with server
-   */
+  
   async batchAddToWishlist(
     userId: string,
     productIds: string[]
@@ -263,7 +238,7 @@ export class WishlistService {
         return { added: 0, skipped: 0 };
       }
 
-      // Validate products exist
+      
       const existingProducts = await prisma.product.findMany({
         where: {
           id: { in: productIds },
@@ -274,7 +249,7 @@ export class WishlistService {
       const validProductIds = existingProducts.map((p) => p.id);
       const invalidCount = productIds.length - validProductIds.length;
 
-      // Get existing wishlist items to avoid duplicates
+      
       const existingWishlist = await prisma.wishlist.findMany({
         where: {
           userId,
@@ -298,8 +273,8 @@ export class WishlistService {
       }
 
       // Batch insert
-      // Note: skipDuplicates not needed as we've already filtered duplicates above
-      // and the schema has @@unique([userId, productId]) constraint
+      
+      
       await prisma.wishlist.createMany({
         data: newProductIds.map((productId) => ({
           userId,
@@ -317,10 +292,7 @@ export class WishlistService {
     }
   }
 
-  /**
-   * Get wishlist count for user
-   * Optimized count query
-   */
+  
   async getWishlistCount(userId: string): Promise<number> {
     try {
       return await prisma.wishlist.count({
@@ -332,10 +304,7 @@ export class WishlistService {
     }
   }
 
-  /**
-   * Clear user's wishlist
-   * Useful for account deletion or reset
-   */
+  
   async clearWishlist(userId: string): Promise<{ deleted: number }> {
     try {
       const result = await prisma.wishlist.deleteMany({
@@ -349,19 +318,16 @@ export class WishlistService {
     }
   }
 
-  /**
-   * Remove products that no longer exist
-   * Cleanup orphaned wishlist items
-   */
+  
   async cleanupOrphanedItems(userId?: string): Promise<{ deleted: number }> {
     try {
-      // Get all product IDs that exist
+      
       const existingProducts = await prisma.product.findMany({
         select: { id: true },
       });
       const existingProductIds = new Set(existingProducts.map((p) => p.id));
 
-      // Delete wishlist items with non-existent products
+      
       const whereClause: Prisma.WishlistWhereInput = {
         productId: { notIn: Array.from(existingProductIds) },
       };
@@ -385,6 +351,5 @@ export class WishlistService {
   }
 }
 
-// Export singleton instance
 export const wishlistService = new WishlistService();
 

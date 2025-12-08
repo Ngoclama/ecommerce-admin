@@ -53,7 +53,7 @@ export function MainNav({
     newBillboardsCount: 0,
   });
 
-  // Fetch new counts
+  
   useEffect(() => {
     if (params.storeId) {
       const fetchNewCounts = async () => {
@@ -139,7 +139,7 @@ export function MainNav({
     },
   ];
 
-  // Dropdown cho Orders, Returns, Shipping
+  
   const orderDropdownRoutes = [
     {
       href: `/${params.storeId}/orders`,
@@ -358,7 +358,7 @@ export function MainNav({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Content Dropdown (Reviews & Blog) */}
+      {}
       <DropdownMenu>
         <DropdownMenuTrigger
           className={cn(
@@ -406,7 +406,7 @@ export function MainNav({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Settings Dropdown */}
+      {}
       <DropdownMenu>
         <DropdownMenuTrigger
           className={cn(

@@ -46,7 +46,7 @@ export const MaterialClient: React.FC<MaterialClientProps> = ({ data }) => {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete Materials");
-      toast.success("All Materials deleted successfully");
+      toast.success("Đã xóa tất cả chất liệu thành công");
       router.refresh();
     } catch (error) {
       handleError(error, "Không thể xóa chất liệu. Vui lòng kiểm tra các mục liên quan trước.");

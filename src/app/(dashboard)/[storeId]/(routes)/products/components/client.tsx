@@ -45,7 +45,7 @@ export const ProductClient: React.FC<ProductClientProps> = ({ data }) => {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete products");
-      toast.success("All products deleted successfully");
+      toast.success("Đã xóa tất cả sản phẩm thành công");
       router.refresh();
     } catch (error) {
       handleError(

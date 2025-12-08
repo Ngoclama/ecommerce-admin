@@ -103,7 +103,7 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
       if (!res.ok)
         throw new Error(result.message || "Failed to delete categories");
 
-      toast.success(result.message || "All categories deleted successfully!");
+      toast.success(result.message || "Đã xóa tất cả danh mục thành công!");
       router.refresh();
     } catch (error) {
       handleError(

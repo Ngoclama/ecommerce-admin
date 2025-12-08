@@ -42,7 +42,7 @@ export const BlogClient: React.FC<BlogClientProps> = ({ data }) => {
       setIsLoading(true);
       await axios.delete(`/api/${params.storeId}/blog`);
       router.refresh();
-      toast.success("All blog posts deleted successfully.");
+      toast.success("Đã xóa tất cả bài viết blog thành công");
     } catch (error) {
       handleError(error, "Có lỗi xảy ra khi xóa bài viết.");
     } finally {

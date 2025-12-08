@@ -11,7 +11,7 @@ if (typeof window !== "undefined") {
   axios.defaults.withCredentials = true;
 }
 
-// Cache keys
+
 export const queryKeys = {
   products: (storeId: string) => ["products", storeId],
   product: (storeId: string, productId: string) => [
@@ -37,7 +37,7 @@ export const queryKeys = {
   reviews: (storeId: string) => ["reviews", storeId],
 };
 
-// Custom hook for fetching user details with cache
+
 export function useUser(storeId: string, userId: string | null) {
   return useQuery({
     queryKey: userId
@@ -81,7 +81,7 @@ export function useUser(storeId: string, userId: string | null) {
   });
 }
 
-// Custom hook for fetching product details with cache
+
 export function useProduct(storeId: string, productId: string | null) {
   return useQuery<any>({
     queryKey: productId
@@ -93,11 +93,11 @@ export function useProduct(storeId: string, productId: string | null) {
       return response.data;
     },
     enabled: !!productId && !!storeId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000, 
   });
 }
 
-// Custom hook for fetching order details with cache
+
 export function useOrder(storeId: string, orderId: string | null) {
   return useQuery({
     queryKey: orderId
@@ -119,7 +119,7 @@ export function useOrder(storeId: string, orderId: string | null) {
   });
 }
 
-// Custom hook for fetching material details with cache
+
 export function useMaterial(storeId: string, materialId: string | null) {
   return useQuery<{
     id: string;
@@ -150,7 +150,7 @@ export function useMaterial(storeId: string, materialId: string | null) {
   });
 }
 
-// Custom hook for fetching color details with cache
+
 export function useColor(storeId: string, colorId: string | null) {
   return useQuery<{
     id: string;
@@ -181,7 +181,7 @@ export function useColor(storeId: string, colorId: string | null) {
   });
 }
 
-// Custom hook for fetching category details with cache
+
 export function useCategory(storeId: string, categoryId: string | null) {
   return useQuery<{
     id: string;
@@ -248,7 +248,7 @@ export function useCategory(storeId: string, categoryId: string | null) {
   });
 }
 
-// Custom hook for fetching return details with cache
+
 interface ReturnDetails {
   id: string;
   orderId: string;
@@ -289,7 +289,7 @@ export function useReturn(storeId: string, returnId: string | null) {
   });
 }
 
-// Custom hook for prefetching
+
 export function usePrefetch() {
   const queryClient = useQueryClient();
 

@@ -37,9 +37,9 @@ export const BlogCategoryClient: React.FC<BlogCategoryClientProps> = ({
     try {
       setIsLoading(true);
       // Note: Need to implement DELETE all endpoint
-      toast.success("Delete all functionality coming soon.");
+      toast.success("Tính năng xóa tất cả sẽ sớm có mặt.");
     } catch (error) {
-      toast.error("Something went wrong.");
+      toast.error("Đã xảy ra lỗi. Vui lòng thử lại sau");
     } finally {
       setIsLoading(false);
       setDeleteAllOpen(false);

@@ -1,11 +1,7 @@
-/**
- * ═══════════════════════════════════════════════════════════════
- * STANDARDIZED ERROR MESSAGES - VIETNAMESE
- * ═══════════════════════════════════════════════════════════════
- */
+
 
 export const ERROR_MESSAGES = {
-  // Authentication & Authorization
+  
   AUTH: {
     UNAUTHENTICATED: "Vui lòng đăng nhập để tiếp tục",
     UNAUTHORIZED: "Bạn không có quyền thực hiện thao tác này",
@@ -13,7 +9,7 @@ export const ERROR_MESSAGES = {
     FORBIDDEN: "Truy cập bị từ chối",
   },
 
-  // Validation
+  
   VALIDATION: {
     REQUIRED_FIELD: (field: string) => `${field} là bắt buộc`,
     INVALID_FORMAT: (field: string) => `${field} không đúng định dạng`,
@@ -88,7 +84,7 @@ export const ERROR_MESSAGES = {
     CIRCULAR_REFERENCE: "Không thể tạo danh mục cha con vòng tròn",
   },
 
-  // Users
+  
   USER: {
     NOT_FOUND: "Không tìm thấy người dùng",
     ALREADY_EXISTS: "Người dùng đã tồn tại",
@@ -107,9 +103,6 @@ export const ERROR_MESSAGES = {
   },
 };
 
-/**
- * SUCCESS MESSAGES
- */
 export const SUCCESS_MESSAGES = {
   PRODUCT: {
     CREATED: "Tạo sản phẩm thành công",
@@ -148,19 +141,16 @@ export const SUCCESS_MESSAGES = {
   },
 };
 
-/**
- * Format Prisma errors to user-friendly Vietnamese messages
- */
 export function formatPrismaError(error: any): string {
   if (!error.code) {
     return ERROR_MESSAGES.GENERIC.SERVER_ERROR;
   }
 
   switch (error.code) {
-    case "P2002": // Unique constraint
+    case "P2002": 
       return "Dữ liệu bị trùng lặp. Vui lòng kiểm tra lại";
 
-    case "P2003": // Foreign key constraint
+    case "P2003": 
       return "Dữ liệu tham chiếu không hợp lệ";
 
     case "P2025": // Record not found
@@ -169,7 +159,7 @@ export function formatPrismaError(error: any): string {
     case "P2014": // Relation violation
       return "Không thể xóa do có dữ liệu liên quan";
 
-    case "P2000": // Value out of range
+    case "P2000": 
       return "Giá trị vượt quá giới hạn cho phép";
 
     default:

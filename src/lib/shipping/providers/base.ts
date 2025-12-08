@@ -1,7 +1,3 @@
-// Interface cơ bản cho tất cả shipping providers
-// Mỗi provider (GHN, ViettelPost, Custom) phải implement interface này
-// Đảm bảo tất cả providers có cùng các method cần thiết
-
 export interface ShippingProvider {
   name: string; // Tên của provider
 

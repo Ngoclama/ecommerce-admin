@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 export function SidebarToggleScript() {
   useEffect(() => {
-    // Update main content padding based on sidebar state
+    
     const updateContentPadding = () => {
       const sidebar = document.querySelector('aside');
       const mainContent = document.getElementById('main-content');
@@ -18,10 +18,10 @@ export function SidebarToggleScript() {
       }
     };
 
-    // Initial update
+    
     updateContentPadding();
 
-    // Watch for sidebar class changes
+    
     const observer = new MutationObserver(updateContentPadding);
     const sidebar = document.querySelector('aside');
     if (sidebar) {
@@ -31,7 +31,7 @@ export function SidebarToggleScript() {
       });
     }
 
-    // Update on resize
+    
     window.addEventListener('resize', updateContentPadding);
 
     return () => {

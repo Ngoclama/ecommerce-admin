@@ -33,7 +33,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
 
   const onCopy = (id: string) => {
     navigator.clipboard.writeText(id);
-    toast.success("Size ID copied to clipboard");
+    toast.success("Đã sao chép ID danh mục");
   };
 
   const handleEdit = () => {
@@ -45,11 +45,11 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       setIsLoading(true);
       await axios.delete(`/api/${params.storeId}/categories/${data.id}`);
 
-      toast.success("Category deleted successfully");
+      toast.success("Đã xóa danh mục thành công");
       router.refresh();
     } catch (error) {
       toast.error(
-        "Make sure you removed all orders using this category first."
+        "Vui lòng xóa tất cả đơn hàng sử dụng danh mục này trước"
       );
     } finally {
       setIsLoading(false);

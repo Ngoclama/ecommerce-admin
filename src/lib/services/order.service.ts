@@ -1,12 +1,6 @@
 import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
-/**
- * Order Service
- * Professional backend service layer for order operations
- * Follows SOLID principles and best practices
- */
-
 export type PaymentMethod = "COD" | "STRIPE" | "MOMO" | "VNPAY";
 export type OrderStatus =
   | "PENDING"
@@ -57,25 +51,19 @@ export interface OrderCalculationResult {
 }
 
 export class OrderService {
-  /**
-   * Determine if payment method requires immediate payment
-   * Online payments (STRIPE, MOMO, VNPAY) = paid immediately
-   * COD = not paid until delivery
-   */
+  
   private isOnlinePayment(paymentMethod: PaymentMethod): boolean {
     return paymentMethod !== "COD";
   }
 
-  /**
-   * Calculate order totals
-   */
+  
   async calculateOrderTotals(
     items: CreateOrderItem[],
     shippingCost: number = 0,
     coupon?: { value: number; type: "PERCENT" | "FIXED" } | null
   ): Promise<OrderCalculationResult> {
     try {
-      // Fetch all products
+      
       const productIds = items.map((item) => item.productId);
       const products = await prisma.product.findMany({
         where: { id: { in: productIds } },
@@ -90,7 +78,7 @@ export class OrderService {
         },
       });
 
-      // Calculate subtotal
+      
       let subtotal = 0;
       for (const item of items) {
         const product = products.find((p) => p.id === item.productId);
@@ -98,7 +86,7 @@ export class OrderService {
           throw new Error(`Product ${item.productId} not found`);
         }
 
-        // Find variant
+        
         let variant = null;
         if (item.variantId) {
           variant = product.variants.find((v) => v.id === item.variantId);
@@ -121,7 +109,7 @@ export class OrderService {
       // Calculate tax (10% VAT)
       const tax = subtotal * 0.1;
 
-      // Calculate discount
+      
       let discount = 0;
       if (coupon) {
         if (coupon.type === "PERCENT") {
@@ -129,11 +117,11 @@ export class OrderService {
         } else {
           discount = coupon.value;
         }
-        // Ensure discount doesn't exceed total
+        
         discount = Math.min(discount, subtotal + tax);
       }
 
-      // Calculate total
+      
       const total = Math.max(0, subtotal + tax + shippingCost - discount);
 
       return {
@@ -149,10 +137,7 @@ export class OrderService {
     }
   }
 
-  /**
-   * Create a new order
-   * Sets isPaid = true for online payments, false for COD
-   */
+  
   async createOrder(data: CreateOrderData): Promise<any> {
     try {
       const {
@@ -166,7 +151,7 @@ export class OrderService {
         customerNote,
       } = data;
 
-      // Validate store exists
+      
       const store = await prisma.store.findUnique({
         where: { id: storeId },
       });
@@ -175,7 +160,7 @@ export class OrderService {
         throw new Error("Store not found");
       }
 
-      // Fetch products for validation and pricing
+      
       const productIds = items.map((item) => item.productId);
       const products = await prisma.product.findMany({
         where: { id: { in: productIds } },
@@ -193,7 +178,7 @@ export class OrderService {
         },
       });
 
-      // Validate all products exist
+      
       for (const item of items) {
         const product = products.find((p) => p.id === item.productId);
         if (!product) {
@@ -201,18 +186,18 @@ export class OrderService {
         }
       }
 
-      // Calculate shipping cost (can be enhanced with shipping method logic)
-      const shippingCost = 0; // Default, can be calculated based on shippingMethod
+      
+      const shippingCost = 0; 
 
-      // Calculate totals
+      
       const totals = await this.calculateOrderTotals(
         items,
         shippingCost,
         coupon
       );
 
-      // Determine payment status
-      // Online payments (STRIPE, MOMO, VNPAY) = paid immediately when order is created
+      
+      
       // COD = not paid until delivery
       const isPaid = this.isOnlinePayment(paymentMethod);
 
@@ -225,7 +210,7 @@ export class OrderService {
       const orderData: Prisma.OrderCreateInput = {
         store: { connect: { id: storeId } },
         isPaid,
-        status: isPaid ? "PROCESSING" : "PENDING", // Online payments start as PROCESSING
+        status: isPaid ? "PROCESSING" : "PENDING", 
         paymentMethod,
         subtotal: totals.subtotal,
         tax: totals.tax,
@@ -259,7 +244,7 @@ export class OrderService {
           create: items.map((item) => {
             const product = products.find((p) => p.id === item.productId)!;
 
-            // Find variant
+            
             let variant = null;
             if (item.variantId) {
               variant = product.variants.find((v) => v.id === item.variantId);
@@ -294,7 +279,7 @@ export class OrderService {
         },
       };
 
-      // Create order
+      
       const order = await prisma.order.create({
         data: orderData,
         include: {
@@ -309,7 +294,7 @@ export class OrderService {
         },
       });
 
-      // If order is paid (online payment), decrement inventory
+      
       if (isPaid) {
         await this.decrementInventory(order.id);
       }
@@ -328,9 +313,7 @@ export class OrderService {
     }
   }
 
-  /**
-   * Decrement product inventory after successful payment
-   */
+  
   async decrementInventory(orderId: string): Promise<void> {
     try {
       const order = await prisma.order.findUnique({
@@ -347,7 +330,7 @@ export class OrderService {
       // Decrement inventory for each order item
       for (const item of order.orderItems) {
         if (item.sizeId && item.colorId) {
-          // Find variant based on snapshot data
+          
           const variant = await prisma.productVariant.findFirst({
             where: {
               productId: item.productId,
@@ -371,13 +354,11 @@ export class OrderService {
       }
     } catch (error) {
       console.error("[ORDER_SERVICE] Error decrementing inventory:", error);
-      // Don't throw - inventory update failure shouldn't fail order creation
+      
     }
   }
 
-  /**
-   * Update order payment status
-   */
+  
   async updatePaymentStatus(
     orderId: string,
     isPaid: boolean,
@@ -396,7 +377,7 @@ export class OrderService {
         },
       });
 
-      // If payment successful, decrement inventory
+      
       if (isPaid && !order.isPaid) {
         await this.decrementInventory(orderId);
       }
@@ -408,9 +389,7 @@ export class OrderService {
     }
   }
 
-  /**
-   * Get order by ID
-   */
+  
   async getOrderById(
     orderId: string,
     includeItems: boolean = true
@@ -445,9 +424,7 @@ export class OrderService {
     }
   }
 
-  /**
-   * Cancel order
-   */
+  
   async cancelOrder(orderId: string, reason?: string): Promise<any> {
     try {
       const order = await prisma.order.findUnique({
@@ -458,7 +435,7 @@ export class OrderService {
         throw new Error("Order not found");
       }
 
-      // Can only cancel PENDING or PROCESSING orders
+      
       if (!["PENDING", "PROCESSING"].includes(order.status)) {
         throw new Error(`Cannot cancel order with status: ${order.status}`);
       }
@@ -478,9 +455,7 @@ export class OrderService {
     }
   }
 
-  /**
-   * Delete unpaid pending order (for payment cancellation)
-   */
+  
   async deleteUnpaidOrder(orderId: string): Promise<boolean> {
     try {
       const order = await prisma.order.findUnique({
@@ -491,7 +466,7 @@ export class OrderService {
         return false;
       }
 
-      // Only delete if unpaid and pending
+      
       if (order.isPaid || order.status !== "PENDING") {
         return false;
       }
@@ -507,9 +482,7 @@ export class OrderService {
     }
   }
 
-  /**
-   * Link order to user by email
-   */
+  
   async linkOrderToUser(orderId: string, email: string): Promise<boolean> {
     try {
       const normalizedEmail = email.toLowerCase().trim();
@@ -547,5 +520,4 @@ export class OrderService {
   }
 }
 
-// Export singleton instance
 export const orderService = new OrderService();

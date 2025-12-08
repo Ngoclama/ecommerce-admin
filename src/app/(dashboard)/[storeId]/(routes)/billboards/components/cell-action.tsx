@@ -35,12 +35,12 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
     try {
       setLoading(true);
       await axios.delete(`/api/${params.storeId}/billboards/${data.id}`);
-      toast.success("Billboard deleted successfully.");
+      toast.success("Đã xóa billboard thành công");
       router.refresh();
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message ||
-        "Make sure you removed all categories using this billboard first.";
+        "Vui lòng xóa tất cả danh mục sử dụng billboard này trước";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -50,7 +50,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
 
   const onCopy = (id: string) => {
     navigator.clipboard.writeText(id);
-    toast.success("Billboard ID copied to clipboard.");
+    toast.success("Đã sao chép ID billboard");
   };
 
   return (

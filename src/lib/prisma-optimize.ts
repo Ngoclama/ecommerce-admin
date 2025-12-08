@@ -4,10 +4,6 @@ const prisma = new PrismaClient({
   log: ["error", "warn"],
 });
 
-/**
- * Optimized Product Query with Includes
- * Avoids N+1 queries
- */
 export const getOptimizedProduct = async (productId: string) => {
   return prisma.product.findUnique({
     where: { id: productId },
@@ -29,9 +25,6 @@ export const getOptimizedProduct = async (productId: string) => {
   });
 };
 
-/**
- * Optimized Products List with Pagination
- */
 export const getOptimizedProducts = async (
   storeId: string,
   skip: number = 0,
@@ -58,9 +51,6 @@ export const getOptimizedProducts = async (
   });
 };
 
-/**
- * Optimized Order with Items and Status
- */
 export const getOptimizedOrder = async (orderId: string) => {
   return prisma.order.findUnique({
     where: { id: orderId },
@@ -107,9 +97,6 @@ export const getOptimizedProductsByIds = async (productIds: string[]) => {
   });
 };
 
-/**
- * Optimized Category List with Count
- */
 export const getOptimizedCategories = async (storeId: string) => {
   return prisma.category.findMany({
     where: { storeId },

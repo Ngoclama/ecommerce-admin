@@ -35,11 +35,11 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
     try {
       setLoading(true);
       await axios.delete(`/api/${params.storeId}/materials/${data.id}`);
-      toast.success("Material deleted.");
+      toast.success("Đã xóa chất liệu thành công");
       router.refresh();
     } catch (error) {
       toast.error(
-        "Make sure you removed all products using this material first."
+        "Vui lòng xóa tất cả sản phẩm sử dụng chất liệu này trước"
       );
     } finally {
       setLoading(false);
@@ -49,7 +49,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
 
   const onCopy = (id: string) => {
     navigator.clipboard.writeText(id);
-    toast.success("Material ID copied to clipboard.");
+    toast.success("Đã sao chép ID chất liệu");
   };
 
   return (

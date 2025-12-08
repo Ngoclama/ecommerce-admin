@@ -46,7 +46,7 @@ export const CouponClient: React.FC<CouponClientProps> = ({ data }) => {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete Coupons");
-      toast.success("All Coupons deleted successfully");
+      toast.success("Đã xóa tất cả mã giảm giá thành công");
       router.refresh();
     } catch (error) {
       handleError(error, "Không thể xóa mã giảm giá. Vui lòng kiểm tra các mục liên quan trước.");

@@ -241,7 +241,7 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
         ) : (
           <ScrollArea className="flex-1 px-8 py-6 min-h-0">
             <div className="space-y-6 w-full">
-              {/* Status Banner */}
+              {}
               <div className="relative overflow-hidden rounded-2xl border bg-linear-to-r from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 p-6 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -292,7 +292,7 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
 
               {/* Main Grid */}
               <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-                {/* Customer Info Card */}
+                {}
                 <div className="xl:col-span-1 space-y-4">
                   <div className="rounded-2xl border bg-card p-6 shadow-sm">
                     <div className="flex items-center gap-3 mb-5">
@@ -340,7 +340,7 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
 
                 {/* Payment & Shipping Cards */}
                 <div className="xl:col-span-4 grid grid-cols-1 md:grid-cols-4 gap-6">
-                  {/* Payment Info */}
+                  {}
                   <div className="rounded-2xl border bg-card p-6 shadow-sm">
                     <div className="flex items-center gap-3 mb-5">
                       <div className="p-2 rounded-xl bg-green-100 dark:bg-green-900/30">
@@ -374,7 +374,7 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Shipping Info */}
+                  {}
                   <div className="rounded-2xl border bg-card p-6 shadow-sm">
                     <div className="flex items-center gap-3 mb-5">
                       <div className="p-2 rounded-xl bg-purple-100 dark:bg-purple-900/30">
@@ -422,9 +422,9 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
                 </div>
               </div>
 
-              {/* Order Summary & Details */}
+              {}
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {/* Financial Summary */}
+                {}
                 <div className="rounded-2xl border bg-card p-6 shadow-sm">
                   <div className="flex items-center gap-3 mb-5">
                     <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-900/30">
@@ -527,7 +527,7 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
                 </div>
               </div>
 
-              {/* Notes */}
+              {}
               {(order.customerNote || order.adminNote) && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {order.customerNote && (
@@ -700,7 +700,7 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
                 </div>
               </div>
 
-              {/* Print Footer */}
+              {}
               <div className="hidden print:block text-center text-sm text-muted-foreground mt-10 pt-10 border-t">
                 <p className="font-medium">{t("modals.thankYou")}</p>
                 <p className="mt-2">

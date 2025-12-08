@@ -221,7 +221,7 @@ export function Header({
         <Menu className="h-5 w-5" />
       </Button>
 
-      {/* Sidebar Toggle Button (Desktop) */}
+      {}
       {onSidebarToggle && (
         <Button
           variant="ghost"
@@ -238,7 +238,7 @@ export function Header({
         </Button>
       )}
 
-      {/* Search Bar */}
+      {}
       <div className="flex-1 max-w-md">
         <div className="relative">
           <div className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 opacity-60">
@@ -267,7 +267,7 @@ export function Header({
         </div>
       </div>
 
-      {/* Command Dialog for Search */}
+      {}
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder={t("nav.overview")} />
         <CommandList>
@@ -345,7 +345,7 @@ export function Header({
                 </div>
               ) : (
                 <div className="p-2">
-                  {/* New Products */}
+                  {}
                   {newItems.newProducts.length > 0 && (
                     <>
                       <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -391,7 +391,7 @@ export function Header({
                     </>
                   )}
 
-                  {/* New Billboards */}
+                  {}
                   {newItems.newBillboards.length > 0 && (
                     <>
                       <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -457,7 +457,7 @@ export function Header({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* User Menu */}
+        {}
         <NavbarUser items={stores} />
       </div>
     </header>

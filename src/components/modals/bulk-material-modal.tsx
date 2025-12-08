@@ -134,7 +134,7 @@ export const BulkCreateMaterialModal: React.FC = () => {
           </DialogHeader>
         </div>
 
-        {/* 2. Table Header (Sticky) */}
+        {}
         <div className="bg-neutral-50/80 dark:bg-neutral-900/80 backdrop-blur-sm border-b dark:border-neutral-800 z-10 px-6 py-3 grid grid-cols-12 gap-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
           <div className="col-span-5">{t("bulk.material.name")}</div>
           <div className="col-span-5">{t("bulk.material.value")}</div>
@@ -157,7 +157,7 @@ export const BulkCreateMaterialModal: React.FC = () => {
                 transition={{ duration: 0.2 }}
                 className="group relative bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3 shadow-sm hover:shadow-md transition-all duration-200 grid grid-cols-12 gap-4 items-center"
               >
-                {/* Name Input */}
+                {}
                 <div className="col-span-5">
                   <Input
                     disabled={isLoading}
@@ -174,7 +174,7 @@ export const BulkCreateMaterialModal: React.FC = () => {
                   />
                 </div>
 
-                {/* Value Input */}
+                {}
                 <div className="col-span-5">
                   <Input
                     disabled={isLoading}
@@ -204,7 +204,7 @@ export const BulkCreateMaterialModal: React.FC = () => {
                   </Button>
                 </div>
 
-                {/* Row Number (for visual reference) */}
+                {}
                 <div className="absolute -left-3 top-1/2 -translate-y-1/2 h-6 w-6 items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-800 text-xs font-bold text-neutral-500 opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex">
                   {index + 1}
                 </div>
@@ -212,7 +212,7 @@ export const BulkCreateMaterialModal: React.FC = () => {
             ))}
           </AnimatePresence>
 
-          {/* Add Row Button (Bottom of list) */}
+          {}
           <motion.button
             layout
             onClick={handleAddRow}

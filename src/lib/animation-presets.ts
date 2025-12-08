@@ -1,6 +1,4 @@
-/**
- * Optimized Animation Presets for Admin
- */
+
 
 export const useReducedMotion = () => {
   if (typeof window === "undefined") return false;

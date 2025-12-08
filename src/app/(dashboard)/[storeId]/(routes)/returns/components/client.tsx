@@ -53,7 +53,7 @@ export const ReturnClient: React.FC<ReturnClientProps> = ({ data }) => {
       }
 
       const result = await response.json();
-      toast.success(result.message || "All returns deleted successfully.");
+      toast.success(result.message || "Đã xóa tất cả đơn trả hàng thành công");
       router.refresh();
     } catch (error: any) {
       handleError(error, "Không thể xóa đơn trả hàng. Vui lòng thử lại.");

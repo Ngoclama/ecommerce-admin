@@ -207,7 +207,7 @@ const NavbarUser: React.FC<NavbarUserProps> = ({ items }) => {
 
           <DropdownMenuSeparator />
 
-          {/* Profile Link */}
+          {}
           <DropdownMenuItem asChild>
             <Link
               href={`/${params.storeId}/profile`}

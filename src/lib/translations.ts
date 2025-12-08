@@ -11,7 +11,7 @@ export const translations = {
       confirm: "Confirm",
       loading: "Loading...",
     },
-    // Settings
+    
     settings: {
       title: "Settings",
       description: "Manage store preferences",
@@ -39,7 +39,7 @@ export const translations = {
       createError: "Failed to create store.",
       invalidResponse: "Invalid response from server. Please try again.",
       missingId: "Store created, but missing ID for redirection.",
-      // Validation messages
+      
       nameRequired: "Store name is required",
       nameMinLength: "Store name must be at least 3 characters",
       nameMaxLength: "Store name must be less than 255 characters",
@@ -138,7 +138,7 @@ export const translations = {
       revenue: "Revenue",
       category: "Category",
     },
-    // Table columns
+    
     columns: {
       name: "Name",
       email: "Email",
@@ -484,7 +484,7 @@ export const translations = {
       sendReply: "Send Reply",
       responseRequired: "Response content is required",
     },
-    // Forms
+    
     forms: {
       edit: "Edit",
       create: "Create",
@@ -532,7 +532,7 @@ export const translations = {
         variantPricePlaceholder: "Override price",
         selectMaterial: "Select material",
         none: "None",
-        // Validation messages
+        
         nameRequired: "Product name is required",
         imagesRequired: "At least one image is required",
         priceRequired: "Price must be a positive number",
@@ -591,7 +591,7 @@ export const translations = {
       confirm: "Xác nhận",
       loading: "Đang tải...",
     },
-    // Settings
+    
     settings: {
       title: "Cài đặt",
       description: "Quản lý tùy chọn cửa hàng",
@@ -619,7 +619,7 @@ export const translations = {
       createError: "Không thể tạo cửa hàng.",
       invalidResponse: "Phản hồi không hợp lệ từ máy chủ. Vui lòng thử lại.",
       missingId: "Cửa hàng đã được tạo, nhưng thiếu ID để chuyển hướng.",
-      // Validation messages
+      
       nameRequired: "Tên cửa hàng là bắt buộc",
       nameMinLength: "Tên cửa hàng phải có ít nhất 3 ký tự",
       nameMaxLength: "Tên cửa hàng phải ít hơn 255 ký tự",
@@ -705,7 +705,7 @@ export const translations = {
       revenue: "Doanh Thu",
       category: "Danh mục",
     },
-    // Table columns
+    
     columns: {
       name: "Tên",
       email: "Email",
@@ -1053,7 +1053,7 @@ export const translations = {
       sendReply: "Gửi phản hồi",
       responseRequired: "Nội dung phản hồi là bắt buộc",
     },
-    // Forms
+    
     forms: {
       edit: "Sửa",
       create: "Tạo",
@@ -1204,7 +1204,7 @@ export const translations = {
         variantPricePlaceholder: "Ghi đè giá",
         selectMaterial: "Chọn chất liệu",
         none: "Không có",
-        // Validation messages
+        
         nameRequired: "Tên sản phẩm là bắt buộc",
         imagesRequired: "Cần ít nhất một hình ảnh",
         priceRequired: "Giá phải là số dương",
@@ -1349,7 +1349,7 @@ export const translations = {
 // Helper function để lấy translation
 export function getTranslation(language: "en" | "vi", key: string): string {
   const keys = key.split(".");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
   let value: any = translations[language];
 
   for (const k of keys) {

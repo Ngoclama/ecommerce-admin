@@ -242,7 +242,7 @@ export function Sidebar({
         )}
       >
         <div className="flex h-full flex-col">
-          {/* Logo/Store Switcher */}
+          {}
           <div
             className={cn(
               "flex h-16 items-center border-b border-white/20 dark:border-white/10 px-6",
@@ -270,7 +270,7 @@ export function Sidebar({
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto px-4 py-4">
             <div className="space-y-1">
-              {/* Main Routes */}
+              {}
               {routes.map((route, index) => {
                 const Icon = route.icon;
                 return (
@@ -464,7 +464,7 @@ export function Sidebar({
                 )}
               </div>
 
-              {/* Settings Menu */}
+              {}
               <div>
                 <button
                   onClick={() => toggleMenu(settingsMenu.key)}

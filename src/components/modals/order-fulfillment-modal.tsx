@@ -83,14 +83,14 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
     },
   });
 
-  // Get valid next statuses based on current status
+  
   const validStatuses = useMemo(() => {
     const validNext = getValidNextStatuses(currentStatus);
-    // Always include current status
+    
     return [currentStatus, ...validNext];
   }, [currentStatus]);
 
-  // Reset form when modal opens or currentStatus changes
+  
   useEffect(() => {
     if (isOpen) {
       form.reset({
@@ -147,7 +147,7 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Status */}
+            {}
             <FormField
               control={form.control}
               name="status"
@@ -167,29 +167,29 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
                     </FormControl>
                     <SelectContent>
                       {validStatuses.includes(ORDER_STATUS.PENDING) && (
-                        <SelectItem value="PENDING">
-                          {t("actions.pending")}
-                        </SelectItem>
+                      <SelectItem value="PENDING">
+                        {t("actions.pending")}
+                      </SelectItem>
                       )}
                       {validStatuses.includes(ORDER_STATUS.PROCESSING) && (
-                        <SelectItem value="PROCESSING">
-                          {t("actions.processingStatus")}
-                        </SelectItem>
+                      <SelectItem value="PROCESSING">
+                        {t("actions.processingStatus")}
+                      </SelectItem>
                       )}
                       {validStatuses.includes(ORDER_STATUS.SHIPPED) && (
-                        <SelectItem value="SHIPPED">
-                          {t("actions.shipped")}
-                        </SelectItem>
+                      <SelectItem value="SHIPPED">
+                        {t("actions.shipped")}
+                      </SelectItem>
                       )}
                       {validStatuses.includes(ORDER_STATUS.DELIVERED) && (
-                        <SelectItem value="DELIVERED">
-                          {t("actions.delivered")}
-                        </SelectItem>
+                      <SelectItem value="DELIVERED">
+                        {t("actions.delivered")}
+                      </SelectItem>
                       )}
                       {validStatuses.includes(ORDER_STATUS.CANCELLED) && (
-                        <SelectItem value="CANCELLED">
-                          {t("actions.cancelled")}
-                        </SelectItem>
+                      <SelectItem value="CANCELLED">
+                        {t("actions.cancelled")}
+                      </SelectItem>
                       )}
                       {validStatuses.includes(ORDER_STATUS.RETURNED) && (
                         <SelectItem value="RETURNED">
@@ -203,7 +203,7 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
               )}
             />
 
-            {/* Shipping Method */}
+            {}
             <FormField
               control={form.control}
               name="shippingMethod"
@@ -223,7 +223,7 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
               )}
             />
 
-            {/* Tracking Number */}
+            {}
             <FormField
               control={form.control}
               name="trackingNumber"

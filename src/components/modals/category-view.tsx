@@ -100,7 +100,7 @@ export const CategoryViewModal: React.FC<CategoryViewModalProps> = ({
           </div>
         ) : categoryData ? (
           <div className="space-y-6">
-            {/* Image Preview - Only show if imageUrl exists */}
+            {}
             {categoryData.imageUrl && (
               <div className="grid grid-cols-1 gap-2">
                 <Label className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 flex items-center gap-1">
@@ -118,7 +118,7 @@ export const CategoryViewModal: React.FC<CategoryViewModalProps> = ({
               </div>
             )}
 
-            {/* Name & Basic Info */}
+            {}
             <div className="grid grid-cols-1 gap-2">
               <Label className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 flex items-center gap-1">
                 <Tag className="h-4 w-4 opacity-70" /> {t("columns.name")}
@@ -178,7 +178,7 @@ export const CategoryViewModal: React.FC<CategoryViewModalProps> = ({
 
             <Separator className="my-2" />
 
-            {/* Timestamps */}
+            {}
             <div className="grid grid-cols-2 gap-4">
               <div className="grid grid-cols-1 gap-2">
                 <Label className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
@@ -205,7 +205,7 @@ export const CategoryViewModal: React.FC<CategoryViewModalProps> = ({
 
             <Separator className="my-2" />
 
-            {/* ID (Readonly) */}
+            {}
             <div className="grid grid-cols-1 gap-2">
               <Label className="text-xs text-neutral-400">
                 {t("modals.systemId")}

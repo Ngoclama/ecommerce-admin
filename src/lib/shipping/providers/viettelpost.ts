@@ -1,4 +1,4 @@
-// Viettel Post Provider Implementation
+
 import {
   ShippingProvider,
   CreateShippingOrderData,
@@ -24,8 +24,8 @@ export class ViettelPostProvider implements ShippingProvider {
     data: CreateShippingOrderData
   ): Promise<CreateShippingOrderResponse> {
     try {
-      // TODO: Implement actual ViettelPost API call
-      // This is a placeholder implementation
+      
+      
       return {
         success: false,
         trackingNumber: "",
@@ -44,7 +44,7 @@ export class ViettelPostProvider implements ShippingProvider {
 
   async getTracking(trackingNumber: string): Promise<TrackingResponse> {
     try {
-      // TODO: Implement actual ViettelPost tracking API
+      
       return {
         success: false,
         status: "UNKNOWN",
@@ -61,10 +61,10 @@ export class ViettelPostProvider implements ShippingProvider {
 
   async calculateFee(data: CalculateFeeData): Promise<CalculateFeeResponse> {
     try {
-      // TODO: Implement actual ViettelPost fee calculation
+      
       return {
         success: true,
-        fee: 25000, // Default fee
+        fee: 25000, 
         estimatedDelivery: "2-3 ngày",
       };
     } catch (error: any) {

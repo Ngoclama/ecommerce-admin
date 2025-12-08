@@ -135,7 +135,7 @@ export const BulkCreateBillboardModal: React.FC = () => {
           </div>
         </div>
 
-        {/* 2. Table Header (Sticky) */}
+        {}
         <div className="bg-neutral-50/80 dark:bg-neutral-900/80 backdrop-blur-sm border-b dark:border-neutral-800 z-10 px-6 py-3 grid grid-cols-12 gap-6 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
           <div className="col-span-4">{t("bulk.billboard.image")}</div>
           <div className="col-span-7">{t("bulk.billboard.label")}</div>
@@ -158,12 +158,12 @@ export const BulkCreateBillboardModal: React.FC = () => {
                 transition={{ duration: 0.2 }}
                 className="group relative bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-all grid grid-cols-1 md:grid-cols-12 gap-6 items-start"
               >
-                {/* Index Badge */}
+                {}
                 <div className="absolute -left-3 top-1/2 -translate-y-1/2 md:flex hidden h-6 w-6 items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-800 text-xs font-bold text-neutral-500 opacity-0 group-hover:opacity-100 transition-opacity">
                   {index + 1}
                 </div>
 
-                {/* Image Upload (Single Image per Row) */}
+                {}
                 <div className="col-span-1 md:col-span-4">
                   <div className="w-full min-h-[180px] flex flex-col justify-center bg-neutral-50 dark:bg-neutral-950/30 rounded-lg p-2 border border-dashed border-neutral-200 dark:border-neutral-800 relative">
                     <ImageUpload
@@ -185,7 +185,7 @@ export const BulkCreateBillboardModal: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Label Input */}
+                {}
                 <div className="col-span-1 md:col-span-7 pt-2">
                   <div className="relative">
                     <label className="text-xs font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wider">
@@ -223,7 +223,7 @@ export const BulkCreateBillboardModal: React.FC = () => {
             ))}
           </AnimatePresence>
 
-          {/* Add Row Button */}
+          {}
           <motion.button
             layout
             onClick={handleAddRow}

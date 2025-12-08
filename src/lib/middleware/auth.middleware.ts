@@ -5,11 +5,6 @@ import { getUserFromDb } from "@/lib/permissions";
 import { clerkClient } from "@clerk/nextjs/server";
 import { userService } from "@/lib/services/user.service";
 
-/**
- * Authentication Middleware
- * Centralized auth logic for API routes
- */
-
 export interface AuthResult {
   success: boolean;
   userId?: string;
@@ -20,10 +15,6 @@ export interface AuthResult {
   statusCode?: number;
 }
 
-/**
- * Authenticate request from Clerk token
- * Supports both Admin and Store Clerk instances
- */
 export async function authenticateRequest(
   req: NextRequest
 ): Promise<AuthResult> {
@@ -40,7 +31,7 @@ export async function authenticateRequest(
 
     const token = authHeader.substring(7);
 
-    // Try Admin Clerk instance first
+    
     try {
       const session = await verifyToken(token, {
         secretKey: process.env.CLERK_SECRET_KEY!,
@@ -55,7 +46,7 @@ export async function authenticateRequest(
         };
       }
 
-      // Auto-create user if doesn't exist
+      
       const user = await userService.getOrCreateUser(clerkUserId, false, true);
       if (!user) {
         return {
@@ -73,7 +64,7 @@ export async function authenticateRequest(
         isStoreUser: false,
       };
     } catch (adminError) {
-      // Try Store Clerk instance if Admin fails
+      
       if (process.env.CLERK_STORE_SECRET_KEY) {
         try {
           const session = await verifyToken(token, {
@@ -89,7 +80,7 @@ export async function authenticateRequest(
             };
           }
 
-          // Auto-create user if doesn't exist
+          
           const user = await userService.getOrCreateUser(clerkUserId, true, true);
           if (!user) {
             return {
@@ -131,22 +122,17 @@ export async function authenticateRequest(
   }
 }
 
-/**
- * Get or create user from Clerk ID
- * Handles user creation and email sync
- * Uses UserService for centralized logic
- */
 export async function getOrCreateUser(
   clerkUserId: string,
   isStoreUser: boolean = false
 ) {
   try {
-    // Use UserService for centralized user management
+    
     const user = await userService.getOrCreateUser(clerkUserId, isStoreUser, true);
     return user;
   } catch (error) {
     console.error("[AUTH_MIDDLEWARE] Error in getOrCreateUser:", error);
-    // Fallback to old method if service fails
+    
     return await getUserFromDb(clerkUserId);
   }
 }

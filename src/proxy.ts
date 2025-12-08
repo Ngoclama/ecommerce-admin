@@ -22,7 +22,6 @@ const isAdminRoute = createRouteMatcher([
   "/api/upload(.*)",
 ]);
 
-// Routes that should bypass middleware (for file uploads, etc.)
 const isUploadRoute = createRouteMatcher([
   "/api/upload(.*)",
   "/api/uploadthing(.*)",
@@ -109,18 +108,7 @@ export default clerkMiddleware(async (auth, request) => {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files with extensions
-     *
-     * Pattern breakdown:
-     * - (?!...) = negative lookahead to exclude patterns
-     * - _next = Next.js internal routes
-     * - [^?]*\\.(?:...) = static file extensions
-     */
+    
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
   ],
 };

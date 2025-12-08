@@ -1,15 +1,12 @@
 /**
- * Constants - Các hằng số dùng chung trong ứng dụng
+ * Các hằng số dùng chung trong ứng dụng
  * Thay thế magic strings và hardcoded values
  */
 
-// ─── API RESPONSE MESSAGES ────────────────────────────────────────
 export const API_MESSAGES = {
-  // Authentication
   UNAUTHENTICATED: "Chưa xác thực",
   UNAUTHORIZED: "Không có quyền truy cập",
 
-  // Validation
   STORE_ID_REQUIRED: "ID cửa hàng là bắt buộc",
   ID_REQUIRED: "ID là bắt buộc",
   NAME_REQUIRED: "Tên là bắt buộc",
@@ -35,18 +32,15 @@ export const API_MESSAGES = {
   RATE_LIMIT_EXCEEDED:
     "Bạn đang thực hiện quá nhiều yêu cầu. Vui lòng thử lại sau.",
 
-  // Success
   CREATED: "Đã tạo thành công",
   UPDATED: "Đã cập nhật thành công",
   DELETED: "Đã xóa thành công",
 
-  // Error
   NOT_FOUND: "Không tìm thấy",
   SERVER_ERROR: "Lỗi máy chủ",
   VALIDATION_ERROR: "Lỗi xác thực",
 } as const;
 
-// ─── HTTP STATUS CODES ────────────────────────────────────────────
 export const HTTP_STATUS = {
   OK: 200,
   CREATED: 201,
@@ -58,7 +52,6 @@ export const HTTP_STATUS = {
   INTERNAL_SERVER_ERROR: 500,
 } as const;
 
-// ─── PRISMA ERROR CODES ───────────────────────────────────────────
 export const PRISMA_ERROR_CODES = {
   UNIQUE_CONSTRAINT: "P2002",
   RECORD_NOT_FOUND: "P2025",
@@ -67,7 +60,6 @@ export const PRISMA_ERROR_CODES = {
   NULL_CONSTRAINT: "P2032",
 } as const;
 
-// ─── ORDER STATUS ────────────────────────────────────────────────
 export const ORDER_STATUS = {
   PENDING: "PENDING",
   PROCESSING: "PROCESSING",
@@ -77,7 +69,6 @@ export const ORDER_STATUS = {
   RETURNED: "RETURNED",
 } as const;
 
-// ─── PAYMENT METHODS ─────────────────────────────────────────────
 export const PAYMENT_METHODS = {
   COD: "COD",
   STRIPE: "STRIPE",
@@ -92,14 +83,12 @@ export const COUPON_TYPES = {
   FIXED: "FIXED",
 } as const;
 
-// ─── USER ROLES ──────────────────────────────────────────────────
 export const USER_ROLES = {
   ADMIN: "ADMIN",
   VENDOR: "VENDOR",
   CUSTOMER: "CUSTOMER",
 } as const;
 
-// ─── GENDER OPTIONS ───────────────────────────────────────────────
 export const GENDER_OPTIONS = {
   MEN: "MEN",
   WOMEN: "WOMEN",
@@ -107,7 +96,6 @@ export const GENDER_OPTIONS = {
   UNISEX: "UNISEX",
 } as const;
 
-// ─── SHIPPING PROVIDERS ──────────────────────────────────────────
 export const SHIPPING_PROVIDERS = {
   GHN: "GHN",
   VIETTELPOST: "VIETTELPOST",
@@ -115,7 +103,6 @@ export const SHIPPING_PROVIDERS = {
   CUSTOM: "CUSTOM",
 } as const;
 
-// ─── SHIPPING STATUS ─────────────────────────────────────────────
 export const SHIPPING_STATUS = {
   PENDING: "PENDING",
   CREATED: "CREATED",
@@ -126,7 +113,6 @@ export const SHIPPING_STATUS = {
   CANCELLED: "CANCELLED",
 } as const;
 
-// ─── RETURN STATUS ───────────────────────────────────────────────
 export const RETURN_STATUS = {
   PENDING: "PENDING",
   APPROVED: "APPROVED",
@@ -144,7 +130,6 @@ export const NOTIFICATION_TYPES = {
   ORDER_CANCELLED: "ORDER_CANCELLED",
 } as const;
 
-// ─── PAYMENT STATUS ──────────────────────────────────────────────
 export const PAYMENT_STATUS = {
   PENDING: "PENDING",
   PAID: "PAID",
@@ -165,19 +150,16 @@ export const UPLOAD = {
   ALLOWED_IMAGE_TYPES: ["image/jpeg", "image/png", "image/webp"],
 } as const;
 
-// ─── CACHE ────────────────────────────────────────────────────────
 export const CACHE = {
   REVALIDATE_TIME: 60, // seconds
   NO_STORE: "no-store",
 } as const;
 
-// ─── TIMEOUT ──────────────────────────────────────────────────────
 export const TIMEOUT = {
   FETCH: 30000, // 30 seconds
   API: 30000, // 30 seconds
 } as const;
 
-// ─── ENVIRONMENT ─────────────────────────────────────────────────
 export const ENV = {
   DEVELOPMENT: "development",
   PRODUCTION: "production",
@@ -191,7 +173,6 @@ export const REGEX = {
   SLUG: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
 } as const;
 
-// ─── DEFAULT VALUES ───────────────────────────────────────────────
 export const DEFAULTS = {
   INVENTORY: 0,
   LOW_STOCK_THRESHOLD: 10,

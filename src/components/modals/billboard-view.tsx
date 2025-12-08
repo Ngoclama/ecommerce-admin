@@ -107,7 +107,7 @@ export const BillboardViewModal: React.FC<BillboardViewModalProps> = ({
                 </code>
               </div>
 
-              {/* Created At Section */}
+              {}
               <div className="flex items-center gap-2 text-sm text-neutral-500">
                 <Calendar className="h-4 w-4" />
                 <span>

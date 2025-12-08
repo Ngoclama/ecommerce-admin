@@ -32,9 +32,9 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       setLoading(true);
       await axios.delete(`/api/${params.storeId}/flash-sales/${data.id}`);
       router.refresh();
-      toast.success("Flash Sale deleted.");
+      toast.success("Đã xóa flash sale thành công");
     } catch (error) {
-      toast.error("Something went wrong.");
+      toast.error("Đã xảy ra lỗi. Vui lòng thử lại sau");
     } finally {
       setLoading(false);
       setOpenAlert(false);
@@ -43,7 +43,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
 
   const onCopy = (id: string) => {
     navigator.clipboard.writeText(id);
-    toast.success("Flash Sale ID copied to clipboard.");
+    toast.success("Đã sao chép ID flash sale");
   };
 
   return (

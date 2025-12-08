@@ -95,7 +95,7 @@ export const BulkCreateCategoryModal: React.FC = () => {
           }
         } catch (error) {
           console.error("Failed to fetch categories:", error);
-          // Don't show error toast for categories as it's optional
+          
         } finally {
           setIsCategoriesLoading(false);
         }
@@ -200,7 +200,7 @@ export const BulkCreateCategoryModal: React.FC = () => {
         {/* Content - Scrollable Area */}
         <div className="flex-1 overflow-hidden bg-neutral-50/50 dark:bg-neutral-950/50 relative">
           <ScrollArea className="h-full w-full p-6">
-            {/* Table Header (Desktop only) */}
+            {}
             <div className="hidden md:grid grid-cols-[2fr_2fr_1.5fr_2.5fr_auto] gap-4 mb-4 px-4 font-medium text-sm text-neutral-500 uppercase tracking-wider">
               <div>{t("bulk.category.name")}</div>
               <div>{t("bulk.category.billboard")}</div>
@@ -209,7 +209,7 @@ export const BulkCreateCategoryModal: React.FC = () => {
               <div className="text-center w-12">{t("columns.actions")}</div>
             </div>
 
-            {/* Rows */}
+            {}
             <div className="space-y-3 pb-4">
               <AnimatePresence mode="popLayout" initial={false}>
                 {rows.map((row, index) => (
@@ -223,7 +223,7 @@ export const BulkCreateCategoryModal: React.FC = () => {
                     className="group relative bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-all"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_1.5fr_2.5fr_auto] gap-4 items-start">
-                      {/* Name Input */}
+                      {}
                       <div>
                         <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
                           {t("bulk.category.name")}
@@ -368,7 +368,7 @@ export const BulkCreateCategoryModal: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Row Number */}
+                    {}
                     <div className="absolute -left-2 -top-2 bg-neutral-100 dark:bg-neutral-800 text-neutral-500 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border border-neutral-200 dark:border-neutral-700 z-10 shadow-sm">
                       {index + 1}
                     </div>

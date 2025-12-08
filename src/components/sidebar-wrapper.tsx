@@ -12,7 +12,7 @@ export function SidebarWrapper({ stores }: SidebarWrapperProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
-  // Listen for toggle events from header (mobile)
+  
   useEffect(() => {
     const handleToggle = () => {
       setIsOpen((prev) => !prev);
@@ -21,7 +21,7 @@ export function SidebarWrapper({ stores }: SidebarWrapperProps) {
     return () => window.removeEventListener("toggle-sidebar", handleToggle);
   }, []);
 
-  // Listen for collapse/expand events from header (desktop)
+  
   useEffect(() => {
     const handleCollapse = () => {
       setCollapsed((prev) => !prev);
@@ -31,7 +31,7 @@ export function SidebarWrapper({ stores }: SidebarWrapperProps) {
       window.removeEventListener("toggle-sidebar-collapse", handleCollapse);
   }, []);
 
-  // Dispatch event after collapsed state changes
+  
   useEffect(() => {
     window.dispatchEvent(
       new CustomEvent("sidebar-collapse-changed", {
@@ -40,7 +40,7 @@ export function SidebarWrapper({ stores }: SidebarWrapperProps) {
     );
   }, [collapsed]);
 
-  // Close sidebar on desktop resize
+  
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {

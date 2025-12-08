@@ -11,7 +11,7 @@ import {
 
 export class GHNProvider implements ShippingProvider {
   name = "GHN";
-  private apiUrl = "https://dev-online-gateway.ghn.vn/shiip/public-api/v2";
+  private apiUrl = "https://dev-online-gateway.ghn.vn";
   private token: string;
 
   constructor(token?: string) {
@@ -130,11 +130,11 @@ export class GHNProvider implements ShippingProvider {
 
   async calculateFee(data: CalculateFeeData): Promise<CalculateFeeResponse> {
     try {
-      // TODO: Implement actual GHN fee calculation API
-      // This is a placeholder
+      
+      
       return {
         success: true,
-        fee: 30000, // Default fee
+        fee: 30000, 
         estimatedDelivery: "2-3 ngày",
       };
     } catch (error: any) {
@@ -148,7 +148,7 @@ export class GHNProvider implements ShippingProvider {
 
   async cancelOrder(orderId: string): Promise<CancelOrderResponse> {
     try {
-      // TODO: Implement actual GHN cancel API
+      
       return {
         success: true,
         message: "Order cancelled successfully",

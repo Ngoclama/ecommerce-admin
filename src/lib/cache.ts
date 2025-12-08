@@ -1,16 +1,13 @@
-/**
- * Response Caching Utility
- * Reduces database queries for frequently accessed data
- */
+
 
 const cache = new Map<string, { data: any; timestamp: number }>();
 
 const CACHE_DURATIONS = {
-  PRODUCTS: 5 * 60 * 1000, // 5 minutes
-  CATEGORIES: 10 * 60 * 1000, // 10 minutes
-  ORDERS: 1 * 60 * 1000, // 1 minute
-  BILLBOARDS: 15 * 60 * 1000, // 15 minutes
-  SETTINGS: 30 * 60 * 1000, // 30 minutes
+  PRODUCTS: 5 * 60 * 1000, 
+  CATEGORIES: 10 * 60 * 1000, 
+  ORDERS: 1 * 60 * 1000, 
+  BILLBOARDS: 15 * 60 * 1000, 
+  SETTINGS: 30 * 60 * 1000, 
 } as const;
 
 export function getCacheKey(prefix: string, id: string): string {

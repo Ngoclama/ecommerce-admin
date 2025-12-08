@@ -14,7 +14,7 @@ interface OverviewPieProps {
 }
 
 const COLORS = [
-  "#2980b9", // Primary Blue
+  "#2980b9", 
   "#2ecc71", // Green
   "#f39c12", // Orange
   "#e74c3c", // Red

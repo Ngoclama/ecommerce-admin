@@ -2,7 +2,6 @@
  * API Types - Các types dùng chung cho API responses
  */
 
-// ─── API RESPONSE TYPES ───────────────────────────────────────────
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
@@ -37,7 +36,6 @@ export interface PaginatedResponse<T> {
   pagination: PaginationMeta;
 }
 
-// ─── VALIDATION TYPES ────────────────────────────────────────────
 export interface ValidationError {
   field: string;
   message: string;

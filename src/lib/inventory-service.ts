@@ -125,7 +125,7 @@ export async function reserveInventory(
           continue;
         }
 
-        // Check sufficient stock
+        
         if (variant.inventory < item.quantity) {
           failedItems.push(
             `${variant.product.name}: Chỉ còn ${variant.inventory}/${item.quantity} sản phẩm`
@@ -137,7 +137,7 @@ export async function reserveInventory(
         await tx.productVariant.update({
           where: {
             id: item.variantId,
-            inventory: { gte: item.quantity }, // Optimistic lock
+            inventory: { gte: item.quantity }, 
           },
           data: {
             inventory: {
@@ -237,9 +237,6 @@ export async function checkLowStockProducts(storeId: string) {
   }));
 }
 
-/**
- * Bulk update inventory (cho admin import)
- */
 export async function bulkUpdateInventory(
   updates: Array<{ variantId: string; quantity: number }>
 ): Promise<{ success: boolean; updated: number; failed: number }> {

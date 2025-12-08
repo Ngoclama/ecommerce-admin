@@ -35,10 +35,10 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
     try {
       setLoading(true);
       await axios.delete(`/api/${params.storeId}/colors/${data.id}`);
-      toast.success("Color deleted.");
+      toast.success("Đã xóa màu sắc thành công");
       router.refresh();
     } catch (error) {
-      toast.error("Make sure you removed all products using this color first.");
+      toast.error("Vui lòng xóa tất cả sản phẩm sử dụng màu sắc này trước");
     } finally {
       setLoading(false);
       setOpen(false);
@@ -47,7 +47,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
 
   const onCopy = (id: string) => {
     navigator.clipboard.writeText(id);
-    toast.success("Color ID copied to clipboard.");
+    toast.success("Đã sao chép ID màu sắc");
   };
 
   return (

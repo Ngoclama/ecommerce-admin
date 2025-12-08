@@ -17,16 +17,13 @@ interface TreeNode extends CategoryWithParent {
   children?: TreeNode[];
 }
 
-/**
- * Build tree structure from flat category list
- */
 export function buildCategoryTree(
   categories: CategoryWithParent[]
 ): TreeNode[] {
   const categoryMap = new Map<string, TreeNode>();
   const roots: TreeNode[] = [];
 
-  // First pass: create all nodes
+  
   categories.forEach((cat) => {
     categoryMap.set(cat.id, {
       ...cat,
@@ -35,7 +32,7 @@ export function buildCategoryTree(
     });
   });
 
-  // Second pass: build tree structure
+  
   categories.forEach((cat) => {
     const node = categoryMap.get(cat.id)!;
     if (cat.parentId && cat.parentId.trim() !== "") {
@@ -57,9 +54,6 @@ export function buildCategoryTree(
   return roots;
 }
 
-/**
- * Flatten tree structure to display in table with proper ordering
- */
 export function flattenCategoryTree(
   tree: TreeNode[],
   expandedIds: Set<string> = new Set()
@@ -82,7 +76,7 @@ export function flattenCategoryTree(
         createdAt: node.createdAt,
       });
 
-      // If expanded or no children, traverse children
+      
       if (expandedIds.has(node.id) || !node.children?.length) {
         if (node.children && node.children.length > 0) {
           traverse(node.children);
@@ -95,9 +89,6 @@ export function flattenCategoryTree(
   return result;
 }
 
-/**
- * Sort tree nodes by name at each level
- */
 export function sortCategoryTree(tree: TreeNode[]): TreeNode[] {
   function sortRecursive(nodes: TreeNode[]): TreeNode[] {
     return nodes

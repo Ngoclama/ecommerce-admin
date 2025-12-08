@@ -95,7 +95,7 @@ export const CouponViewModal: React.FC<CouponViewModalProps> = ({
           </div>
         ) : data ? (
           <div className="space-y-6 pt-2">
-            {/* Code Section */}
+            {}
             <div className="p-4 rounded-lg border bg-neutral-50 dark:bg-neutral-800/50 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-white dark:bg-neutral-900 rounded-md border shadow-sm">
@@ -118,7 +118,7 @@ export const CouponViewModal: React.FC<CouponViewModalProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              {/* Value */}
+              {}
               <div className="p-3 border rounded-md">
                 <h3 className="text-xs font-medium text-neutral-500 mb-1 flex items-center gap-1">
                   {data.type === "PERCENT" ? (
@@ -135,7 +135,7 @@ export const CouponViewModal: React.FC<CouponViewModalProps> = ({
                 </div>
               </div>
 
-              {/* Type */}
+              {}
               <div className="p-3 border rounded-md">
                 <h3 className="text-xs font-medium text-neutral-500 mb-1">
                   Type
@@ -163,7 +163,7 @@ export const CouponViewModal: React.FC<CouponViewModalProps> = ({
               </div>
             </div>
 
-            {/* Footer Info */}
+            {}
             <div className="flex items-center justify-between text-xs text-neutral-500 border-t pt-4">
               <div className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />

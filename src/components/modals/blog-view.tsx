@@ -110,7 +110,7 @@ export const BlogViewModal: React.FC<BlogViewModalProps> = ({
         ) : (
           <ScrollArea className="flex-1 px-8 py-6">
             <div className="space-y-8 max-w-6xl mx-auto">
-              {/* Header Section */}
+              {}
               <div className="space-y-4">
                 {/* Title */}
                 <div>
@@ -125,7 +125,7 @@ export const BlogViewModal: React.FC<BlogViewModalProps> = ({
                   )}
                 </div>
 
-                {/* Status and Meta Info */}
+                {}
                 <div className="flex flex-wrap items-center gap-4">
                   <Badge
                     variant={data.isPublished ? "default" : "secondary"}
@@ -268,7 +268,7 @@ export const BlogViewModal: React.FC<BlogViewModalProps> = ({
                 </>
               )}
 
-              {/* System Info */}
+              {}
               <Separator />
               <div className="space-y-3 text-sm bg-gray-50 dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
                 <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">

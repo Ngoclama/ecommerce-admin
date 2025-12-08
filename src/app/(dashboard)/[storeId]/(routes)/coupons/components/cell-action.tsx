@@ -35,10 +35,10 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
     try {
       setLoading(true);
       await axios.delete(`/api/${params.storeId}/coupons/${data.id}`);
-      toast.success("Coupon deleted.");
+      toast.success("Đã xóa mã giảm giá thành công");
       router.refresh();
     } catch (error) {
-      toast.error("Something went wrong.");
+      toast.error("Đã xảy ra lỗi. Vui lòng thử lại sau");
     } finally {
       setLoading(false);
       setOpen(false);
@@ -47,7 +47,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
 
   const onCopy = (code: string) => {
     navigator.clipboard.writeText(code);
-    toast.success("Coupon code copied to clipboard.");
+    toast.success("Đã sao chép mã giảm giá");
   };
 
   return (

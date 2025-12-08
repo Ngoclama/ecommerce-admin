@@ -2,14 +2,8 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { ERROR_MESSAGES, formatPrismaError } from "./error-messages";
 
-/**
- * ═══════════════════════════════════════════════════════════════
- * STANDARDIZED API ERROR HANDLER
- * ═══════════════════════════════════════════════════════════════
- */
-
 export enum ErrorCode {
-  // 4xx Client Errors
+  
   BAD_REQUEST = 400,
   UNAUTHORIZED = 401,
   FORBIDDEN = 403,
@@ -17,7 +11,7 @@ export enum ErrorCode {
   CONFLICT = 409,
   UNPROCESSABLE_ENTITY = 422,
 
-  // 5xx Server Errors
+  
   INTERNAL_SERVER_ERROR = 500,
   SERVICE_UNAVAILABLE = 503,
 }
@@ -33,13 +27,10 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * Handle errors and return standardized NextResponse
- */
 export function handleApiError(error: unknown): NextResponse {
   console.error("[API ERROR]", error);
 
-  // ApiError - Custom application errors
+  
   if (error instanceof ApiError) {
     return NextResponse.json(
       {
@@ -50,7 +41,7 @@ export function handleApiError(error: unknown): NextResponse {
     );
   }
 
-  // Prisma Errors
+  
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     const message = formatPrismaError(error);
     const statusCode = getPrismaErrorStatusCode(error.code);
@@ -64,7 +55,7 @@ export function handleApiError(error: unknown): NextResponse {
     );
   }
 
-  // Prisma Validation Error
+  
   if (error instanceof Prisma.PrismaClientValidationError) {
     return NextResponse.json(
       {
@@ -74,7 +65,7 @@ export function handleApiError(error: unknown): NextResponse {
     );
   }
 
-  // Generic Error
+  
   if (error instanceof Error) {
     return NextResponse.json(
       {
@@ -86,7 +77,7 @@ export function handleApiError(error: unknown): NextResponse {
     );
   }
 
-  // Unknown error
+  
   return NextResponse.json(
     {
       error: ERROR_MESSAGES.GENERIC.SERVER_ERROR,
@@ -95,22 +86,19 @@ export function handleApiError(error: unknown): NextResponse {
   );
 }
 
-/**
- * Map Prisma error codes to HTTP status codes
- */
 function getPrismaErrorStatusCode(code: string): ErrorCode {
   switch (code) {
-    case "P2002": // Unique constraint
+    case "P2002": 
       return ErrorCode.CONFLICT;
 
     case "P2025": // Not found
       return ErrorCode.NOT_FOUND;
 
-    case "P2003": // Foreign key constraint
+    case "P2003": 
     case "P2014": // Relation violation
       return ErrorCode.UNPROCESSABLE_ENTITY;
 
-    case "P2000": // Value out of range
+    case "P2000": 
       return ErrorCode.BAD_REQUEST;
 
     default:
@@ -118,9 +106,6 @@ function getPrismaErrorStatusCode(code: string): ErrorCode {
   }
 }
 
-/**
- * Throw standardized errors
- */
 export const throwError = {
   unauthenticated: () => {
     throw new ApiError(
@@ -157,9 +142,6 @@ export const throwError = {
   },
 };
 
-/**
- * Validation helpers
- */
 export function validateRequired(
   data: Record<string, any>,
   requiredFields: string[]

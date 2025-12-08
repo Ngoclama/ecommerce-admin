@@ -248,7 +248,7 @@ export async function PATCH(
       if (transitionResult.updates) {
         const { message, requiresRefund, ...validUpdates } = transitionResult.updates;
         Object.assign(updateData, validUpdates);
-      }
+    }
     }
 
     console.log("[ORDER_PATCH] Final update data:", {
@@ -260,17 +260,17 @@ export async function PATCH(
 
     // Update order
     try {
-      const order = await prisma.order.update({
-        where: { id: orderId },
-        data: updateData,
-      });
+    const order = await prisma.order.update({
+      where: { id: orderId },
+      data: updateData,
+    });
 
       console.log("[ORDER_PATCH] Order updated successfully:", {
         orderId,
         newStatus: order.status,
       });
 
-      return NextResponse.json(order);
+    return NextResponse.json(order);
     } catch (dbError: any) {
       console.error("[ORDER_PATCH_DB_ERROR]", {
         orderId,

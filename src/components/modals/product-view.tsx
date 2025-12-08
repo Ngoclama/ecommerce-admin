@@ -242,7 +242,7 @@ export const ProductViewModal: React.FC<ProductViewModalProps> = ({
                   )}
                 </div>
 
-                {/* Product Info - Right Side */}
+                {}
                 <div className="col-span-12 lg:col-span-7 space-y-8">
                   {/* Product Title & Badges */}
                   <div className="space-y-5">
@@ -314,7 +314,7 @@ export const ProductViewModal: React.FC<ProductViewModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Stats Grid - Simple Cards */}
+                  {}
                   <div className="grid grid-cols-3 gap-4">
                     <div className="group relative bg-white dark:bg-neutral-900 rounded-2xl p-6 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600 transition-all duration-500 hover:shadow-xl">
                       <div className="flex items-center gap-3 mb-3">
@@ -408,7 +408,7 @@ export const ProductViewModal: React.FC<ProductViewModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Settings Grid */}
+                  {}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="bg-white dark:bg-neutral-900 rounded-2xl p-8 border border-neutral-200 dark:border-neutral-800 shadow-sm transition-all duration-500 hover:shadow-lg">
                       <h4 className="text-lg font-light mb-6 flex items-center gap-2 text-neutral-900 dark:text-neutral-50">
@@ -488,7 +488,7 @@ export const ProductViewModal: React.FC<ProductViewModalProps> = ({
                   </div>
                 </TabsContent>
 
-                {/* Variants Tab */}
+                {}
                 <TabsContent value="variants" className="mt-8">
                   {data.variants && data.variants.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4">

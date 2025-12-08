@@ -44,7 +44,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     setIsMounted(true);
   }, []);
 
-  // Auto remove completed uploads after 3 seconds
+  
   useEffect(() => {
     const timer = setTimeout(() => {
       setUploads((prev) =>
@@ -106,7 +106,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       <UploadButton
         endpoint="imageUploader"
         onUploadProgress={(progress) => {
-          // Update progress for all uploading files
+          
           setUploads((prev) =>
             prev.map((upload) =>
               upload.status === "uploading" ? { ...upload, progress } : upload
@@ -114,13 +114,13 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           );
         }}
         onUploadBegin={(name) => {
-          // Create preview URL from file
+          
           const file = (
             document.querySelector('input[type="file"]') as HTMLInputElement
           )?.files?.[0];
           const previewUrl = file ? URL.createObjectURL(file) : undefined;
 
-          // Add new upload to list
+          
           const uploadId = `${Date.now()}-${Math.random()}`;
           setUploads((prev) => [
             ...prev,
@@ -204,7 +204,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
               }
             }
 
-            // Update uploads to success
+            
             setUploads((prev) =>
               prev.map((upload) =>
                 upload.status === "uploading"
@@ -272,7 +272,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         }}
       />
 
-      {/* Loading Overlay */}
+      {}
       <ImageUploadLoadingList uploads={uploads} />
     </div>
   );

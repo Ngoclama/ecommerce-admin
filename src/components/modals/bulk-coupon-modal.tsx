@@ -260,7 +260,7 @@ export const BulkCreateCouponModal = () => {
 
         <div className="flex-1 overflow-hidden bg-neutral-50/50 dark:bg-neutral-950/50 relative">
           <ScrollArea className="h-full w-full p-6">
-            {/* Grid Layout Adjustment: Code(3) - Value(2) - Type(3) - Expires(3) - Action(1) */}
+            {}
             <div className="hidden md:grid grid-cols-12 gap-4 mb-4 px-4 font-medium text-sm text-neutral-500 uppercase tracking-wider">
               <div className="col-span-3">{t("bulk.coupon.code")}</div>
               <div className="col-span-2">{t("bulk.coupon.value")}</div>
@@ -284,7 +284,7 @@ export const BulkCreateCouponModal = () => {
                     className="group relative bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-all"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start md:items-center">
-                      {/* Code Input (3 cols) */}
+                      {}
                       <div className="col-span-1 md:col-span-3">
                         <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
                           {t("bulk.coupon.code")}
@@ -317,7 +317,7 @@ export const BulkCreateCouponModal = () => {
                         </div>
                       </div>
 
-                      {/* Value Input (2 cols) */}
+                      {}
                       <div className="col-span-1 md:col-span-2">
                         <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
                           {t("bulk.coupon.value")}
@@ -343,7 +343,7 @@ export const BulkCreateCouponModal = () => {
                         </div>
                       </div>
 
-                      {/* Type Select (3 cols - Increased from 2) */}
+                      {}
                       <div className="col-span-1 md:col-span-3">
                         <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
                           {t("bulk.coupon.type")}
@@ -371,7 +371,7 @@ export const BulkCreateCouponModal = () => {
                         </Select>
                       </div>
 
-                      {/* Expires At Input (3 cols) */}
+                      {}
                       <div className="col-span-1 md:col-span-3">
                         <label className="md:hidden text-sm font-medium text-muted-foreground mb-1 block">
                           {t("bulk.coupon.expiresAt")}
@@ -398,7 +398,7 @@ export const BulkCreateCouponModal = () => {
                               }
                               handleChange(index, "expiresAt", selectedDate);
                             }}
-                            className="pl-9" // Padding left cho icon
+                            className="pl-9" 
                           />
                           <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                         </div>

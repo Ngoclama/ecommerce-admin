@@ -46,7 +46,7 @@ export const ColorClient: React.FC<ColorClientProps> = ({ data }) => {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete Colors");
-      toast.success("All Colors deleted successfully");
+      toast.success("Đã xóa tất cả màu sắc thành công");
       router.refresh();
     } catch (error) {
       handleError(error, "Không thể xóa màu sắc. Vui lòng kiểm tra các mục liên quan trước.");

@@ -3,12 +3,6 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { createClerkClient } from "@clerk/backend";
 import { Prisma } from "@prisma/client";
 
-/**
- * User Service
- * Professional backend service layer for user operations
- * Handles synchronization between Clerk and database
- */
-
 export interface UserData {
   id: string;
   clerkId: string;
@@ -26,9 +20,7 @@ export interface ClerkUserData {
 }
 
 export class UserService {
-  /**
-   * Get user from database by Clerk ID
-   */
+  
   async getUserByClerkId(clerkUserId: string): Promise<UserData | null> {
     try {
       const user = await prisma.user.findUnique({
@@ -51,9 +43,7 @@ export class UserService {
     }
   }
 
-  /**
-   * Get user from database by email
-   */
+  
   async getUserByEmail(email: string): Promise<UserData | null> {
     try {
       const normalizedEmail = email.toLowerCase().trim();
@@ -80,9 +70,7 @@ export class UserService {
     }
   }
 
-  /**
-   * Fetch user data from Clerk
-   */
+  
   async fetchClerkUser(
     clerkUserId: string,
     isStoreUser: boolean = false
@@ -94,7 +82,7 @@ export class UserService {
           secretKey: process.env.CLERK_STORE_SECRET_KEY,
         });
       } else {
-        // clerkClient() returns a Promise, await it
+        
         clerk = await clerkClient();
       }
 
@@ -121,16 +109,14 @@ export class UserService {
     }
   }
 
-  /**
-   * Create user in database from Clerk data
-   */
+  
   async createUser(
     clerkUserId: string,
     clerkData?: ClerkUserData,
     isStoreUser: boolean = false
   ): Promise<UserData | null> {
     try {
-      // Fetch from Clerk if not provided
+      
       if (!clerkData) {
         const fetchedData = await this.fetchClerkUser(clerkUserId, isStoreUser);
         clerkData = fetchedData || undefined;
@@ -177,7 +163,7 @@ export class UserService {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
-          // User already exists, fetch and return
+          
           console.log("[USER_SERVICE] User already exists, fetching:", clerkUserId);
           return await this.getUserByClerkId(clerkUserId);
         }
@@ -188,10 +174,7 @@ export class UserService {
     }
   }
 
-  /**
-   * Sync user data from Clerk to database
-   * Updates email, name, imageUrl if they differ
-   */
+  
   async syncUserFromClerk(
     clerkUserId: string,
     isStoreUser: boolean = false
@@ -199,21 +182,21 @@ export class UserService {
     try {
       const user = await this.getUserByClerkId(clerkUserId);
       if (!user) {
-        // User doesn't exist, create it
+        
         return await this.createUser(clerkUserId, undefined, isStoreUser);
       }
 
-      // Fetch latest data from Clerk
+      
       const clerkData = await this.fetchClerkUser(clerkUserId, isStoreUser);
       if (!clerkData) {
         return user;
       }
 
-      // Normalize emails for comparison
+      
       const normalizedClerkEmail = clerkData.email.toLowerCase().trim();
       const normalizedDbEmail = user.email.toLowerCase().trim();
 
-      // Check if sync is needed
+      
       const needsSync =
         normalizedClerkEmail !== normalizedDbEmail ||
         user.name !== clerkData.name ||
@@ -224,7 +207,7 @@ export class UserService {
         return user;
       }
 
-      // Update user data
+      
       const updatedUser = await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -252,15 +235,12 @@ export class UserService {
       return updatedUser as UserData;
     } catch (error) {
       console.error("[USER_SERVICE] Error syncing user:", error);
-      // Return existing user if sync fails
+      
       return await this.getUserByClerkId(clerkUserId);
     }
   }
 
-  /**
-   * Get or create user (with automatic sync)
-   * This is the main method to use - it handles everything
-   */
+  
   async getOrCreateUser(
     clerkUserId: string,
     isStoreUser: boolean = false,
@@ -270,10 +250,10 @@ export class UserService {
       let user = await this.getUserByClerkId(clerkUserId);
 
       if (!user) {
-        // User doesn't exist, create it
+        
         user = await this.createUser(clerkUserId, undefined, isStoreUser);
       } else if (autoSync) {
-        // User exists, sync if needed
+        
         user = await this.syncUserFromClerk(clerkUserId, isStoreUser);
       }
 
@@ -284,10 +264,7 @@ export class UserService {
     }
   }
 
-  /**
-   * Link orders to user by email
-   * Useful when orders are created before user exists
-   */
+  
   async linkOrdersByEmail(
     userId: string,
     email: string
@@ -295,7 +272,7 @@ export class UserService {
     try {
       const normalizedEmail = email.toLowerCase().trim();
 
-      // Find all orders with matching email but no userId
+      
       const result = await prisma.order.updateMany({
         where: {
           email: {
@@ -321,9 +298,7 @@ export class UserService {
     }
   }
 
-  /**
-   * Update user role
-   */
+  
   async updateUserRole(
     userId: string,
     role: "ADMIN" | "VENDOR" | "CUSTOMER"
@@ -350,9 +325,7 @@ export class UserService {
     }
   }
 
-  /**
-   * Ban/unban user
-   */
+  
   async setUserBannedStatus(
     userId: string,
     isBanned: boolean
@@ -379,10 +352,7 @@ export class UserService {
     }
   }
 
-  /**
-   * Batch sync multiple users from Clerk
-   * Useful for maintenance or migration
-   */
+  
   async batchSyncUsers(
     clerkUserIds: string[],
     isStoreUser: boolean = false
@@ -410,11 +380,7 @@ export class UserService {
     return { synced, failed };
   }
 
-  /**
-   * Find or create user by email (for guest orders)
-   * If user exists with this email, return it
-   * If not, try to find by Clerk ID first, then create if needed
-   */
+  
   async findOrCreateByEmail(
     email: string,
     clerkUserId?: string,
@@ -424,17 +390,17 @@ export class UserService {
       // Normalize email
       const normalizedEmail = email.toLowerCase().trim();
 
-      // First, try to find by email
+      
       let user = await this.getUserByEmail(normalizedEmail);
 
       if (user) {
-        // User exists with this email
-        // If we have clerkUserId and it doesn't match, update it
+        
+        
         if (clerkUserId && user.clerkId !== clerkUserId) {
-          // Check if clerkUserId is already used by another user
+          
           const existingUser = await this.getUserByClerkId(clerkUserId);
           if (!existingUser) {
-            // Update this user's clerkId
+            
             user = await prisma.user.update({
               where: { id: user.id },
               data: { clerkId: clerkUserId },
@@ -453,13 +419,13 @@ export class UserService {
         return user;
       }
 
-      // User not found by email
-      // If we have clerkUserId, try to get or create by that
+      
+      
       if (clerkUserId) {
         return await this.getOrCreateUser(clerkUserId, isStoreUser);
       }
 
-      // No clerkUserId, can't create user
+      
       return null;
     } catch (error) {
       console.error("[USER_SERVICE] Error in findOrCreateByEmail:", error);
@@ -468,6 +434,5 @@ export class UserService {
   }
 }
 
-// Export singleton instance
 export const userService = new UserService();
 

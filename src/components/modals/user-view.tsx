@@ -206,7 +206,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
             </div>
           ) : (
             <div className="p-6 md:p-8 space-y-8 pb-8">
-              {/* Header Section - Luxury Style */}
+              {}
               <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-center">
                 {/* Avatar - Large & Elegant */}
                 <div className="shrink-0 relative">
@@ -226,7 +226,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                   )}
                 </div>
 
-                {/* Basic Info */}
+                {}
                 <div className="flex-1 space-y-4 min-w-0">
                   <div>
                     <h2 className="text-3xl md:text-4xl lg:text-5xl font-light text-neutral-900 dark:text-neutral-100 uppercase tracking-tight leading-tight">
@@ -237,7 +237,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                     </p>
                   </div>
 
-                  {/* Status Badges - Luxury Style */}
+                  {}
                   <div className="flex flex-wrap gap-3">
                     {user.isVIP && (
                       <Badge className="bg-linear-to-r from-yellow-500 to-yellow-600 text-white hover:from-yellow-600 hover:to-yellow-700 border-0 px-4 py-1.5 gap-1.5">
@@ -266,9 +266,9 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
 
               <Separator className="bg-neutral-200 dark:bg-neutral-800" />
 
-              {/* Statistics Cards - Luxury Style */}
+              {}
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {/* Total Spent */}
+                {}
                 <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-linear-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
                   <div className="flex items-center gap-2 mb-3">
                     <DollarSign className="w-5 h-5 text-neutral-500" />
@@ -281,7 +281,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                   </p>
                 </div>
 
-                {/* Total Orders */}
+                {}
                 <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-linear-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
                   <div className="flex items-center gap-2 mb-3">
                     <ShoppingBag className="w-5 h-5 text-neutral-500" />
@@ -294,7 +294,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                   </p>
                 </div>
 
-                {/* Total Items Purchased */}
+                {}
                 <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-linear-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
                   <div className="flex items-center gap-2 mb-3">
                     <Package className="w-5 h-5 text-neutral-500" />
@@ -307,7 +307,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                   </p>
                 </div>
 
-                {/* Reviews */}
+                {}
                 <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-linear-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
                   <div className="flex items-center gap-2 mb-3">
                     <MessageSquare className="w-5 h-5 text-neutral-500" />
@@ -320,7 +320,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                   </p>
                 </div>
 
-                {/* Wishlist */}
+                {}
                 <div className="p-4 md:p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-linear-to-br from-white to-neutral-50 dark:from-neutral-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300">
                   <div className="flex items-center gap-2 mb-3">
                     <Heart className="w-5 h-5 text-neutral-500" />
@@ -349,7 +349,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
 
               <Separator className="bg-neutral-200 dark:bg-neutral-800" />
 
-              {/* Tabs for organized information */}
+              {}
               <Tabs defaultValue="info" className="w-full">
                 <TabsList className="grid w-full grid-cols-3 lg:grid-cols-4 h-12 bg-neutral-100 dark:bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-800">
                   <TabsTrigger value="info" className="text-xs font-light uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-950">
@@ -370,18 +370,18 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                   </TabsTrigger>
                 </TabsList>
 
-                {/* Info Tab */}
+                {}
                 <TabsContent value="info" className="mt-6 space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                    {/* User Information Card */}
+                    {}
                     <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 space-y-4">
                       <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-100 uppercase tracking-wide mb-4">
                         {t("modals.userInformation") || "Thông tin người dùng"}
                       </h3>
                       
                       <div className="space-y-4">
-                        {/* User ID */}
+                        {}
                         <div className="flex items-start gap-3">
                           <UserIcon className="w-5 h-5 text-neutral-500 mt-0.5 shrink-0" />
                           <div className="flex-1 min-w-0">
@@ -447,7 +447,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                           </div>
                         )}
 
-                        {/* Role */}
+                        {}
                         <div className="flex items-start gap-3">
                           <Shield className="w-5 h-5 text-neutral-500 mt-0.5 shrink-0" />
                           <div className="flex-1 min-w-0">
@@ -462,7 +462,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Dates Card */}
+                    {}
                     <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 space-y-4">
                       <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-100 uppercase tracking-wide mb-4">
                         Thời gian
@@ -560,7 +560,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                                   </div>
                                 )}
 
-                                {/* Payment Status */}
+                                {}
                                 <div className="ml-8 flex items-center gap-2 flex-wrap">
                                   <Badge
                                     variant={order.isPaid ? "default" : "secondary"}
@@ -592,7 +592,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                                 </div>
                               </div>
 
-                              {/* Order Total */}
+                              {}
                               <div className="text-right shrink-0">
                                 <p className="text-2xl font-light text-neutral-900 dark:text-neutral-100 mb-2">
                                   {formatter.format(order.total)}
@@ -613,10 +613,10 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                   )}
                 </TabsContent>
 
-                {/* Stats Tab */}
+                {}
                 <TabsContent value="stats" className="mt-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Order Status Breakdown */}
+                    {}
                     <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
                       <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-100 uppercase tracking-wide mb-4">
                         Đơn hàng theo trạng thái
@@ -642,7 +642,7 @@ export const UserViewModal: React.FC<UserViewModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Additional Stats */}
+                    {}
                     <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 space-y-4">
                       <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-100 uppercase tracking-wide mb-4">
                         Thống kê khác

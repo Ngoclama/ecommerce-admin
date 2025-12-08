@@ -58,7 +58,7 @@ export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete billboards");
-      toast.success("All billboards deleted successfully");
+      toast.success("Đã xóa tất cả billboard thành công");
       router.refresh();
     } catch (error) {
       handleError(error, "Không thể xóa billboard. Vui lòng kiểm tra các mục liên quan trước.");

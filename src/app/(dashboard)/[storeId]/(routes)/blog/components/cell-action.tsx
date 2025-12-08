@@ -36,9 +36,9 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       setLoading(true);
       await axios.delete(`/api/${params.storeId}/blog/${data.id}`);
       router.refresh();
-      toast.success("Blog post deleted.");
+      toast.success("Đã xóa bài viết blog thành công");
     } catch (error) {
-      toast.error("Something went wrong.");
+      toast.error("Đã xảy ra lỗi. Vui lòng thử lại sau");
     } finally {
       setLoading(false);
       setOpenAlert(false);
@@ -47,7 +47,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
 
   const onCopy = (id: string) => {
     navigator.clipboard.writeText(id);
-    toast.success("Blog post ID copied to clipboard.");
+    toast.success("Đã sao chép ID bài viết blog");
   };
 
   return (

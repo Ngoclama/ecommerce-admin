@@ -5,7 +5,7 @@
 
 // ─── COLOR SYSTEM ───────────────────────────────────────────────
 export const colors = {
-  // Primary Colors
+  
   primary: {
     50: '#f9fafb',
     100: '#f3f4f6',
@@ -81,7 +81,6 @@ export const spacing = {
   24: '6rem',     // 96px
 } as const;
 
-// ─── TYPOGRAPHY SCALE ────────────────────────────────────────────
 export const typography = {
   fontFamily: {
     sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
@@ -149,7 +148,6 @@ export const breakpoints = {
   '2xl': '1536px',
 } as const;
 
-// ─── Z-INDEX SCALE ───────────────────────────────────────────────
 export const zIndex = {
   base: 0,
   dropdown: 1000,
@@ -161,7 +159,6 @@ export const zIndex = {
   tooltip: 1070,
 } as const;
 
-// ─── TRANSITIONS ─────────────────────────────────────────────────
 export const transitions = {
   duration: {
     fast: '150ms',
@@ -177,7 +174,6 @@ export const transitions = {
   },
 } as const;
 
-// ─── COMPONENT SIZES ──────────────────────────────────────────────
 export const componentSizes = {
   button: {
     sm: {
@@ -215,7 +211,6 @@ export const componentSizes = {
   },
 } as const;
 
-// ─── EXPORT TYPES ────────────────────────────────────────────────
 export type ColorScale = typeof colors;
 export type SpacingScale = typeof spacing;
 export type TypographyScale = typeof typography;

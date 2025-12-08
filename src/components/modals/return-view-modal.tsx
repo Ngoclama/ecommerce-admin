@@ -79,7 +79,7 @@ export const ReturnViewModal = () => {
                 </div>
               ) : data ? (
                 <div className="space-y-6">
-                  {/* Status */}
+                  {}
                   <div className="flex items-center gap-4">
                     <span className="text-sm font-medium text-neutral-500">
                       {t("columns.status")}:
@@ -93,7 +93,7 @@ export const ReturnViewModal = () => {
                     </Badge>
                   </div>
 
-                  {/* Customer Info */}
+                  {}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-sm text-neutral-500">
@@ -120,7 +120,7 @@ export const ReturnViewModal = () => {
                     </div>
                   </div>
 
-                  {/* Return Reason */}
+                  {}
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm text-neutral-500">
                       <FileText className="h-4 w-4" />
@@ -134,7 +134,7 @@ export const ReturnViewModal = () => {
                     )}
                   </div>
 
-                  {/* Refund Info */}
+                  {}
                   {data.refundAmount > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg">
                       <div className="space-y-2">
@@ -157,7 +157,7 @@ export const ReturnViewModal = () => {
                     </div>
                   )}
 
-                  {/* Return Items */}
+                  {}
                   {data.returnItems && data.returnItems.length > 0 && (
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold">
@@ -187,7 +187,7 @@ export const ReturnViewModal = () => {
                     </div>
                   )}
 
-                  {/* Date */}
+                  {}
                   <div className="flex items-center gap-2 text-sm text-neutral-500">
                     <Calendar className="h-4 w-4" />
                     <span>

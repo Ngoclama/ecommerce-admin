@@ -11,7 +11,7 @@ interface HeaderWrapperProps {
 export function HeaderWrapper({ stores }: HeaderWrapperProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Listen for collapse state changes
+  
   useEffect(() => {
     const handleCollapseChange = (e: CustomEvent) => {
       setSidebarCollapsed(e.detail.collapsed);
@@ -28,12 +28,12 @@ export function HeaderWrapper({ stores }: HeaderWrapperProps) {
   }, []);
 
   const handleMenuClick = () => {
-    // Dispatch event to toggle sidebar (mobile)
+    
     window.dispatchEvent(new CustomEvent("toggle-sidebar"));
   };
 
   const handleSidebarToggle = () => {
-    // Dispatch event to collapse/expand sidebar (desktop)
+    
     window.dispatchEvent(new CustomEvent("toggle-sidebar-collapse"));
   };
 

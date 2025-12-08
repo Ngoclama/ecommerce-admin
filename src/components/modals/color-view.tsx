@@ -90,7 +90,7 @@ export const ColorViewModal: React.FC<ColorViewModalProps> = ({
             </div>
 
             <div className="grid grid-cols-1 gap-4">
-              {/* Value & Preview */}
+              {}
               <div>
                 <h3 className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1 flex items-center gap-1">
                   <Hash className="h-3 w-3" /> {t("modals.valuePreview")}
@@ -107,7 +107,7 @@ export const ColorViewModal: React.FC<ColorViewModalProps> = ({
               </div>
             </div>
 
-            {/* Footer Info */}
+            {}
             <div className="flex items-center justify-between text-xs text-neutral-500 border-t pt-4">
               <div className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
