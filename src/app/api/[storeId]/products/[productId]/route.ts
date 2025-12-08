@@ -101,7 +101,14 @@ export async function GET(
       },
     });
 
-    return NextResponse.json(product);
+    // Disable cache for production - always return fresh data
+    return NextResponse.json(product, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
   } catch (error) {
     return new NextResponse("Internal Error", { status: 500 });
   }

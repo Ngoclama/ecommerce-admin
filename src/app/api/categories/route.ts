@@ -39,7 +39,17 @@ export async function GET(req: Request) {
       take: PAGINATION.MAX_LIMIT * 10, // Giới hạn để tránh query quá lớn
     });
 
-    return NextResponse.json({ success: true, data: categories });
+    // Disable cache for production - always return fresh data
+    return NextResponse.json(
+      { success: true, data: categories },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (error) {
     devError(
       "[CATEGORIES_PUBLIC_GET] Lỗi khi lấy danh sách categories:",

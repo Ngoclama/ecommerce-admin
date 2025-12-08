@@ -34,7 +34,14 @@ export async function GET(req: Request) {
         );
       }
 
-      return NextResponse.json([coupon]);
+      // Disable cache for production
+      return NextResponse.json([coupon], {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      });
     }
 
     // If no code, return all active coupons
@@ -56,7 +63,14 @@ export async function GET(req: Request) {
       },
     });
 
-    return NextResponse.json(coupons);
+    // Disable cache for production - always return fresh data
+    return NextResponse.json(coupons, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
   } catch (error) {
     console.error("[COUPONS_PUBLIC_GET] Error:", error);
 

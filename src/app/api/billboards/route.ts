@@ -36,6 +36,14 @@ export async function GET(req: Request) {
     // Always return array, even if empty
     const response = NextResponse.json(billboards || []);
 
+    // Disable cache for production - always return fresh data
+    response.headers.set(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, max-age=0"
+    );
+    response.headers.set("Pragma", "no-cache");
+    response.headers.set("Expires", "0");
+
     // Add CORS headers to allow store frontend to access
     response.headers.set("Access-Control-Allow-Origin", "*");
     response.headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -50,6 +58,15 @@ export async function GET(req: Request) {
     // Return empty array instead of error to prevent frontend crash
     // Frontend will handle empty array gracefully
     const response = NextResponse.json([], { status: 200 });
+
+    // Disable cache for production
+    response.headers.set(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, max-age=0"
+    );
+    response.headers.set("Pragma", "no-cache");
+    response.headers.set("Expires", "0");
+
     response.headers.set("Access-Control-Allow-Origin", "*");
     response.headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
     response.headers.set("Access-Control-Allow-Headers", "Content-Type");

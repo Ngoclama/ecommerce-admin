@@ -74,33 +74,39 @@ export async function GET(req: Request) {
 
     const totalPages = Math.ceil(totalCount / limit);
 
+    // Disable cache for production - always return fresh data
+    const cacheHeaders = {
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+      Pragma: "no-cache",
+      Expires: "0",
+    };
+
     // If no pagination params provided, return simple array for backward compatibility
     const hasPaginationParams =
       searchParams.get("page") || searchParams.get("limit");
 
     if (!hasPaginationParams && limit === 10) {
-      return NextResponse.json(blogPosts);
+      return NextResponse.json(blogPosts, { headers: cacheHeaders });
     }
 
-    return NextResponse.json({
-      success: true,
-      data: blogPosts,
-      pagination: {
-        page,
-        limit,
-        totalCount,
-        totalPages,
+    return NextResponse.json(
+      {
+        success: true,
+        data: blogPosts,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          totalPages,
+        },
       },
-    });
-  } catch (error) {
-    devError(
-      "[BLOG_PUBLIC_GET] Lỗi khi lấy danh sách blog posts:",
-      error
+      { headers: cacheHeaders }
     );
+  } catch (error) {
+    devError("[BLOG_PUBLIC_GET] Lỗi khi lấy danh sách blog posts:", error);
     return NextResponse.json(
       { success: false, message: API_MESSAGES.SERVER_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     );
   }
 }
-

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,8 +9,6 @@ import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
 import { Truck, Loader2 } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
-import { getValidNextStatuses } from "@/lib/order-state-machine";
-import { ORDER_STATUS } from "@/lib/constants";
 
 import {
   Dialog,
@@ -45,7 +43,6 @@ const formSchema = z.object({
     "SHIPPED",
     "DELIVERED",
     "CANCELLED",
-    "RETURNED",
   ]),
   shippingMethod: z.string().optional().nullable(),
   trackingNumber: z.string().optional().nullable(),
@@ -83,50 +80,15 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
     },
   });
 
-  
-  const validStatuses = useMemo(() => {
-    const validNext = getValidNextStatuses(currentStatus);
-    
-    return [currentStatus, ...validNext];
-  }, [currentStatus]);
-
-  
-  useEffect(() => {
-    if (isOpen) {
-      form.reset({
-        status: currentStatus as any,
-        shippingMethod: initialData?.shippingMethod || null,
-        trackingNumber: initialData?.trackingNumber || null,
-      });
-    }
-  }, [isOpen, currentStatus, initialData, form]);
-
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsLoading(true);
-      console.log("Order fulfillment modal - submitting:", {
-        orderId,
-        storeId: params.storeId,
-        currentStatus,
-        newStatus: values.status,
-        values,
-      });
-      
       await axios.patch(`/api/${params.storeId}/orders/${orderId}`, values);
       toast.success(t("actions.orderStatusUpdated"));
       router.refresh();
       onClose();
-    } catch (error: any) {
-      console.error("Order fulfillment modal error:", error);
-      console.error("Error response:", error?.response?.data);
-      
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        t("actions.failedToUpdateOrder");
-      
-      toast.error(errorMessage);
+    } catch (error) {
+      toast.error(t("actions.failedToUpdateOrder"));
     } finally {
       setIsLoading(false);
     }
@@ -147,7 +109,7 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {}
+            {/* Status */}
             <FormField
               control={form.control}
               name="status"
@@ -166,36 +128,21 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {validStatuses.includes(ORDER_STATUS.PENDING) && (
                       <SelectItem value="PENDING">
                         {t("actions.pending")}
                       </SelectItem>
-                      )}
-                      {validStatuses.includes(ORDER_STATUS.PROCESSING) && (
                       <SelectItem value="PROCESSING">
                         {t("actions.processingStatus")}
                       </SelectItem>
-                      )}
-                      {validStatuses.includes(ORDER_STATUS.SHIPPED) && (
                       <SelectItem value="SHIPPED">
                         {t("actions.shipped")}
                       </SelectItem>
-                      )}
-                      {validStatuses.includes(ORDER_STATUS.DELIVERED) && (
                       <SelectItem value="DELIVERED">
                         {t("actions.delivered")}
                       </SelectItem>
-                      )}
-                      {validStatuses.includes(ORDER_STATUS.CANCELLED) && (
                       <SelectItem value="CANCELLED">
                         {t("actions.cancelled")}
                       </SelectItem>
-                      )}
-                      {validStatuses.includes(ORDER_STATUS.RETURNED) && (
-                        <SelectItem value="RETURNED">
-                          {t("actions.returned")}
-                        </SelectItem>
-                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -203,7 +150,7 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
               )}
             />
 
-            {}
+            {/* Shipping Method */}
             <FormField
               control={form.control}
               name="shippingMethod"
@@ -223,7 +170,7 @@ export const OrderFulfillmentModal: React.FC<OrderFulfillmentModalProps> = ({
               )}
             />
 
-            {}
+            {/* Tracking Number */}
             <FormField
               control={form.control}
               name="trackingNumber"

@@ -242,21 +242,31 @@ export async function GET(req: Request) {
       const hasPaginationParams =
         searchParams.get("page") || searchParams.get("limit");
 
+      // Disable cache for production - always return fresh data
+      const cacheHeaders = {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+        Expires: "0",
+      };
+
       if (!hasPaginationParams && limit === 10) {
-        return NextResponse.json(productsWithSales);
+        return NextResponse.json(productsWithSales, { headers: cacheHeaders });
       }
 
-      return NextResponse.json({
-        products: productsWithSales,
-        pagination: {
-          page,
-          limit,
-          totalCount,
-          totalPages,
-          hasNextPage: page < totalPages,
-          hasPrevPage: page > 1,
+      return NextResponse.json(
+        {
+          products: productsWithSales,
+          pagination: {
+            page,
+            limit,
+            totalCount,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+          },
         },
-      });
+        { headers: cacheHeaders }
+      );
     }
 
     // Build where clause for main query
@@ -376,23 +386,33 @@ export async function GET(req: Request) {
     const hasPaginationParams =
       searchParams.get("page") || searchParams.get("limit");
 
+    // Disable cache for production - always return fresh data
+    const cacheHeaders = {
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+      Pragma: "no-cache",
+      Expires: "0",
+    };
+
     if (!hasPaginationParams && limit === 10) {
       // Backward compatibility: return array if no pagination params
-      return NextResponse.json(products);
+      return NextResponse.json(products, { headers: cacheHeaders });
     }
 
     // Return pagination format for search or when pagination params are provided
-    return NextResponse.json({
-      products,
-      pagination: {
-        page,
-        limit,
-        totalCount,
-        totalPages,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
+    return NextResponse.json(
+      {
+        products,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1,
+        },
       },
-    });
+      { headers: cacheHeaders }
+    );
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.log("[PRODUCTS_PUBLIC_GET]", error);

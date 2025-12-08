@@ -263,7 +263,14 @@ export async function GET(
       take: 100, // Giới hạn số lượng để tránh query quá lớn
     });
 
-    return NextResponse.json(products);
+    // Disable cache for production - always return fresh data
+    return NextResponse.json(products, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
   } catch (error) {
     devError("[PRODUCTS_GET] Lỗi khi lấy danh sách sản phẩm:", error);
     return new NextResponse(API_MESSAGES.SERVER_ERROR, {

@@ -54,7 +54,14 @@ export async function GET(
       take: 100, // Giới hạn số lượng để tối ưu
     });
 
-    return NextResponse.json(blogPosts);
+    // Disable cache for production - always return fresh data
+    return NextResponse.json(blogPosts, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error("[BLOG_GET]", error);

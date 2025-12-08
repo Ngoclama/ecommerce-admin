@@ -49,10 +49,16 @@ export async function GET(
       return new NextResponse("Blog post not found", { status: 404 });
     }
 
-    return NextResponse.json(blogPost);
+    // Disable cache for production - always return fresh data
+    return NextResponse.json(blogPost, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
   } catch (error) {
     devError("[BLOG_PUBLIC_GET_SLUG] Lỗi khi lấy blog post:", error);
     return new NextResponse("Internal error", { status: 500 });
   }
 }
-

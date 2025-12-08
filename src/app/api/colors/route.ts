@@ -19,7 +19,14 @@ export async function GET(req: Request) {
       },
     });
 
-    return NextResponse.json(colors);
+    // Disable cache for production - always return fresh data
+    return NextResponse.json(colors, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error("[COLORS_PUBLIC_GET]", error);
@@ -30,4 +37,3 @@ export async function GET(req: Request) {
     );
   }
 }
-
