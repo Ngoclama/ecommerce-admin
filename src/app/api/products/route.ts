@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { API_MESSAGES, HTTP_STATUS, PAGINATION } from "@/lib/constants";
 import { devError } from "@/lib/api-utils";
 import { Prisma } from "@prisma/client";
+import { getCorsHeaders } from "@/lib/utils/cors";
 
 // ───────────────────────────────────────────────
 // GET: Public API - Lấy tất cả sản phẩm (không cần storeId)
@@ -250,7 +251,12 @@ export async function GET(req: Request) {
       };
 
       if (!hasPaginationParams && limit === 10) {
-        return NextResponse.json(productsWithSales, { headers: cacheHeaders });
+        return NextResponse.json(productsWithSales, {
+          headers: {
+            ...cacheHeaders,
+            ...getCorsHeaders(req),
+          },
+        });
       }
 
       return NextResponse.json(
@@ -265,7 +271,12 @@ export async function GET(req: Request) {
             hasPrevPage: page > 1,
           },
         },
-        { headers: cacheHeaders }
+        {
+          headers: {
+            ...cacheHeaders,
+            ...getCorsHeaders(req),
+          },
+        }
       );
     }
 
@@ -395,7 +406,12 @@ export async function GET(req: Request) {
 
     if (!hasPaginationParams && limit === 10) {
       // Backward compatibility: return array if no pagination params
-      return NextResponse.json(products, { headers: cacheHeaders });
+      return NextResponse.json(products, {
+        headers: {
+          ...cacheHeaders,
+          ...getCorsHeaders(req),
+        },
+      });
     }
 
     // Return pagination format for search or when pagination params are provided
@@ -411,7 +427,12 @@ export async function GET(req: Request) {
           hasPrevPage: page > 1,
         },
       },
-      { headers: cacheHeaders }
+      {
+        headers: {
+          ...cacheHeaders,
+          ...getCorsHeaders(req),
+        },
+      }
     );
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
