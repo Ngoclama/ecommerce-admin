@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import slugify from "slugify";
+import { revalidateStore } from "@/lib/revalidate-store";
 
 // GET: Lấy chi tiết blog post
 export async function GET(
@@ -173,6 +174,9 @@ export async function PATCH(
       // Loại bỏ include để tối ưu - có thể fetch sau nếu cần
     });
 
+    // Trigger revalidation ở store
+    await revalidateStore({ type: "blog" });
+
     return NextResponse.json(result);
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
@@ -221,6 +225,9 @@ export async function DELETE(
     await prisma.blogPost.delete({
       where: { id: postId },
     });
+
+    // Trigger revalidation ở store
+    await revalidateStore({ type: "blog" });
 
     return NextResponse.json({ message: "Blog post deleted successfully" });
   } catch (error) {

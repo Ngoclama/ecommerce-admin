@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import slugify from "slugify";
+import { revalidateStore } from "@/lib/revalidate-store";
 
 // GET: Lấy danh sách blog posts
 export async function GET(
@@ -229,7 +230,7 @@ export async function POST(
           },
         });
         createSuccess = true;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (createError: any) {
         // Nếu lỗi là unique constraint violation (P2002), tạo slug mới và retry
         if (
@@ -266,8 +267,11 @@ export async function POST(
       );
     }
 
+    // Trigger revalidation ở store
+    await revalidateStore({ type: "blog" });
+
     return NextResponse.json(blogPost, { status: 201 });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     // Improved error handling with detailed messages
     if (process.env.NODE_ENV === "development") {
@@ -400,7 +404,7 @@ export async function DELETE(
       message: `Successfully deleted ${result.count} blog posts.`,
       count: result.count,
     });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (process.env.NODE_ENV === "development") {
       console.error("[BLOG_DELETE_ALL_ERROR]", error);

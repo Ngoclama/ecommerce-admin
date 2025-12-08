@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import slugify from "slugify";
 import { API_MESSAGES, HTTP_STATUS, DEFAULTS } from "@/lib/constants";
 import { devLog, devError } from "@/lib/api-utils";
+import { revalidateStore } from "@/lib/revalidate-store";
 
 // ───────────────────────────────────────────────
 // POST: Tạo sản phẩm mới
@@ -38,28 +39,28 @@ export async function POST(
     } = body;
 
     if (!userId) {
-      return new NextResponse(API_MESSAGES.UNAUTHENTICATED, { 
-        status: HTTP_STATUS.UNAUTHORIZED 
+      return new NextResponse(API_MESSAGES.UNAUTHENTICATED, {
+        status: HTTP_STATUS.UNAUTHORIZED,
       });
     }
     if (!storeId) {
-      return new NextResponse(API_MESSAGES.STORE_ID_REQUIRED, { 
-        status: HTTP_STATUS.BAD_REQUEST 
+      return new NextResponse(API_MESSAGES.STORE_ID_REQUIRED, {
+        status: HTTP_STATUS.BAD_REQUEST,
       });
     }
     if (!name) {
-      return new NextResponse(API_MESSAGES.NAME_REQUIRED, { 
-        status: HTTP_STATUS.BAD_REQUEST 
+      return new NextResponse(API_MESSAGES.NAME_REQUIRED, {
+        status: HTTP_STATUS.BAD_REQUEST,
       });
     }
     if (!price) {
-      return new NextResponse(API_MESSAGES.PRICE_REQUIRED, { 
-        status: HTTP_STATUS.BAD_REQUEST 
+      return new NextResponse(API_MESSAGES.PRICE_REQUIRED, {
+        status: HTTP_STATUS.BAD_REQUEST,
       });
     }
     if (!categoryId) {
-      return new NextResponse(API_MESSAGES.CATEGORY_ID_REQUIRED, { 
-        status: HTTP_STATUS.BAD_REQUEST 
+      return new NextResponse(API_MESSAGES.CATEGORY_ID_REQUIRED, {
+        status: HTTP_STATUS.BAD_REQUEST,
       });
     }
 
@@ -99,15 +100,20 @@ export async function POST(
         description,
         isFeatured: isFeatured ? true : false,
         isArchived: isArchived ? true : false,
-        isPublished: isPublished !== undefined ? isPublished : DEFAULTS.IS_PUBLISHED,
+        isPublished:
+          isPublished !== undefined ? isPublished : DEFAULTS.IS_PUBLISHED,
         categoryId,
         materialId: materialId || null,
         gender: gender || DEFAULTS.GENDER,
         metaTitle: metaTitle || null,
         metaDescription: metaDescription || null,
         tags: tags || [],
-        trackQuantity: trackQuantity !== undefined ? trackQuantity : DEFAULTS.TRACK_QUANTITY,
-        allowBackorder: allowBackorder !== undefined ? allowBackorder : DEFAULTS.ALLOW_BACKORDER,
+        trackQuantity:
+          trackQuantity !== undefined ? trackQuantity : DEFAULTS.TRACK_QUANTITY,
+        allowBackorder:
+          allowBackorder !== undefined
+            ? allowBackorder
+            : DEFAULTS.ALLOW_BACKORDER,
         storeId: storeId,
         images: {
           createMany: {
@@ -116,33 +122,39 @@ export async function POST(
         },
         variants: {
           createMany: {
-            data: variants.map((v: {
-            sizeId: string;
-            colorId: string;
-            materialId?: string | null;
-            sku?: string | null;
-            inventory: number;
-            lowStockThreshold?: number;
-            price?: number | null;
-          }) => ({
-              sizeId: v.sizeId,
-              colorId: v.colorId,
-              materialId: v.materialId || null,
-              sku: v.sku || null,
-              inventory: Number(v.inventory),
-              lowStockThreshold: Number(v.lowStockThreshold) || DEFAULTS.LOW_STOCK_THRESHOLD,
-              price: v.price ? Number(v.price) : null,
-            })),
+            data: variants.map(
+              (v: {
+                sizeId: string;
+                colorId: string;
+                materialId?: string | null;
+                sku?: string | null;
+                inventory: number;
+                lowStockThreshold?: number;
+                price?: number | null;
+              }) => ({
+                sizeId: v.sizeId,
+                colorId: v.colorId,
+                materialId: v.materialId || null,
+                sku: v.sku || null,
+                inventory: Number(v.inventory),
+                lowStockThreshold:
+                  Number(v.lowStockThreshold) || DEFAULTS.LOW_STOCK_THRESHOLD,
+                price: v.price ? Number(v.price) : null,
+              })
+            ),
           },
         },
       },
     });
 
+    // Trigger revalidation ở store
+    await revalidateStore({ type: "product" });
+
     return NextResponse.json(product);
   } catch (error) {
     devError("[PRODUCTS_POST] Lỗi khi tạo sản phẩm:", error);
-    return new NextResponse(API_MESSAGES.SERVER_ERROR, { 
-      status: HTTP_STATUS.INTERNAL_SERVER_ERROR 
+    return new NextResponse(API_MESSAGES.SERVER_ERROR, {
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
     });
   }
 }
@@ -163,8 +175,8 @@ export async function GET(
     const isFeatured = searchParams.get("isFeatured");
 
     if (!storeId) {
-      return new NextResponse(API_MESSAGES.STORE_ID_REQUIRED, { 
-        status: HTTP_STATUS.BAD_REQUEST 
+      return new NextResponse(API_MESSAGES.STORE_ID_REQUIRED, {
+        status: HTTP_STATUS.BAD_REQUEST,
       });
     }
 
@@ -254,8 +266,8 @@ export async function GET(
     return NextResponse.json(products);
   } catch (error) {
     devError("[PRODUCTS_GET] Lỗi khi lấy danh sách sản phẩm:", error);
-    return new NextResponse(API_MESSAGES.SERVER_ERROR, { 
-      status: HTTP_STATUS.INTERNAL_SERVER_ERROR 
+    return new NextResponse(API_MESSAGES.SERVER_ERROR, {
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
     });
   }
 }
@@ -272,8 +284,8 @@ export async function DELETE(
     const { storeId } = await params;
 
     if (!userId) {
-      return new NextResponse(API_MESSAGES.UNAUTHENTICATED, { 
-        status: HTTP_STATUS.UNAUTHORIZED 
+      return new NextResponse(API_MESSAGES.UNAUTHENTICATED, {
+        status: HTTP_STATUS.UNAUTHORIZED,
       });
     }
 
@@ -282,8 +294,8 @@ export async function DELETE(
     });
 
     if (!storeByUserId) {
-      return new NextResponse(API_MESSAGES.UNAUTHORIZED, { 
-        status: HTTP_STATUS.FORBIDDEN 
+      return new NextResponse(API_MESSAGES.UNAUTHORIZED, {
+        status: HTTP_STATUS.FORBIDDEN,
       });
     }
 
@@ -361,15 +373,20 @@ export async function DELETE(
   } catch (error: unknown) {
     devError("[PRODUCTS_DELETE_ALL_ERROR] Lỗi khi xóa sản phẩm:", error);
 
-    if (error && typeof error === "object" && "code" in error && error.code === "P2003") {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "P2003"
+    ) {
       return new NextResponse(
         "Không thể xóa sản phẩm do ràng buộc khóa ngoại. Một số sản phẩm có thể đã được liên kết với đơn hàng.",
         { status: HTTP_STATUS.BAD_REQUEST }
       );
     }
 
-    return new NextResponse(API_MESSAGES.SERVER_ERROR, { 
-      status: HTTP_STATUS.INTERNAL_SERVER_ERROR 
+    return new NextResponse(API_MESSAGES.SERVER_ERROR, {
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
     });
   }
 }

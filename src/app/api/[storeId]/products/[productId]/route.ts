@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { API_MESSAGES, HTTP_STATUS, DEFAULTS } from "@/lib/constants";
 import { devError } from "@/lib/api-utils";
+import { revalidateStore } from "@/lib/revalidate-store";
 
 export async function GET(
   req: Request,
@@ -216,6 +217,9 @@ export async function PATCH(
       include: { variants: true },
     });
 
+    // Trigger revalidation ở store
+    await revalidateStore({ type: "product" });
+
     return NextResponse.json(product);
   } catch (error) {
     devError("[PRODUCT_PATCH] Lỗi khi cập nhật sản phẩm:", error);
@@ -265,6 +269,10 @@ export async function DELETE(
     }
 
     await prisma.product.delete({ where: { id: productId } });
+
+    // Trigger revalidation ở store
+    await revalidateStore({ type: "product" });
+
     return NextResponse.json({ message: API_MESSAGES.DELETED });
   } catch (error) {
     devError("[PRODUCT_DELETE] Lỗi khi xóa sản phẩm:", error);
