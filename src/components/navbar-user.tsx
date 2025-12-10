@@ -28,6 +28,7 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 
 interface NavbarUserProps {
   items: any[];
@@ -40,6 +41,11 @@ const NavbarUser: React.FC<NavbarUserProps> = ({ items }) => {
   const params = useParams();
   const { user } = useUser();
   const { signOut } = useClerk();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLanguageChange = (lang: "en" | "vi") => {
     setLanguage(lang);
@@ -65,6 +71,9 @@ const NavbarUser: React.FC<NavbarUserProps> = ({ items }) => {
     return name.substring(0, 2).toUpperCase();
   };
 
+  // Use consistent fallback during SSR to avoid hydration mismatch
+  const userInitials = mounted ? getInitials(user?.fullName) : "U";
+
   return (
     <div className="ml-auto">
       <DropdownMenu>
@@ -83,7 +92,7 @@ const NavbarUser: React.FC<NavbarUserProps> = ({ items }) => {
                 alt={user?.fullName || "User"}
               />
               <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                {getInitials(user?.fullName)}
+                {userInitials}
               </AvatarFallback>
             </Avatar>
             <ChevronDown className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
@@ -220,7 +229,9 @@ const NavbarUser: React.FC<NavbarUserProps> = ({ items }) => {
 
           {/* Sign Out */}
           <DropdownMenuItem
-            onClick={() => signOut({ redirectUrl: window.location.origin + "/sign-in" })}
+            onClick={() =>
+              signOut({ redirectUrl: window.location.origin + "/sign-in" })
+            }
             className="rounded-lg cursor-pointer text-red-600 dark:text-red-400"
           >
             <LogOut className="mr-2 h-4 w-4" />

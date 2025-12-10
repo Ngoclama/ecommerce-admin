@@ -356,7 +356,7 @@ export const DashboardClient: React.FC<DashboardClientProps> = ({
                   {t("dashboard.byCategory")}
                 </p>
               </CardHeader>
-              <CardContent className="pl-2 flex justify-center">
+              <CardContent>
                 <OverviewPie data={newStats.productDistribution} />
               </CardContent>
             </Card>

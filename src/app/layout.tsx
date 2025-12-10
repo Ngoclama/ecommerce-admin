@@ -6,6 +6,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ModalProvider } from "@/providers/modal-provider";
 import { QueryProvider } from "@/providers/query-provider";
+import { LoadingProvider } from "@/hooks/use-loading";
+import { LoadingOverlay } from "@/components/loading-overlay";
 import { Toaster } from "@/components/ui/sonner";
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,15 +48,18 @@ export default function RootLayout({
               enableSystem={false}
               disableTransitionOnChange
             >
-              <ModalProvider>
-                <div className="min-h-screen flex flex-col">
-                  <main className="flex-1">
-                    {children}
-                    <div className="fixed bottom-4 right-4"></div>
-                  </main>
-                </div>
-                <Toaster richColors position="bottom-center" />
-              </ModalProvider>
+              <LoadingProvider>
+                <ModalProvider>
+                  <div className="min-h-screen flex flex-col">
+                    <main className="flex-1">
+                      {children}
+                      <div className="fixed bottom-4 right-4"></div>
+                    </main>
+                  </div>
+                  <LoadingOverlay />
+                  <Toaster richColors position="bottom-center" />
+                </ModalProvider>
+              </LoadingProvider>
             </ThemeProvider>
           </QueryProvider>
         </ClerkProvider>

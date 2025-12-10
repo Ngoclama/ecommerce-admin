@@ -68,6 +68,13 @@ import {
 } from "recharts";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Helper function to map status to Vietnamese labels
 const getStatusLabel = (status: string): string => {
@@ -77,6 +84,7 @@ const getStatusLabel = (status: string): string => {
     SHIPPED: "Đã giao hàng",
     DELIVERED: "Đã nhận hàng",
     CANCELLED: "Đã hủy",
+    RETURNED: "Đã trả hàng",
   };
   return statusMap[status] || status;
 };
@@ -88,7 +96,7 @@ const getPaymentMethodLabel = (method: string): string => {
     VNPAY: "VNPay",
     MOMO: "MoMo",
     STRIPE: "Stripe",
-    UNKNOWN: "Không xác định",
+    QR: "Quét mã QR",
   };
   return methodMap[method] || method;
 };
@@ -209,6 +217,12 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
     data.filters?.selectedPaymentMethod || ""
   );
 
+  // Modal state for detail popup
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [detailType, setDetailType] = useState<
+    "revenue" | "orders" | "items" | "profit" | null
+  >(null);
+
   // Pagination state - persisted in localStorage
   const [rowsPerPage, setRowsPerPage] = useState<number>(() => {
     if (typeof window !== "undefined") {
@@ -314,6 +328,7 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
     { value: "SHIPPED", label: "Đã giao hàng" },
     { value: "DELIVERED", label: "Đã nhận hàng" },
     { value: "CANCELLED", label: "Đã hủy" },
+    { value: "RETURNED", label: "Đã trả hàng" },
   ];
 
   // Payment method options
@@ -323,6 +338,7 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
     { value: "VNPAY", label: "VNPay" },
     { value: "MOMO", label: "MoMo" },
     { value: "STRIPE", label: "Stripe" },
+    { value: "QR", label: "Quét mã QR" },
   ];
 
   const handleExportPDF = async () => {
@@ -524,7 +540,13 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
 
       {/* Summary Cards */}
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => {
+            setDetailType("revenue");
+            setDetailModalOpen(true);
+          }}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               {t("reports.totalRevenue")}
@@ -540,10 +562,19 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
                 Giảm giá: {formatter.format(data.summary.totalDiscount)}
               </p>
             )}
+            <p className="text-xs text-muted-foreground mt-2 text-blue-600 dark:text-blue-400">
+              Click để xem chi tiết →
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => {
+            setDetailType("orders");
+            setDetailModalOpen(true);
+          }}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               {t("reports.totalOrders")}
@@ -555,10 +586,19 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
             <p className="text-xs text-muted-foreground mt-1">
               Giá trị TB: {formatter.format(data.summary.averageOrderValue)}
             </p>
+            <p className="text-xs text-muted-foreground mt-2 text-blue-600 dark:text-blue-400">
+              Click để xem chi tiết →
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => {
+            setDetailType("items");
+            setDetailModalOpen(true);
+          }}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               {t("reports.totalItems")}
@@ -573,11 +613,20 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
                 {formatter.format(data.summary.totalShippingCost)}
               </p>
             )}
+            <p className="text-xs text-muted-foreground mt-2 text-blue-600 dark:text-blue-400">
+              Click để xem chi tiết →
+            </p>
           </CardContent>
         </Card>
 
         {data.summary.netProfit !== undefined && (
-          <Card>
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => {
+              setDetailType("profit");
+              setDetailModalOpen(true);
+            }}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Lợi nhuận ròng
@@ -590,6 +639,9 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Doanh thu - Chi phí
+              </p>
+              <p className="text-xs text-muted-foreground mt-2 text-blue-600 dark:text-blue-400">
+                Click để xem chi tiết →
               </p>
             </CardContent>
           </Card>
@@ -774,7 +826,8 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
           )}
 
           {data.paymentMethodDistribution &&
-            data.paymentMethodDistribution.length > 0 && (
+            data.paymentMethodDistribution.filter((p) => p.method !== "UNKNOWN")
+              .length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -786,28 +839,32 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
                   <ResponsiveContainer width="100%" height="100%">
                     <RePieChart>
                       <Pie
-                        data={data.paymentMethodDistribution.map((p) => ({
-                          name: getPaymentMethodLabel(p.method),
-                          value: p.count,
-                        }))}
+                        data={data.paymentMethodDistribution
+                          .filter((p) => p.method !== "UNKNOWN")
+                          .map((p) => ({
+                            name: getPaymentMethodLabel(p.method),
+                            value: p.count,
+                          }))}
                         dataKey="value"
                         nameKey="name"
                         outerRadius={90}
                       >
-                        {data.paymentMethodDistribution.map((entry, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={
-                              [
-                                "#22c55e",
-                                "#06b6d4",
-                                "#a855f7",
-                                "#f59e0b",
-                                "#ef4444",
-                              ][index % 5]
-                            }
-                          />
-                        ))}
+                        {data.paymentMethodDistribution
+                          .filter((p) => p.method !== "UNKNOWN")
+                          .map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={
+                                [
+                                  "#22c55e",
+                                  "#06b6d4",
+                                  "#a855f7",
+                                  "#f59e0b",
+                                  "#ef4444",
+                                ][index % 5]
+                              }
+                            />
+                          ))}
                       </Pie>
                       <Tooltip />
                       <Legend />
@@ -1155,6 +1212,431 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
           </CardContent>
         </Card>
       )}
+
+      {/* Detail Modal */}
+      <Dialog open={detailModalOpen} onOpenChange={setDetailModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {detailType === "revenue" && "Chi tiết Doanh thu"}
+              {detailType === "orders" && "Chi tiết Đơn hàng"}
+              {detailType === "items" && "Chi tiết Sản phẩm"}
+              {detailType === "profit" && "Chi tiết Lợi nhuận"}
+            </DialogTitle>
+            <DialogDescription>
+              {format(new Date(data.period.start), "dd/MM/yyyy")} -{" "}
+              {format(new Date(data.period.end), "dd/MM/yyyy")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 mt-4">
+            {/* Revenue Detail */}
+            {detailType === "revenue" && (
+              <>
+                <div className="space-y-4">
+                  <div className="rounded-lg border p-4">
+                    <h3 className="font-semibold mb-3">Tổng quan</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Tổng doanh thu
+                        </p>
+                        <p className="text-2xl font-bold">
+                          {formatter.format(data.summary.totalRevenue)}
+                        </p>
+                      </div>
+                      {data.summary.totalDiscount !== undefined && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Tổng giảm giá
+                          </p>
+                          <p className="text-2xl font-bold text-red-600">
+                            -{formatter.format(data.summary.totalDiscount)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {data.paymentMethodDistribution &&
+                    data.paymentMethodDistribution.filter(
+                      (p) => p.method !== "UNKNOWN"
+                    ).length > 0 && (
+                      <div className="rounded-lg border p-4">
+                        <h3 className="font-semibold mb-3">
+                          Phân bố theo phương thức thanh toán
+                        </h3>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Phương thức</TableHead>
+                              <TableHead className="text-right">
+                                Số đơn
+                              </TableHead>
+                              <TableHead className="text-right">
+                                Doanh thu
+                              </TableHead>
+                              <TableHead className="text-right">
+                                Tỷ lệ
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {data.paymentMethodDistribution
+                              .filter((p) => p.method !== "UNKNOWN")
+                              .map((p) => (
+                                <TableRow key={p.method}>
+                                  <TableCell>
+                                    {getPaymentMethodLabel(p.method)}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {p.count}
+                                  </TableCell>
+                                  <TableCell className="text-right font-semibold">
+                                    {formatter.format(p.revenue)}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {p.percentage.toFixed(1)}%
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+
+                  {data.statusDistribution &&
+                    data.statusDistribution.length > 0 && (
+                      <div className="rounded-lg border p-4">
+                        <h3 className="font-semibold mb-3">
+                          Phân bố theo trạng thái đơn hàng
+                        </h3>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Trạng thái</TableHead>
+                              <TableHead className="text-right">
+                                Số đơn
+                              </TableHead>
+                              <TableHead className="text-right">
+                                Doanh thu
+                              </TableHead>
+                              <TableHead className="text-right">
+                                Tỷ lệ
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {data.statusDistribution.map((s) => (
+                              <TableRow key={s.status}>
+                                <TableCell>
+                                  {getStatusLabel(s.status)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {s.count}
+                                </TableCell>
+                                <TableCell className="text-right font-semibold">
+                                  {formatter.format(s.revenue)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {s.percentage.toFixed(1)}%
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+
+                  {data.dailyRevenue && data.dailyRevenue.length > 0 && (
+                    <div className="rounded-lg border p-4">
+                      <h3 className="font-semibold mb-3">
+                        Doanh thu theo ngày
+                      </h3>
+                      <div className="max-h-64 overflow-y-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Ngày</TableHead>
+                              <TableHead className="text-right">
+                                Doanh thu
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {data.dailyRevenue.map((d) => (
+                              <TableRow key={d.date}>
+                                <TableCell>{d.name}</TableCell>
+                                <TableCell className="text-right font-semibold">
+                                  {formatter.format(d.total)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Orders Detail */}
+            {detailType === "orders" && (
+              <>
+                <div className="space-y-4">
+                  <div className="rounded-lg border p-4">
+                    <h3 className="font-semibold mb-3">Tổng quan</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Tổng đơn hàng
+                        </p>
+                        <p className="text-2xl font-bold">
+                          {data.summary.totalOrders}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Giá trị đơn hàng trung bình
+                        </p>
+                        <p className="text-2xl font-bold">
+                          {formatter.format(data.summary.averageOrderValue)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {data.statusDistribution &&
+                    data.statusDistribution.length > 0 && (
+                      <div className="rounded-lg border p-4">
+                        <h3 className="font-semibold mb-3">
+                          Phân bố theo trạng thái
+                        </h3>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Trạng thái</TableHead>
+                              <TableHead className="text-right">
+                                Số đơn
+                              </TableHead>
+                              <TableHead className="text-right">
+                                Tỷ lệ
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {data.statusDistribution.map((s) => (
+                              <TableRow key={s.status}>
+                                <TableCell>
+                                  {getStatusLabel(s.status)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {s.count}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {s.percentage.toFixed(1)}%
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+
+                  {data.paymentMethodDistribution &&
+                    data.paymentMethodDistribution.filter(
+                      (p) => p.method !== "UNKNOWN"
+                    ).length > 0 && (
+                      <div className="rounded-lg border p-4">
+                        <h3 className="font-semibold mb-3">
+                          Phân bố theo phương thức thanh toán
+                        </h3>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Phương thức</TableHead>
+                              <TableHead className="text-right">
+                                Số đơn
+                              </TableHead>
+                              <TableHead className="text-right">
+                                Tỷ lệ
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {data.paymentMethodDistribution
+                              .filter((p) => p.method !== "UNKNOWN")
+                              .map((p) => (
+                                <TableRow key={p.method}>
+                                  <TableCell>
+                                    {getPaymentMethodLabel(p.method)}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {p.count}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {p.percentage.toFixed(1)}%
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                </div>
+              </>
+            )}
+
+            {/* Items Detail */}
+            {detailType === "items" && (
+              <>
+                <div className="space-y-4">
+                  <div className="rounded-lg border p-4">
+                    <h3 className="font-semibold mb-3">Tổng quan</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Tổng sản phẩm bán
+                        </p>
+                        <p className="text-2xl font-bold">
+                          {data.summary.totalItems}
+                        </p>
+                      </div>
+                      {data.summary.totalShippingCost !== undefined && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Tổng phí vận chuyển
+                          </p>
+                          <p className="text-2xl font-bold">
+                            {formatter.format(data.summary.totalShippingCost)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {data.topProducts && data.topProducts.length > 0 && (
+                    <div className="rounded-lg border p-4">
+                      <h3 className="font-semibold mb-3">
+                        Top sản phẩm bán chạy
+                      </h3>
+                      <div className="max-h-64 overflow-y-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Sản phẩm</TableHead>
+                              <TableHead className="text-right">
+                                Số lượng
+                              </TableHead>
+                              <TableHead className="text-right">
+                                Doanh thu
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {data.topProducts.slice(0, 10).map((p, idx) => (
+                              <TableRow key={idx}>
+                                <TableCell className="font-medium">
+                                  {p.name}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {p.quantity}
+                                </TableCell>
+                                <TableCell className="text-right font-semibold">
+                                  {formatter.format(p.revenue)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  )}
+
+                  {data.categoryRevenue && data.categoryRevenue.length > 0 && (
+                    <div className="rounded-lg border p-4">
+                      <h3 className="font-semibold mb-3">
+                        Doanh thu theo danh mục
+                      </h3>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Danh mục</TableHead>
+                            <TableHead className="text-right">
+                              Doanh thu
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {data.categoryRevenue.map((c) => (
+                            <TableRow key={c.categoryId || c.name}>
+                              <TableCell>{c.name}</TableCell>
+                              <TableCell className="text-right font-semibold">
+                                {formatter.format(c.value)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Profit Detail */}
+            {detailType === "profit" &&
+              data.summary.netProfit !== undefined && (
+                <>
+                  <div className="space-y-4">
+                    <div className="rounded-lg border p-4">
+                      <h3 className="font-semibold mb-3">Tổng quan</h3>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">
+                            Tổng doanh thu
+                          </span>
+                          <span className="text-lg font-semibold text-green-600">
+                            +{formatter.format(data.summary.totalRevenue)}
+                          </span>
+                        </div>
+                        {data.summary.totalDiscount !== undefined && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">
+                              Tổng giảm giá
+                            </span>
+                            <span className="text-lg font-semibold text-red-600">
+                              -{formatter.format(data.summary.totalDiscount)}
+                            </span>
+                          </div>
+                        )}
+                        {data.summary.totalShippingCost !== undefined && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">
+                              Tổng phí vận chuyển
+                            </span>
+                            <span className="text-lg font-semibold text-red-600">
+                              -
+                              {formatter.format(data.summary.totalShippingCost)}
+                            </span>
+                          </div>
+                        )}
+                        <Separator />
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold">Lợi nhuận ròng</span>
+                          <span className="text-2xl font-bold">
+                            {formatter.format(data.summary.netProfit)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

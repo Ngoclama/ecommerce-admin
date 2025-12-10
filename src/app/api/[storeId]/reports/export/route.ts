@@ -13,6 +13,7 @@ const getStatusLabel = (status: string): string => {
     SHIPPED: "Đã giao hàng",
     DELIVERED: "Đã nhận hàng",
     CANCELLED: "Đã hủy",
+    RETURNED: "Đã trả hàng",
   };
   return statusMap[status] || status;
 };
@@ -24,7 +25,7 @@ const getPaymentMethodLabel = (method: string): string => {
     VNPAY: "VNPay",
     MOMO: "MoMo",
     STRIPE: "Stripe",
-    UNKNOWN: "Không xác định",
+    QR: "Quét mã QR",
   };
   return methodMap[method] || method;
 };

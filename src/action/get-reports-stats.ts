@@ -13,7 +13,13 @@ import {
   subYears,
 } from "date-fns";
 
-export type PeriodType = "day" | "week" | "month" | "quarter" | "year" | "custom";
+export type PeriodType =
+  | "day"
+  | "week"
+  | "month"
+  | "quarter"
+  | "year"
+  | "custom";
 
 export interface ReportsStatsParams {
   storeId: string;
@@ -175,14 +181,20 @@ export const getReportsStats = async (
   });
 
   // Tính tổng quan
-  const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+  const totalRevenue = orders.reduce(
+    (sum, order) => sum + (order.total || 0),
+    0
+  );
   const totalOrders = orders.length;
   const totalItemsSold = orders.reduce(
     (sum, order) =>
       sum + order.orderItems.reduce((s, item) => s + item.quantity, 0),
     0
   );
-  const totalDiscount = orders.reduce((sum, order) => sum + (order.discount || 0), 0);
+  const totalDiscount = orders.reduce(
+    (sum, order) => sum + (order.discount || 0),
+    0
+  );
   const totalShippingCost = orders.reduce(
     (sum, order) => sum + (order.shippingCost || 0),
     0
@@ -191,8 +203,10 @@ export const getReportsStats = async (
   const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
   // Time series data - nhóm theo ngày
-  const timeSeriesMap: Record<string, { revenue: number; orders: number; items: number }> =
-    {};
+  const timeSeriesMap: Record<
+    string,
+    { revenue: number; orders: number; items: number }
+  > = {};
   orders.forEach((order) => {
     const dateKey = order.createdAt.toISOString().split("T")[0];
     if (!timeSeriesMap[dateKey]) {
@@ -213,7 +227,6 @@ export const getReportsStats = async (
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  
   const statusMap: Record<string, { count: number; revenue: number }> = {};
   orders.forEach((order) => {
     const orderStatus = order.status || "PENDING";
@@ -233,7 +246,6 @@ export const getReportsStats = async (
     }))
     .sort((a, b) => b.revenue - a.revenue);
 
-  
   const paymentMap: Record<string, { count: number; revenue: number }> = {};
   orders.forEach((order) => {
     const method = order.paymentMethod || "UNKNOWN";
@@ -245,6 +257,7 @@ export const getReportsStats = async (
   });
 
   const paymentMethodDistribution = Object.entries(paymentMap)
+    .filter(([method]) => method !== "UNKNOWN") // Loại bỏ UNKNOWN
     .map(([method, data]) => ({
       method,
       count: data.count,
@@ -265,7 +278,8 @@ export const getReportsStats = async (
       if (!categoryMap[catId]) {
         categoryMap[catId] = { name: catName, revenue: 0, orders: 0, items: 0 };
       }
-      const itemRevenue = (item.productPrice || item.product?.price || 0) * item.quantity;
+      const itemRevenue =
+        (item.productPrice || item.product?.price || 0) * item.quantity;
       categoryMap[catId].revenue += itemRevenue;
       categoryMap[catId].items += item.quantity;
     });
@@ -317,7 +331,8 @@ export const getReportsStats = async (
           revenue: 0,
         };
       }
-      const itemRevenue = (item.productPrice || item.product?.price || 0) * item.quantity;
+      const itemRevenue =
+        (item.productPrice || item.product?.price || 0) * item.quantity;
       productMap[productId].quantity += item.quantity;
       productMap[productId].revenue += itemRevenue;
     });
@@ -354,7 +369,8 @@ export const getReportsStats = async (
           orders: new Set(),
         };
       }
-      const itemRevenue = (item.productPrice || item.product?.price || 0) * item.quantity;
+      const itemRevenue =
+        (item.productPrice || item.product?.price || 0) * item.quantity;
       colorMap[colorName].quantity += item.quantity;
       colorMap[colorName].revenue += itemRevenue;
       colorMap[colorName].orders.add(order.id);
@@ -367,7 +383,8 @@ export const getReportsStats = async (
       quantity: data.quantity,
       revenue: data.revenue,
       orders: data.orders.size,
-      percentage: totalItemsSold > 0 ? (data.quantity / totalItemsSold) * 100 : 0,
+      percentage:
+        totalItemsSold > 0 ? (data.quantity / totalItemsSold) * 100 : 0,
     }))
     .sort((a, b) => b.quantity - a.quantity)
     .slice(0, 15); // Top 15
@@ -391,7 +408,8 @@ export const getReportsStats = async (
           orders: new Set(),
         };
       }
-      const itemRevenue = (item.productPrice || item.product?.price || 0) * item.quantity;
+      const itemRevenue =
+        (item.productPrice || item.product?.price || 0) * item.quantity;
       sizeMap[sizeName].quantity += item.quantity;
       sizeMap[sizeName].revenue += itemRevenue;
       sizeMap[sizeName].orders.add(order.id);
@@ -404,7 +422,8 @@ export const getReportsStats = async (
       quantity: data.quantity,
       revenue: data.revenue,
       orders: data.orders.size,
-      percentage: totalItemsSold > 0 ? (data.quantity / totalItemsSold) * 100 : 0,
+      percentage:
+        totalItemsSold > 0 ? (data.quantity / totalItemsSold) * 100 : 0,
     }))
     .sort((a, b) => b.quantity - a.quantity)
     .slice(0, 15); // Top 15
@@ -426,4 +445,3 @@ export const getReportsStats = async (
     topSizes,
   };
 };
-
