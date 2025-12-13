@@ -15,7 +15,7 @@ Admin dashboard cho nền tảng thương mại điện tử đa cửa hàng (mu
 - [Database Schema](#database-schema)
 - [Development](#development)
 
-## 🎯 Tổng quan
+## Tổng quan
 
 Admin Panel là một ứng dụng quản lý toàn diện cho phép người dùng quản lý nhiều cửa hàng, sản phẩm, đơn hàng, và các tài nguyên khác trong hệ thống thương mại điện tử.
 
@@ -42,31 +42,31 @@ Admin Panel là một ứng dụng quản lý toàn diện cho phép người d�
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    E-Commerce Platform                       │
+│                    E-Commerce Platform                      │
 ├─────────────────────────────────────────────────────────────┤
-│                                                               │
+│                                                             │
 │  ┌──────────────────┐         ┌──────────────────┐          │
 │  │   Admin Panel    │         │   Storefront     │          │
 │  │   (Port 3000)    │◄───────►│   (Port 3001)    │          │
 │  └────────┬─────────┘         └────────┬─────────┘          │
-│           │                            │                     │
-│           │                            │                     │
-│           ▼                            ▼                     │
+│           │                            │                    │
+│           │                            │                    │
+│           ▼                            ▼                    │
 │  ┌─────────────────────────────────────────────┐            │
-│  │         Next.js API Routes                   │            │
-│  │  /api/[storeId]/products                     │            │
-│  │  /api/[storeId]/orders                       │            │
-│  │  /api/[storeId]/categories                   │            │
-│  │  ...                                         │            │
+│  │         Next.js API Routes                   │           │
+│  │  /api/[storeId]/products                     │           │
+│  │  /api/[storeId]/orders                       │           │
+│  │  /api/[storeId]/categories                   │           │
+│  │  ...                                         │           │
 │  └──────────────────┬──────────────────────────┘            │
-│                     │                                         │
-│           ┌─────────┴─────────┐                              │
-│           ▼                   ▼                              │
+│                     │                                       │
+│           ┌─────────┴─────────┐                             │
+│           ▼                   ▼                             │
 │  ┌──────────────┐    ┌──────────────┐                       │
 │  │   MongoDB    │    │    Clerk     │                       │
 │  │  (Prisma)    │    │  (Auth)      │                       │
 │  └──────────────┘    └──────────────┘                       │
-│                                                               │
+│                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -125,7 +125,7 @@ User (Clerk)
 - **VENDOR**: Access to owned stores only
 - **CUSTOMER**: Read-only access (via storefront)
 
-## ✨ Tính năng chính
+## Tính năng chính
 
 ### 1. Quản lý Cửa hàng (Store Management)
 - Tạo và quản lý nhiều cửa hàng
@@ -187,14 +187,14 @@ User (Clerk)
 - Quản lý roles
 - User details
 
-## 🚀 Cài đặt
+##  Cài đặt
 
 ### Yêu cầu
 
 - Node.js 18+ 
 - MongoDB database
 - Clerk account (for authentication)
-- npm hoặc yarn
+- npm 
 
 ### Bước 1: Clone repository
 
@@ -275,7 +275,7 @@ npm run dev:turbo
 
 Ứng dụng sẽ chạy tại `http://localhost:3000`
 
-## ⚙️ Cấu hình
+##  Cấu hình
 
 ### Database Schema
 
@@ -304,7 +304,7 @@ File `src/middleware.ts` xử lý:
 - Role-based access control
 - Route protection
 
-## 📁 Cấu trúc dự án
+##  Cấu trúc dự án
 
 ```
 admin/
@@ -351,7 +351,7 @@ admin/
 └── package.json
 ```
 
-## 📖 Hướng dẫn sử dụng
+## Hướng dẫn sử dụng
 
 ### Tạo Store đầu tiên
 
@@ -393,7 +393,7 @@ admin/
 2. Upload file CSV/Excel
 3. Preview và confirm import
 
-## 🔌 API Documentation
+##  API Documentation
 
 ### Base URL
 
@@ -538,7 +538,7 @@ model ProductVariant {
 
 Xem file `prisma/schema.prisma` để biết đầy đủ schema.
 
-## 💻 Development
+##  Development
 
 ### Scripts
 
@@ -634,14 +634,14 @@ await prisma.product.create({
 4. **Variant validation**: Products must have at least one variant
 5. **Cascade deletes**: OrderItems don't cascade - manually delete before removing products
 
-## 📝 Notes
+##  Notes
 
 - File `.github/copilot-instructions.md` chứa hướng dẫn chi tiết cho AI coding assistants
 - Sử dụng constants từ `@/lib/constants` thay vì hardcode strings
 - Luôn validate store ownership trước khi thực hiện mutations
 - Sử dụng Prisma Studio để inspect database: `npx prisma studio`
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
@@ -649,7 +649,7 @@ await prisma.product.create({
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📄 License
+##  License
 
 This project is private and proprietary.
 
@@ -660,5 +660,5 @@ This project is private and proprietary.
 
 ---
 
-**Made with ❤️ by Ngoclama**
+**Made with by Ngoclam**
 
