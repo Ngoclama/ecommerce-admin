@@ -30,6 +30,7 @@ export async function GET(
       },
       select: {
         id: true,
+        orderNumber: true,
         phone: true,
         address: true,
         email: true,

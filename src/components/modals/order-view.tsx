@@ -74,6 +74,7 @@ type OrderItem = {
 
 type OrderDetails = {
   id: string;
+  orderNumber: string;
   status: string;
   isPaid: boolean;
   phone: string;
@@ -211,7 +212,7 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
                 <div className="mt-1.5 flex items-center gap-2 text-sm text-muted-foreground">
                   <Hash className="h-3.5 w-3.5" />
                   <span className="font-mono font-semibold text-primary">
-                    #{order?.id.slice(-8).toUpperCase()}
+                    #{order?.orderNumber || order?.id.slice(-8).toUpperCase()}
                   </span>
                   {order && <span>• {formatDate(order.createdAt)}</span>}
                 </div>
@@ -501,7 +502,9 @@ export const OrderViewModal: React.FC<OrderViewModalProps> = ({
                         <Hash className="h-4 w-4" />
                         {t("modals.orderCode")}
                       </div>
-                      <span className="text-xs font-mono">{order.id}</span>
+                      <span className="text-xs font-mono">
+                        {order.orderNumber || order.id}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center py-2">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
