@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { Trash, MoreHorizontal } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { Trash, MoreHorizontal, CheckCircle2 } from "lucide-react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { handleError } from "@/lib/error-handler";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
@@ -30,12 +31,46 @@ interface OrderClientProps {
 export const OrderClient: React.FC<OrderClientProps> = ({ data }) => {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useTranslation();
   const columns = useOrderColumns();
   const [isLoading, setIsLoading] = useState(false);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState<OrderColumn[]>([]);
   const [deleteSelectedOpen, setDeleteSelectedOpen] = useState(false);
+
+  const statusParam =
+    searchParams.get("status") || searchParams.get("statuses") || "";
+  const activeStatuses = useMemo(
+    () =>
+      statusParam
+        .split(",")
+        .map((s) => s.trim().toUpperCase())
+        .filter(Boolean),
+    [statusParam]
+  );
+
+  const statusOptions = [
+    { key: "ALL", label: "Tất cả" },
+    { key: "PENDING", label: "Chờ xử lý" },
+    { key: "PROCESSING", label: "Đang xử lý" },
+    { key: "SHIPPED", label: "Đã gửi hàng" },
+    { key: "DELIVERED", label: "Đã giao hàng" },
+    { key: "CANCELLED", label: "Đã hủy" },
+    { key: "RETURNED", label: "Đã trả hàng" },
+  ];
+
+  const handleSelectStatus = (statusKey: string) => {
+    const url = new URL(window.location.href);
+    if (statusKey === "ALL") {
+      url.searchParams.delete("status");
+      url.searchParams.delete("statuses");
+    } else {
+      url.searchParams.set("status", statusKey);
+    }
+    router.replace(url.toString(), { scroll: false });
+    router.refresh();
+  };
 
   const handleDeleteAll = async () => {
     try {
@@ -180,6 +215,30 @@ export const OrderClient: React.FC<OrderClientProps> = ({ data }) => {
       </div>
 
       <Separator className="my-4" />
+
+      <div className="flex flex-wrap gap-2 mb-4">
+        {statusOptions.map((option) => {
+          const isActive =
+            option.key === "ALL"
+              ? activeStatuses.length === 0
+              : activeStatuses.includes(option.key);
+          return (
+            <button
+              key={option.key}
+              onClick={() => handleSelectStatus(option.key)}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition",
+                isActive
+                  ? "border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900"
+                  : "border-neutral-200 text-neutral-700 hover:border-neutral-900 hover:text-neutral-900 dark:border-neutral-800 dark:text-neutral-200 dark:hover:border-neutral-100 dark:hover:text-neutral-50"
+              )}
+            >
+              {isActive && <CheckCircle2 className="h-4 w-4" />}
+              <span className="whitespace-nowrap">{option.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
       <DataTable
         searchKey="phone"

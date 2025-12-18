@@ -7,15 +7,31 @@ import { OrderColumn } from "./components/columns";
 
 const OrdersPage = async ({
   params,
+  searchParams,
 }: {
   params: Promise<{ storeId: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) => {
   const { storeId } = await params;
+  const sp = (await searchParams) || {};
+
+  const statusParam =
+    (typeof sp.status === "string" && sp.status) ||
+    (typeof sp.statuses === "string" && sp.statuses) ||
+    undefined;
+
+  const requestedStatuses = (statusParam || "")
+    .split(",")
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean);
 
   const orders = await prisma.order
     .findMany({
       where: {
         storeId: storeId,
+        ...(requestedStatuses.length > 0 && {
+          status: { in: requestedStatuses as any },
+        }),
       },
       select: {
         id: true,

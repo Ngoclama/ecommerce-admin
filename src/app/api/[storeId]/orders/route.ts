@@ -10,6 +10,28 @@ export async function GET(
   try {
     const { storeId } = await params;
 
+    const url = new URL(req.url);
+    const statusParam =
+      url.searchParams.get("status") || url.searchParams.get("statuses");
+    const requestedStatuses = (statusParam || "")
+      .split(",")
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean);
+
+    const validStatuses = Object.values(ORDER_STATUS).map((s) =>
+      s.toUpperCase()
+    );
+    const filteredStatuses = requestedStatuses.filter((s) =>
+      validStatuses.includes(s)
+    );
+
+    const statusFilter =
+      filteredStatuses.length > 0
+        ? {
+            in: filteredStatuses as any,
+          }
+        : undefined;
+
     if (!storeId) {
       return new NextResponse("Store Id is required", { status: 400 });
     }
@@ -17,6 +39,7 @@ export async function GET(
     const orders = await prisma.order.findMany({
       where: {
         storeId: storeId,
+        ...(statusFilter && { status: statusFilter }),
       },
       select: {
         id: true,

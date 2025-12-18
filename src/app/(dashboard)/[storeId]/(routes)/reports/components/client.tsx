@@ -341,12 +341,23 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
     { value: "QR", label: "Quét mã QR" },
   ];
 
+  const buildExportUrl = (format: "pdf" | "excel") => {
+    const qs = new URLSearchParams();
+    qs.set("format", format);
+    if (startDate) qs.set("startDate", startDate);
+    if (endDate) qs.set("endDate", endDate);
+    if (period) qs.set("period", period);
+    if (categoryId) qs.set("categoryId", categoryId);
+    if (productId) qs.set("productId", productId);
+    if (status) qs.set("status", status);
+    if (paymentMethod) qs.set("paymentMethod", paymentMethod);
+    return `/api/${params.storeId}/reports/export?${qs.toString()}`;
+  };
+
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
-      const response = await fetch(
-        `/api/${params.storeId}/reports/export?format=pdf&startDate=${startDate}&endDate=${endDate}`
-      );
+      const response = await fetch(buildExportUrl("pdf"));
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -366,10 +377,9 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
   const handleExportExcel = async () => {
     setIsExporting(true);
     try {
-      const response = await fetch(
-        `/api/${params.storeId}/reports/export?format=excel&startDate=${startDate}&endDate=${endDate}`,
-        { method: "GET" }
-      );
+      const response = await fetch(buildExportUrl("excel"), {
+        method: "GET",
+      });
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -562,7 +572,7 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
                 Giảm giá: {formatter.format(data.summary.totalDiscount)}
               </p>
             )}
-            <p className="text-xs text-muted-foreground mt-2 text-blue-600 dark:text-blue-400">
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
               Click để xem chi tiết →
             </p>
           </CardContent>
@@ -586,7 +596,7 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
             <p className="text-xs text-muted-foreground mt-1">
               Giá trị TB: {formatter.format(data.summary.averageOrderValue)}
             </p>
-            <p className="text-xs text-muted-foreground mt-2 text-blue-600 dark:text-blue-400">
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
               Click để xem chi tiết →
             </p>
           </CardContent>
@@ -613,7 +623,7 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
                 {formatter.format(data.summary.totalShippingCost)}
               </p>
             )}
-            <p className="text-xs text-muted-foreground mt-2 text-blue-600 dark:text-blue-400">
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
               Click để xem chi tiết →
             </p>
           </CardContent>
@@ -640,7 +650,7 @@ export const ReportsClient: React.FC<ReportsClientProps> = ({ data }) => {
               <p className="text-xs text-muted-foreground mt-1">
                 Doanh thu - Chi phí
               </p>
-              <p className="text-xs text-muted-foreground mt-2 text-blue-600 dark:text-blue-400">
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
                 Click để xem chi tiết →
               </p>
             </CardContent>

@@ -79,6 +79,8 @@ export async function POST(req: Request) {
       items,
       shippingAddress,
       shippingMethod,
+      shippingCost: providedShippingCostFromClient,
+      shippingDetails,
       paymentMethod,
       coupon,
       customerNote,
@@ -86,6 +88,8 @@ export async function POST(req: Request) {
       items: CheckoutItem[];
       shippingAddress?: ShippingAddress;
       shippingMethod?: string;
+      shippingCost?: number;
+      shippingDetails?: unknown;
       paymentMethod?: string;
       coupon?: {
         code: string;
@@ -280,19 +284,28 @@ export async function POST(req: Request) {
       discount = Math.min(discount, subtotal);
     }
 
-    // Tính shipping cost dựa trên method và subtotal
-    let shippingCost = 0;
-    if (subtotal >= 500000) {
-      shippingCost = 0; // Free shipping nếu >= 500k
+    // Tính shipping cost: ưu tiên giá trị được client tính bằng shipping-calculator
+    const providedShippingCost =
+      typeof providedShippingCostFromClient === "number" &&
+      !Number.isNaN(providedShippingCostFromClient)
+        ? providedShippingCostFromClient
+        : null;
+
+    let finalShippingCost: number;
+    if (providedShippingCost !== null) {
+      finalShippingCost = Math.max(0, Math.round(providedShippingCost));
+    } else if (subtotal >= 500000) {
+      finalShippingCost = 0; // Free shipping nếu >= 500k
     } else if (shippingMethod === "express") {
-      shippingCost = 50000; // Express shipping
+      finalShippingCost = 50000; // Express shipping (fallback)
     } else {
-      shippingCost = 30000; // Standard shipping
+      finalShippingCost = 30000; // Standard shipping (fallback)
     }
-    const total = subtotal + tax + shippingCost - discount;
+
+    const total = subtotal + tax + finalShippingCost - discount;
 
     // Thêm shipping cost vào line items nếu > 0
-    if (shippingCost > 0) {
+    if (finalShippingCost > 0) {
       line_items.push({
         quantity: 1,
         price_data: {
@@ -306,7 +319,7 @@ export async function POST(req: Request) {
                 ? "Giao hàng nhanh (1-2 ngày làm việc)"
                 : "Giao hàng tiêu chuẩn (3-5 ngày làm việc)",
           },
-          unit_amount: shippingCost,
+          unit_amount: finalShippingCost,
         },
       });
     }
@@ -378,7 +391,7 @@ export async function POST(req: Request) {
       subtotal,
       tax,
       discount,
-      shippingCost,
+      shippingCost: finalShippingCost,
       total,
       // Lưu shipping address nếu có - ĐẢM BẢO LUÔN LƯU
       // Ưu tiên email từ user đã đăng nhập, sau đó mới dùng email từ shippingAddress
@@ -775,7 +788,7 @@ export async function POST(req: Request) {
             orderId: order.id,
             subtotal,
             discount,
-            shippingCost,
+            shippingCost: finalShippingCost,
             tax,
             total,
             vnpAmount,

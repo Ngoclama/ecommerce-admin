@@ -52,6 +52,14 @@ export async function GET(
         | null) || "custom";
     const categoryId = searchParams.get("categoryId");
     const productId = searchParams.get("productId");
+    const statusParam =
+      searchParams.get("status") || searchParams.get("statuses");
+    const paymentMethod = searchParams.get("paymentMethod");
+
+    const requestedStatuses = (statusParam || "")
+      .split(",")
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean);
 
     if (!userId) {
       return new NextResponse(API_MESSAGES.UNAUTHENTICATED, {
@@ -114,6 +122,10 @@ export async function GET(
               },
             }
           : {}),
+        ...(requestedStatuses.length > 0
+          ? { status: { in: requestedStatuses as any } }
+          : {}),
+        ...(paymentMethod ? { paymentMethod } : {}),
       },
       include: {
         orderItems: {
