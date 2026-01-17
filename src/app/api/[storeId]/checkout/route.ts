@@ -5,16 +5,16 @@ import prisma from "@/lib/prisma";
 
 interface CheckoutItem {
   productId: string;
-  variantId?: string; // Variant ID (nếu có)
-  sizeId?: string; // Fallback: Size ID
-  colorId?: string; // Fallback: Color ID
-  materialId?: string; // Fallback: Material ID
+  variantId?: string;
+  sizeId?: string;
+  colorId?: string;
+  materialId?: string;
   quantity: number;
 }
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ storeId: string }> }
+  { params }: { params: Promise<{ storeId: string }> },
 ) {
   try {
     const { storeId } = await params;
@@ -26,7 +26,7 @@ export async function POST(
 
     const productIds = items.map((item) => item.productId);
 
-    // Lấy thông tin chi tiết của tất cả sản phẩm với variants
+    // Lấy thông tin sản phẩm (chỉ để lấy giá và mô tả, inventory đã được kiểm tra ở store)
     const products = await prisma.product.findMany({
       where: {
         id: {
@@ -45,7 +45,6 @@ export async function POST(
       },
     });
 
-    // Kiểm tra nếu sản phẩm bị thiếu hoặc trùng lặp (phòng thủ)
     if (products.length !== new Set(productIds).size) {
       return new NextResponse("One or more products not found in the store.", {
         status: 404,
@@ -55,18 +54,18 @@ export async function POST(
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
     let subtotal = 0;
 
-    // Lặp qua các items đã gửi lên
+    // Lặp qua các items và tạo Stripe line items
     for (const checkoutItem of items) {
       const product = products.find((p) => p.id === checkoutItem.productId);
 
       if (!product) {
         return new NextResponse(
           `Product ID ${checkoutItem.productId} not found.`,
-          { status: 404 }
+          { status: 404 },
         );
       }
 
-      // Tìm variant phù hợp
+      // Tìm variant
       let variant = null;
       if (checkoutItem.variantId) {
         variant = product.variants.find((v) => v.id === checkoutItem.variantId);
@@ -76,30 +75,8 @@ export async function POST(
             v.sizeId === checkoutItem.sizeId &&
             v.colorId === checkoutItem.colorId &&
             (!checkoutItem.materialId ||
-              v.materialId === checkoutItem.materialId)
+              v.materialId === checkoutItem.materialId),
         );
-      }
-
-      // Kiểm tra tồn kho từ variant hoặc product
-      if (variant) {
-        if (variant.inventory < checkoutItem.quantity) {
-          return new NextResponse(
-            `Sản phẩm '${product.name}' (${variant.size.name}/${variant.color.name}) chỉ còn ${variant.inventory} cái.`,
-            { status: 400 }
-          );
-        }
-      } else {
-        // Fallback: kiểm tra tổng inventory từ tất cả variants
-        const totalInventory = product.variants.reduce(
-          (sum, v) => sum + v.inventory,
-          0
-        );
-        if (totalInventory < checkoutItem.quantity) {
-          return new NextResponse(
-            `Sản phẩm '${product.name}' chỉ còn ${totalInventory} cái.`,
-            { status: 400 }
-          );
-        }
       }
 
       // Lấy giá từ variant hoặc product
@@ -136,78 +113,16 @@ export async function POST(
       });
     }
 
-    // Tính toán tổng giá trị đơn hàng
-    const tax = 0; // Có thể tính từ subtotal
-    const discount = 0; // Có thể áp dụng coupon
-    const shippingCost = 0; // Có thể tính từ shipping method
-    const total = subtotal + tax + shippingCost - discount;
+    // ⚠️ NOTE: Order đã được tạo ở /api/orders trên store
+    // Endpoint này chỉ tạo Stripe checkout session
+    // Inventory đã được trừ khi tạo order
 
-    // This route is for Stripe checkout, so payment method is always STRIPE
-    // STRIPE is online payment, so isPaid = true immediately
-    const isPaid = true; // STRIPE = online payment = paid immediately
-    const initialStatus = "PROCESSING"; // Paid orders start as PROCESSING
+    console.log(
+      "[CHECKOUT_STRIPE] ✅ Creating Stripe session for items:",
+      items.length,
+    );
 
-    // Tạo Order với đầy đủ thông tin
-    const order = await prisma.order.create({
-      data: {
-        storeId: storeId,
-        isPaid: isPaid, // Set based on payment method
-        status: initialStatus, // PROCESSING for online payment, PENDING for COD
-        subtotal,
-        tax,
-        discount,
-        shippingCost,
-        total,
-        orderItems: {
-          create: items.map((checkoutItem) => {
-            const product = products.find(
-              (p) => p.id === checkoutItem.productId
-            );
-            if (!product)
-              throw new Error(
-                `Product ${checkoutItem.productId} missing during order creation.`
-              );
-
-            // Tìm variant tương ứng
-            let variant = null;
-            if (checkoutItem.variantId) {
-              variant = product.variants.find(
-                (v) => v.id === checkoutItem.variantId
-              );
-            } else if (checkoutItem.sizeId && checkoutItem.colorId) {
-              variant = product.variants.find(
-                (v) =>
-                  v.sizeId === checkoutItem.sizeId &&
-                  v.colorId === checkoutItem.colorId &&
-                  (!checkoutItem.materialId ||
-                    v.materialId === checkoutItem.materialId)
-              );
-            }
-
-            // Lấy giá từ variant hoặc product
-            const itemPrice = variant?.price
-              ? Number(variant.price)
-              : Number(product.price);
-
-            return {
-              product: { connect: { id: checkoutItem.productId } },
-              sizeId: variant?.sizeId || checkoutItem.sizeId || null,
-              colorId: variant?.colorId || checkoutItem.colorId || null,
-              materialId:
-                variant?.materialId || checkoutItem.materialId || null,
-              sizeName: variant?.size.name || null,
-              colorName: variant?.color.name || null,
-              materialName: variant?.material?.name || null,
-              productPrice: itemPrice,
-              price: itemPrice,
-              productName: product.name,
-              quantity: checkoutItem.quantity,
-            };
-          }),
-        },
-      },
-    });
-
+    // Tạo Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       line_items,
       mode: "payment",
@@ -218,24 +133,21 @@ export async function POST(
       success_url: `${
         process.env.FRONTEND_STORE_URL ||
         process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")
-      }/payment/success?orderId=${order.id}&method=stripe`,
+      }/payment/success?method=stripe`,
       cancel_url: `${
         process.env.FRONTEND_STORE_URL ||
         process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")
-      }/payment/failure?orderId=${order.id}&method=stripe&reason=cancelled`,
-      metadata: {
-        orderId: order.id,
-      },
+      }/payment/failure?method=stripe&reason=cancelled`,
     });
+
+    console.log("[CHECKOUT_STRIPE] ✅ Session created:", session.id);
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("[CHECKOUT_POST_ERROR]", error);
-    }
+    console.error("[CHECKOUT_ERROR]", error);
     return new NextResponse(
       "Internal Server Error: Checkout Processing Failed.",
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

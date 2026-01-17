@@ -2,6 +2,7 @@ import { stripe } from "@/lib/stripe";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import prisma from "@/lib/prisma";
+import { decrementOrderInventory } from "@/lib/inventory-service";
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -13,7 +14,7 @@ export async function POST(req: Request) {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      process.env.STRIPE_WEBHOOK_SECRET!,
     );
   } catch (error: any) {
     console.error("[STRIPE_WEBHOOK_ERROR]", error.message);
@@ -67,40 +68,6 @@ export async function POST(req: Request) {
             : fullSession.payment_intent.id
           : null,
       };
-
-      // If order was not paid before (shouldn't happen for STRIPE, but safety check)
-      // Decrement inventory now
-      if (!existingOrder.isPaid) {
-        // Decrement inventory for order items
-        const orderItems = await prisma.orderItem.findMany({
-          where: { orderId: orderId },
-        });
-
-        for (const item of orderItems) {
-          if (item.sizeId && item.colorId) {
-            const variant = await prisma.productVariant.findFirst({
-              where: {
-                productId: item.productId,
-                sizeId: item.sizeId,
-                colorId: item.colorId,
-                materialId: item.materialId || null,
-              },
-            });
-
-            if (variant) {
-              await prisma.productVariant.update({
-                where: { id: variant.id },
-                data: {
-                  inventory: {
-                    decrement: item.quantity,
-                  },
-                },
-              });
-            }
-          }
-        }
-        console.log("[STRIPE_WEBHOOK] Inventory decremented for order:", orderId);
-      }
 
       // Cập nhật email: ưu tiên từ Stripe, nếu không có thì giữ nguyên
       if (customerDetails?.email) {
@@ -167,23 +134,25 @@ export async function POST(req: Request) {
       if (!existingOrder.userId && updateData.email) {
         try {
           const normalizedEmail = updateData.email.toLowerCase().trim();
-          
+
           // Tìm user theo email (exact match hoặc normalized)
           const user = await prisma.user.findFirst({
             where: {
-              OR: [
-                { email: updateData.email },
-                { email: normalizedEmail },
-              ],
+              OR: [{ email: updateData.email }, { email: normalizedEmail }],
             },
           });
 
           if (user) {
             updateData.userId = user.id;
-            console.log(`[STRIPE_WEBHOOK] Linking order ${orderId} to user ${user.id} via email ${updateData.email}`);
+            console.log(
+              `[STRIPE_WEBHOOK] Linking order ${orderId} to user ${user.id} via email ${updateData.email}`,
+            );
           }
         } catch (linkError) {
-          console.error("[STRIPE_WEBHOOK] Error linking order to user:", linkError);
+          console.error(
+            "[STRIPE_WEBHOOK] Error linking order to user:",
+            linkError,
+          );
           // Không fail webhook nếu link lỗi, chỉ log
         }
       }
@@ -209,51 +178,32 @@ export async function POST(req: Request) {
 
       console.log(`[STRIPE_WEBHOOK] Order ${orderId} updated to PAID`);
 
-      // Giảm inventory của các sản phẩm trong order
-      try {
-        const orderItems = await prisma.orderItem.findMany({
-          where: {
-            orderId: orderId,
-          },
-          include: {
-            product: {
-              include: {
-                variants: true,
-              },
-            },
-          },
-        });
+      // CHỈ giảm inventory nếu đơn hàng mới được thanh toán (không phải đã thanh toán trước)
+      // Sử dụng flag inventoryDecremented để tránh xử lý lại nếu webhook gọi nhiều lần
+      if (!existingOrder.isPaid && !existingOrder.inventoryDecremented) {
+        console.log(
+          `[STRIPE_WEBHOOK] Decrementing inventory for order ${orderId}...`,
+        );
+        const inventoryResult = await decrementOrderInventory(orderId);
 
-        // Cập nhật inventory cho từng item
-        for (const item of orderItems) {
-          if (item.sizeId && item.colorId) {
-            // Tìm variant tương ứng
-            const variant = item.product.variants.find(
-              (v) => v.sizeId === item.sizeId && v.colorId === item.colorId
-            );
-
-            if (variant && variant.inventory >= item.quantity) {
-              // Giảm inventory của variant
-              await prisma.productVariant.update({
-                where: {
-                  id: variant.id,
-                },
-                data: {
-                  inventory: {
-                    decrement: item.quantity,
-                  },
-                },
-              });
-            } else {
-              console.warn(
-                `[STRIPE_WEBHOOK] Insufficient inventory for variant ${variant?.id}`
-              );
-            }
-          }
+        if (inventoryResult.success) {
+          console.log(
+            `[STRIPE_WEBHOOK] ✅ Inventory decremented: ${inventoryResult.decremented} items`,
+          );
+        } else {
+          console.error(
+            `[STRIPE_WEBHOOK] ❌ Inventory decrement failed: ${inventoryResult.message}`,
+          );
+          // Không fail webhook, chỉ log warning
         }
-      } catch (inventoryError) {
-        console.error("[STRIPE_WEBHOOK_INVENTORY_ERROR]", inventoryError);
-        // Không fail webhook nếu inventory update lỗi, chỉ log
+      } else if (existingOrder.inventoryDecremented) {
+        console.log(
+          `[STRIPE_WEBHOOK] ⚠️ Order ${orderId} inventory already decremented - skipping to avoid double decrement`,
+        );
+      } else {
+        console.log(
+          `[STRIPE_WEBHOOK] Order ${orderId} was already paid - inventory should have been decremented`,
+        );
       }
 
       return new NextResponse(null, { status: 200 });

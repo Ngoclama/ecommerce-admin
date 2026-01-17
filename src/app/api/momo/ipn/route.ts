@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyMoMoIPNSignature, getMoMoConfig } from "@/lib/momo";
 import prisma from "@/lib/prisma";
 import { API_MESSAGES, HTTP_STATUS } from "@/lib/constants";
+import { decrementOrderInventory } from "@/lib/inventory-service";
 import type { MoMoIPNRequest } from "@/lib/momo";
 
 /**
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
       console.error("[MOMO_IPN] Invalid signature");
       return NextResponse.json(
         { success: false, message: "Invalid signature" },
-        { status: HTTP_STATUS.UNAUTHORIZED }
+        { status: HTTP_STATUS.UNAUTHORIZED },
       );
     }
 
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
       console.error("[MOMO_IPN] Order not found:", ipnData.orderId);
       return NextResponse.json(
         { success: false, message: "Order not found" },
-        { status: HTTP_STATUS.NOT_FOUND }
+        { status: HTTP_STATUS.NOT_FOUND },
       );
     }
 
@@ -56,34 +57,32 @@ export async function POST(req: Request) {
         status: order.isPaid ? "PROCESSING" : "PROCESSING", // Already PROCESSING if paid
       };
 
-      // If order was not paid before (shouldn't happen for MOMO, but safety check)
-      // Decrement inventory now
-      if (!order.isPaid) {
-        // Decrement inventory for order items
-        for (const item of order.orderItems) {
-          if (item.sizeId && item.colorId) {
-            const variant = await prisma.productVariant.findFirst({
-              where: {
-                productId: item.productId,
-                sizeId: item.sizeId,
-                colorId: item.colorId,
-                materialId: item.materialId || null,
-              },
-            });
+      // CHỈ giảm inventory nếu đơn hàng mới được thanh toán (không phải đã thanh toán trước)
+      // Sử dụng flag inventoryDecremented để tránh xử lý lại nếu webhook gọi nhiều lần
+      if (!order.isPaid && !order.inventoryDecremented) {
+        console.log(
+          `[MOMO_IPN] Decrementing inventory for order ${order.id}...`,
+        );
+        const inventoryResult = await decrementOrderInventory(order.id);
 
-            if (variant) {
-              await prisma.productVariant.update({
-                where: { id: variant.id },
-                data: {
-                  inventory: {
-                    decrement: item.quantity,
-                  },
-                },
-              });
-            }
-          }
+        if (inventoryResult.success) {
+          console.log(
+            `[MOMO_IPN] ✅ Inventory decremented: ${inventoryResult.decremented} items`,
+          );
+        } else {
+          console.error(
+            `[MOMO_IPN] ❌ Inventory decrement failed: ${inventoryResult.message}`,
+          );
+          // Không fail webhook, chỉ log warning
         }
-        console.log("[MOMO_IPN] Inventory decremented for order:", order.id);
+      } else if (order.inventoryDecremented) {
+        console.log(
+          `[MOMO_IPN] ⚠️ Order ${order.id} inventory already decremented - skipping to avoid double decrement`,
+        );
+      } else {
+        console.log(
+          `[MOMO_IPN] Order ${order.id} was already paid - inventory should have been decremented`,
+        );
       }
 
       if (!order.userId && order.email) {
@@ -100,7 +99,7 @@ export async function POST(req: Request) {
           if (user) {
             updateData.userId = user.id;
             console.log(
-              `[MOMO_IPN] Linking order ${order.id} to user ${user.id} via email ${order.email}`
+              `[MOMO_IPN] Linking order ${order.id} to user ${user.id} via email ${order.email}`,
             );
           }
         } catch (linkError) {
@@ -115,44 +114,14 @@ export async function POST(req: Request) {
         data: updateData,
       });
 
-      // Update product variant inventory
-      // Note: OrderItem has snapshot data (sizeId, colorId, materialId) instead of direct variant relation
-      for (const item of order.orderItems) {
-        if (item.sizeId && item.colorId) {
-          // Find the variant based on snapshot data
-          const variant = await prisma.productVariant.findFirst({
-            where: {
-              productId: item.productId,
-              sizeId: item.sizeId,
-              colorId: item.colorId,
-              materialId: item.materialId || null,
-            },
-          });
-
-          if (variant) {
-            await prisma.productVariant.update({
-              where: { id: variant.id },
-              data: {
-                inventory: {
-                  decrement: item.quantity,
-                },
-              },
-            });
-          }
-        }
-      }
-
-      console.log(
-        "[MOMO_IPN] Order updated and inventory decremented:",
-        order.id
-      );
+      console.log("[MOMO_IPN] Order updated:", order.id);
     } else {
       // Payment failed or cancelled
       console.log(
         "[MOMO_IPN] Payment failed/cancelled:",
         ipnData.message,
         "for order:",
-        order.id
+        order.id,
       );
 
       // Delete order if unpaid and PENDING (payment was cancelled)
@@ -163,7 +132,7 @@ export async function POST(req: Request) {
           });
           console.log(
             "[MOMO_IPN] Order deleted after payment failure:",
-            order.id
+            order.id,
           );
         } catch (deleteError) {
           console.error("[MOMO_IPN] Error deleting order:", deleteError);

@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "mongodb"
-  url      = env("DATABASE_URL")
 }
 
 // ─── 1. USER & AUTH ───────────────────────────────────────────
@@ -281,6 +280,9 @@ model Order {
 
   customerNote String?
   adminNote    String?
+
+  // Inventory tracking flag
+  inventoryDecremented Boolean @default(false)
 
   shippings Shipping[]
   returns   Return[]

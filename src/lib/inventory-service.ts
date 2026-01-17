@@ -30,7 +30,7 @@ export interface InventoryReservation {
  */
 export async function checkInventoryAvailability(
   variantId: string,
-  quantity: number
+  quantity: number,
 ): Promise<InventoryCheckResult> {
   const variant = await prisma.productVariant.findUnique({
     where: { id: variantId },
@@ -95,7 +95,7 @@ export async function checkInventoryAvailability(
  * Reserve inventory khi tạo đơn hàng (atomic operation)
  */
 export async function reserveInventory(
-  items: InventoryReservation[]
+  items: InventoryReservation[],
 ): Promise<{ success: boolean; message?: string; failedItems?: string[] }> {
   try {
     await prisma.$transaction(async (tx) => {
@@ -125,10 +125,9 @@ export async function reserveInventory(
           continue;
         }
 
-        
         if (variant.inventory < item.quantity) {
           failedItems.push(
-            `${variant.product.name}: Chỉ còn ${variant.inventory}/${item.quantity} sản phẩm`
+            `${variant.product.name}: Chỉ còn ${variant.inventory}/${item.quantity} sản phẩm`,
           );
           continue;
         }
@@ -137,7 +136,7 @@ export async function reserveInventory(
         await tx.productVariant.update({
           where: {
             id: item.variantId,
-            inventory: { gte: item.quantity }, 
+            inventory: { gte: item.quantity },
           },
           data: {
             inventory: {
@@ -165,7 +164,7 @@ export async function reserveInventory(
  * Release inventory khi hủy đơn hàng
  */
 export async function releaseInventory(
-  items: InventoryReservation[]
+  items: InventoryReservation[],
 ): Promise<{ success: boolean; message?: string }> {
   try {
     await prisma.$transaction(async (tx) => {
@@ -238,7 +237,7 @@ export async function checkLowStockProducts(storeId: string) {
 }
 
 export async function bulkUpdateInventory(
-  updates: Array<{ variantId: string; quantity: number }>
+  updates: Array<{ variantId: string; quantity: number }>,
 ): Promise<{ success: boolean; updated: number; failed: number }> {
   let updated = 0;
   let failed = 0;
@@ -258,4 +257,110 @@ export async function bulkUpdateInventory(
   });
 
   return { success: true, updated, failed };
+}
+
+/**
+ * Giảm tồn kho khi đơn hàng được thanh toán (Atomic operation)
+ * Đảm bảo chỉ giảm một lần duy nhất
+ */
+export async function decrementOrderInventory(
+  orderId: string,
+): Promise<{ success: boolean; message?: string; decremented: number }> {
+  try {
+    let decrementedCount = 0;
+
+    await prisma.$transaction(async (tx) => {
+      // Lấy tất cả items của order
+      const orderItems = await tx.orderItem.findMany({
+        where: { orderId },
+        include: {
+          product: {
+            select: {
+              id: true,
+              trackQuantity: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      // Giảm tồn kho cho từng item
+      for (const item of orderItems) {
+        // Skip nếu sản phẩm không theo dõi tồn kho
+        if (!item.product.trackQuantity) {
+          continue;
+        }
+
+        // Phải có size và color để tìm variant
+        if (!item.sizeId || !item.colorId) {
+          console.warn(
+            `[INVENTORY_DECREMENT] OrderItem ${item.id} không có sizeId/colorId`,
+          );
+          continue;
+        }
+
+        // Tìm variant
+        const variant = await tx.productVariant.findFirst({
+          where: {
+            productId: item.productId,
+            sizeId: item.sizeId,
+            colorId: item.colorId,
+            materialId: item.materialId || null,
+          },
+        });
+
+        if (!variant) {
+          console.warn(
+            `[INVENTORY_DECREMENT] Không tìm thấy variant cho product ${item.productId}, size ${item.sizeId}, color ${item.colorId}`,
+          );
+          continue;
+        }
+
+        // Kiểm tra tồn kho trước khi giảm
+        if (variant.inventory < item.quantity) {
+          console.warn(
+            `[INVENTORY_DECREMENT] Insufficient inventory for variant ${variant.id}: available ${variant.inventory}, requested ${item.quantity}`,
+          );
+          continue;
+        }
+
+        // Giảm tồn kho (atomic operation)
+        await tx.productVariant.update({
+          where: { id: variant.id },
+          data: {
+            inventory: {
+              decrement: item.quantity,
+            },
+          },
+        });
+
+        decrementedCount++;
+        console.log(
+          `[INVENTORY_DECREMENT] Decremented variant ${variant.id}: -${item.quantity} (${item.product.name})`,
+        );
+      }
+
+      // Đánh dấu order đã xử lý tồn kho
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          // Thêm flag để tránh xử lý lại
+          inventoryDecremented: true,
+        },
+      });
+    });
+
+    return {
+      success: true,
+      message: `Successfully decremented inventory for ${decrementedCount} items`,
+      decremented: decrementedCount,
+    };
+  } catch (error: any) {
+    console.error("[INVENTORY_DECREMENT_ERROR]", error);
+    return {
+      success: false,
+      message: error.message || "Không thể giảm tồn kho",
+      decremented: 0,
+    };
+  }
 }
